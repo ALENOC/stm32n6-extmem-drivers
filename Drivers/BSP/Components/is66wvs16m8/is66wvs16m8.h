@@ -23,8 +23,10 @@ extern "C" {
 #include "extmem_common.h"
 #include "stm32n6xx_hal.h"
 
+#define IS66WVS_RAM_SIZE_8MBIT           (1U * 1024U * 1024U)  /* 8 Mbits = 1 MByte    */
 #define IS66WVS_RAM_SIZE_16MBIT          (2U * 1024U * 1024U)  /* 16 Mbits = 2 MBytes  */
 #define IS66WVS_RAM_SIZE_32MBIT          (4U * 1024U * 1024U)  /* 32 Mbits = 4 MBytes  */
+#define IS66WVS_RAM_SIZE_64MBIT          (8U * 1024U * 1024U)  /* 64 Mbits = 8 MBytes  */
 #define IS66WVS_RAM_SIZE_128MBIT         (16U * 1024U * 1024U) /* 128 Mbits = 16 MBytes */
 
 #define IS66WVS_OK                       (0)

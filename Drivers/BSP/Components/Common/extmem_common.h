@@ -59,6 +59,7 @@ typedef enum {
   EXTMEM_TYPE_HYPERRAM_ISSI,       /*!< ISSI HyperRAM (IS66WVH / IS67WVH)               */
   EXTMEM_TYPE_PSRAM_OCTAL_ISSI,    /*!< ISSI Octal PSRAM (IS66WVO / IS67WVO)            */
   EXTMEM_TYPE_PSRAM_QUAD_ISSI,     /*!< ISSI Quad PSRAM (IS66WVS / IS67WVS)             */
+  EXTMEM_TYPE_SRAM_SERIAL_ISSI,    /*!< ISSI Serial SRAM (IS62WVS / IS65WVS)            */
   EXTMEM_TYPE_PSRAM_PARALLEL_FMC,  /*!< ISSI / Infineon Parallel Asynchronous PSRAM/SRAM*/
   EXTMEM_TYPE_NOR_PARALLEL_FMC     /*!< Parallel Asynchronous NOR Flash via FMC         */
 } ExtMem_Type_t;

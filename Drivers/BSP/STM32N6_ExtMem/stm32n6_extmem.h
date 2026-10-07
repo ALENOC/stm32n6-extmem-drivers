@@ -37,6 +37,7 @@ extern "C" {
 #include "../Components/is66wvo32m8/is66wvo32m8.h"
 #include "../Components/is66wvh16m8/is66wvh16m8.h"
 #include "../Components/is66wvs16m8/is66wvs16m8.h"
+#include "../Components/is62wvs/is62wvs.h"
 #include "../Components/is66wv_fmc/is66wv_fmc.h"
 #include "../Components/is29gl_fmc/is29gl_fmc.h"
 #include "../Components/Common/sfdp.h"

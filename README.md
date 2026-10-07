@@ -68,7 +68,8 @@ Supports **XSPI1**, **XSPI2**, **XSPI3** (Single, Quad, Octal DTR up to 200 MHz,
 | **ISSI** | Parallel NOR Flash (`IS29GL032/064/128/256/512`) | FMC (16-bit) | 110 ns | 16-bit Parallel CFI NOR | `is29gl_fmc` |
 | **ISSI** | Octal PSRAM (`IS66WVO/IS67WVO`) | XSPI1 / XSPI2 | 200 MHz | xSPI Profile 2.0 (8D-8D-8D) | `is66wvo32m8` |
 | **ISSI** | HyperRAM™ PSRAM (`IS66WVH/IS67WVH`) | XSPI1 / XSPI2 | 200 MHz | HyperBus™ DDR | `is66wvh16m8` |
-| **ISSI** | Quad SPI PSRAM (`IS66WVS/IS67WVS`) | XSPI1 / XSPI2 / XSPI3 | 104 MHz | 1-4-4 Quad SPI | `is66wvs16m8` |
+| **ISSI** | Quad SPI PSRAM (`IS66WVS/IS67WVS`) | XSPI1 / XSPI2 / XSPI3 | 133 MHz | 1-4-4 Quad SPI | `is66wvs16m8` |
+| **ISSI** | Serial Static RAM (`IS62WVS/IS65WVS`) | XSPI1 / XSPI2 / XSPI3 | 45 MHz | SPI / SQI (1-1-1 / 1-4-4) | `is62wvs` |
 | **ISSI/IFX** | Parallel Asynch PSRAM (`IS66WV/CY62`) | FMC (16-bit) | Asynchronous (~10-55ns) | 16-bit Parallel SRAM/PSRAM | `is66wv_fmc` |
 
 *For the comprehensive matrix including ordering part numbers, packages, and voltage options, refer to [Docs/Supported_Memories_Matrix.md](Docs/Supported_Memories_Matrix.md).*
@@ -92,6 +93,7 @@ stm32n6-extmem-drivers/
 │       │   ├── is66wvo32m8/         # ISSI Octal PSRAM Driver
 │       │   ├── is66wvh16m8/         # ISSI HyperRAM PSRAM Driver
 │       │   ├── is66wvs16m8/         # ISSI Quad PSRAM Driver
+│       │   ├── is62wvs/             # ISSI Serial Static RAM Driver
 │       │   ├── is66wv_fmc/          # FMC Parallel PSRAM Driver
 │       │   └── is29gl_fmc/          # ISSI IS29GL FMC Parallel NOR Flash Driver
 │       └── STM32N6_ExtMem/          # High-Level Unified Manager
@@ -107,7 +109,7 @@ stm32n6-extmem-drivers/
 │   ├── mock_hal.h                   # STM32N6 HAL Mock (XSPI, FMC, Cache, RCC)
 │   ├── mock_hal.c                   # Register, bus transaction and memory array simulator
 │   ├── extmem_unit_tests.h          # Unit test definitions
-│   ├── extmem_unit_tests.c          # 13 exhaustive unit tests
+│   ├── extmem_unit_tests.c          # 14 exhaustive unit tests
 │   └── main_test.c                  # Host test runner for Linux/macOS/Windows
 ├── Docs/
 │   ├── STM32CubeIDE_Integration_Guide.md # Step-by-step CubeIDE setup & Linker guide
@@ -198,7 +200,7 @@ The repository includes a comprehensive automated test harness featuring a **Moc
 
 ### Running Tests Locally
 ```bash
-# Compile and execute the 13 unit tests
+# Compile and execute the 14 unit tests
 make test
 ```
 
@@ -210,39 +212,41 @@ make test
   Supported Peripherals: XSPI1, XSPI2, XSPI3, FMC
 ====================================================================
 
-[INFO] Running 13 unit tests...
+[INFO] Running 14 unit tests...
 
-[ RUN      ] [ 1/13] SFDP Discovery Parser (JEDEC JESD216)
-[       OK ] [ 1/13] SFDP Discovery Parser (JEDEC JESD216)
-[ RUN      ] [ 2/13] Infineon SEMPER Octal NOR Flash (S28HS512T)
-[       OK ] [ 2/13] Infineon SEMPER Octal NOR Flash (S28HS512T)
-[ RUN      ] [ 3/13] Infineon HyperFlash NOR Flash (S26KS512S)
-[       OK ] [ 3/13] Infineon HyperFlash NOR Flash (S26KS512S)
-[ RUN      ] [ 4/13] Infineon HyperRAM PSRAM (S27KS0641)
-[       OK ] [ 4/13] Infineon HyperRAM PSRAM (S27KS0641)
-[ RUN      ] [ 5/13] Infineon SEMPER/FL Quad NOR Flash (S25HL512T)
-[       OK ] [ 5/13] Infineon SEMPER/FL Quad NOR Flash (S25HL512T)
-[ RUN      ] [ 6/13] ISSI Octal NOR Flash (IS25LX256)
-[       OK ] [ 6/13] ISSI Octal NOR Flash (IS25LX256)
-[ RUN      ] [ 7/13] ISSI Quad NOR Flash (IS25LP256)
-[       OK ] [ 7/13] ISSI Quad NOR Flash (IS25LP256)
-[ RUN      ] [ 8/13] ISSI Octal PSRAM xSPI Profile 2.0 (IS66WVO32M8)
-[       OK ] [ 8/13] ISSI Octal PSRAM xSPI Profile 2.0 (IS66WVO32M8)
-[ RUN      ] [ 9/13] ISSI HyperRAM PSRAM (IS66WVH16M8)
-[       OK ] [ 9/13] ISSI HyperRAM PSRAM (IS66WVH16M8)
-[ RUN      ] [10/13] ISSI Quad SPI PSRAM (IS66WVS16M8)
-[       OK ] [10/13] ISSI Quad SPI PSRAM (IS66WVS16M8)
-[ RUN      ] [11/13] ISSI FMC 16-bit Parallel PSRAM (IS66WV51216)
-[       OK ] [11/13] ISSI FMC 16-bit Parallel PSRAM (IS66WV51216)
-[ RUN      ] [12/13] ISSI FMC 16-bit Parallel NOR Flash (IS29GL512)
-[       OK ] [12/13] ISSI FMC 16-bit Parallel NOR Flash (IS29GL512)
-[ RUN      ] [13/13] STM32N6 ExtMem Unified Manager & Auto-Detect
-[       OK ] [13/13] STM32N6 ExtMem Unified Manager & Auto-Detect
+[ RUN      ] [ 1/14] SFDP Discovery Parser (JEDEC JESD216)
+[       OK ] [ 1/14] SFDP Discovery Parser (JEDEC JESD216)
+[ RUN      ] [ 2/14] Infineon SEMPER Octal NOR Flash (S28HS512T)
+[       OK ] [ 2/14] Infineon SEMPER Octal NOR Flash (S28HS512T)
+[ RUN      ] [ 3/14] Infineon HyperFlash NOR Flash (S26KS512S)
+[       OK ] [ 3/14] Infineon HyperFlash NOR Flash (S26KS512S)
+[ RUN      ] [ 4/14] Infineon HyperRAM PSRAM (S27KS0641)
+[       OK ] [ 4/14] Infineon HyperRAM PSRAM (S27KS0641)
+[ RUN      ] [ 5/14] Infineon SEMPER/FL Quad NOR Flash (S25HL512T)
+[       OK ] [ 5/14] Infineon SEMPER/FL Quad NOR Flash (S25HL512T)
+[ RUN      ] [ 6/14] ISSI Octal NOR Flash (IS25LX256)
+[       OK ] [ 6/14] ISSI Octal NOR Flash (IS25LX256)
+[ RUN      ] [ 7/14] ISSI Quad NOR Flash (IS25LP256)
+[       OK ] [ 7/14] ISSI Quad NOR Flash (IS25LP256)
+[ RUN      ] [ 8/14] ISSI Octal PSRAM xSPI Profile 2.0 (IS66WVO32M8)
+[       OK ] [ 8/14] ISSI Octal PSRAM xSPI Profile 2.0 (IS66WVO32M8)
+[ RUN      ] [ 9/14] ISSI HyperRAM PSRAM (IS66WVH16M8)
+[       OK ] [ 9/14] ISSI HyperRAM PSRAM (IS66WVH16M8)
+[ RUN      ] [10/14] ISSI Quad SPI PSRAM (IS66WVS16M8)
+[       OK ] [10/14] ISSI Quad SPI PSRAM (IS66WVS16M8)
+[ RUN      ] [11/14] ISSI FMC 16-bit Parallel PSRAM (IS66WV51216)
+[       OK ] [11/14] ISSI FMC 16-bit Parallel PSRAM (IS66WV51216)
+[ RUN      ] [12/14] ISSI FMC 16-bit Parallel NOR Flash (IS29GL512)
+[       OK ] [12/14] ISSI FMC 16-bit Parallel NOR Flash (IS29GL512)
+[ RUN      ] [13/14] ISSI Serial SRAM (IS62WVS / IS65WVS)
+[       OK ] [13/14] ISSI Serial SRAM (IS62WVS / IS65WVS)
+[ RUN      ] [14/14] STM32N6 ExtMem Unified Manager & Auto-Detect
+[       OK ] [14/14] STM32N6 ExtMem Unified Manager & Auto-Detect
 
 ====================================================================
 Test Results Summary:
-  Total:   13
-  Passed:  13
+  Total:   14
+  Passed:  14
   Failed:  0
 ====================================================================
 >>> ALL TESTS PASSED SUCCESSFULLY! <<<

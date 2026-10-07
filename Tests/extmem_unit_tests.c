@@ -306,7 +306,66 @@ bool test_issi_is29gl_fmc_parallel_nor_flash(void)
   return true;
 }
 
-/* 13. High-Level ExtMem Manager Unified Auto-Detection & Operations */
+/* 13. ISSI Serial SRAM (IS62WVS / IS65WVS) */
+bool test_issi_is62wvs_serial_sram(void)
+{
+  MockHAL_Reset();
+  XSPI_HandleTypeDef hxspi = {0};
+
+  ASSERT_EQ(IS62WVS_Init(&hxspi, 2, HAL_XSPI_SIZE_512KB), IS62WVS_OK);
+
+  /* Verify Mode Register is Sequential Mode (0x40) */
+  uint8_t mode = 0;
+  ASSERT_EQ(IS62WVS_ReadModeRegister(&hxspi, &mode), IS62WVS_OK);
+  ASSERT_EQ(mode, IS62WVS_MODE_SEQUENTIAL);
+
+  /* Test Quad mode enter & exit */
+  ASSERT_EQ(IS62WVS_EnterQuadMode(&hxspi), IS62WVS_OK);
+  ASSERT_EQ(IS62WVS_ExitQuadMode(&hxspi), IS62WVS_OK);
+
+  /* Test Data Write and Read */
+  uint8_t tx[64];
+  uint8_t rx[64];
+  for (int i = 0; i < 64; i++) tx[i] = (uint8_t)(0x55 ^ i);
+
+  ASSERT_EQ(IS62WVS_Write(&hxspi, 0x00000400, tx, sizeof(tx)), IS62WVS_OK);
+  ASSERT_EQ(IS62WVS_Read(&hxspi, 0x00000400, rx, sizeof(rx)), IS62WVS_OK);
+  ASSERT_EQ(memcmp(tx, rx, sizeof(tx)), 0);
+
+  /* Test Quad Write and Read */
+  for (int i = 0; i < 64; i++) tx[i] = (uint8_t)(0xAA ^ i);
+  ASSERT_EQ(IS62WVS_WriteQuad(&hxspi, 0x00000500, tx, sizeof(tx)), IS62WVS_OK);
+  ASSERT_EQ(IS62WVS_ReadQuad(&hxspi, 0x00000500, rx, sizeof(rx), 2), IS62WVS_OK);
+  ASSERT_EQ(memcmp(tx, rx, sizeof(tx)), 0);
+
+  /* Test Memory Mapped Mode activation */
+  ASSERT_EQ(IS62WVS_EnableMemoryMappedMode(&hxspi, 2), IS62WVS_OK);
+
+  /* Test through unified ExtMem manager with forced type */
+  ExtMem_HandleTypeDef hextmem = {0};
+  hextmem.Config.Bus              = EXTMEM_BUS_XSPI1;
+  hextmem.Config.ClockPrescaler   = 2;
+  hextmem.Config.ForcedDeviceType = EXTMEM_TYPE_SRAM_SERIAL_ISSI;
+
+  ASSERT_EQ(ExtMem_Init(&hextmem), EXTMEM_OK);
+  ASSERT_EQ(hextmem.Geometry.Type, EXTMEM_TYPE_SRAM_SERIAL_ISSI);
+  ASSERT_TRUE(ExtMem_IsRAM(&hextmem));
+  ASSERT_TRUE(!ExtMem_IsFlash(&hextmem));
+
+  uint8_t mtx[32], mrx[32];
+  for (int i = 0; i < 32; i++) mtx[i] = (uint8_t)(i + 0x30);
+  ASSERT_EQ(ExtMem_Write(&hextmem, 0x100, mtx, 32), EXTMEM_OK);
+  ASSERT_EQ(ExtMem_Read(&hextmem, 0x100, mrx, 32), EXTMEM_OK);
+  ASSERT_EQ(memcmp(mtx, mrx, 32), 0);
+
+  ASSERT_EQ(ExtMem_EnableMemoryMapped(&hextmem), EXTMEM_OK);
+  ASSERT_EQ(hextmem.State, EXTMEM_STATE_MEMORY_MAPPED);
+  ASSERT_EQ(ExtMem_DisableMemoryMapped(&hextmem), EXTMEM_OK);
+
+  return true;
+}
+
+/* 14. High-Level ExtMem Manager Unified Auto-Detection & Operations */
 bool test_extmem_manager_unified_autodetect(void)
 {
   MockHAL_Reset();

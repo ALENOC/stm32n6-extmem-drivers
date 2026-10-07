@@ -73,7 +73,14 @@ The following matrix lists all Flash and PSRAM parts from **Infineon Technologie
 | **ISSI** | `IS66WVS1M8` (8Mb) | Quad SPI PSRAM | Quad SPI / QPI PSRAM | 1.8V/3.0V | 133 MHz | `is66wvs16m8` |
 | **ISSI** | `IS66WVS2M8` (16Mb) | Quad SPI PSRAM | Quad SPI / QPI PSRAM | 1.8V/3.0V | 133 MHz | `is66wvs16m8` |
 | **ISSI** | `IS66WVS4M8` (32Mb) | Quad SPI PSRAM | Quad SPI / QPI PSRAM | 1.8V/3.0V | 133 MHz | `is66wvs16m8` |
+| **ISSI** | `IS66WVS8M8` (64Mb) | Quad SPI PSRAM | Quad SPI / QPI PSRAM | 1.8V/3.0V | 133 MHz | `is66wvs16m8` |
 | **ISSI** | `IS66WVS16M8` (128Mb)| Quad SPI PSRAM | Quad SPI / QPI PSRAM | 1.8V/3.0V | 133 MHz | `is66wvs16m8` |
+| **ISSI** | `IS67WVS...` (Auto) | Quad SPI PSRAM | Quad SPI / QPI (Automotive Grade) | 1.8V/3.0V | 104 MHz | `is66wvs16m8` |
+| **ISSI** | `IS62WVS5128` (4Mb) | Serial Static RAM | SPI / SDI / SQI Serial SRAM | 1.8V/3.0V/3.3V | 45 MHz | `is62wvs` |
+| **ISSI** | `IS62WVS2568` (2Mb) | Serial Static RAM | SPI / SDI / SQI Serial SRAM | 1.8V/3.0V/3.3V | 45 MHz | `is62wvs` |
+| **ISSI** | `IS62WVS1288` (1Mb) | Serial Static RAM | SPI / SDI / SQI Serial SRAM | 1.8V/3.0V/3.3V | 45 MHz | `is62wvs` |
+| **ISSI** | `IS62WVS0648` (512Kb)| Serial Static RAM | SPI / SDI / SQI Serial SRAM | 1.8V/3.0V/3.3V | 45 MHz | `is62wvs` |
+| **ISSI** | `IS65WVS...` (Auto) | Serial Static RAM | SPI / SDI / SQI (Automotive Grade) | 1.8V/3.0V | 30 MHz | `is62wvs` |
 | **ISSI** | `IS66WV51216` (8Mb) | Parallel PSRAM | 16-bit Parallel Asynchronous FMC | 3.0V | 55 ns | `is66wv_fmc` |
 | **ISSI** | `IS66WV102416` (16Mb)| Parallel PSRAM | 16-bit Parallel Asynchronous FMC | 3.0V | 55 ns | `is66wv_fmc` |
 | **ISSI** | `IS66WV204816` (32Mb)| Parallel PSRAM | 16-bit Parallel Asynchronous FMC | 3.0V | 55 ns | `is66wv_fmc` |

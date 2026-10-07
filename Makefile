@@ -18,6 +18,7 @@ INCLUDES = \
 	-I Drivers/BSP/Components/is66wvo32m8 \
 	-I Drivers/BSP/Components/is66wvh16m8 \
 	-I Drivers/BSP/Components/is66wvs16m8 \
+	-I Drivers/BSP/Components/is62wvs \
 	-I Drivers/BSP/Components/is66wv_fmc \
 	-I Drivers/BSP/Components/is29gl_fmc
 
@@ -35,6 +36,7 @@ SRCS = \
 	Drivers/BSP/Components/is66wvo32m8/is66wvo32m8.c \
 	Drivers/BSP/Components/is66wvh16m8/is66wvh16m8.c \
 	Drivers/BSP/Components/is66wvs16m8/is66wvs16m8.c \
+	Drivers/BSP/Components/is62wvs/is62wvs.c \
 	Drivers/BSP/Components/is66wv_fmc/is66wv_fmc.c \
 	Drivers/BSP/Components/is29gl_fmc/is29gl_fmc.c \
 	Drivers/BSP/STM32N6_ExtMem/stm32n6_extmem.c

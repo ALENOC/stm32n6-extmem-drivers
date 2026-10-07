@@ -82,6 +82,14 @@ typedef enum {
 #define HAL_XSPI_MEMTYPE_HYPERBUS        0x04U
 
 #define HAL_XSPI_SINGLE_MEM              0x00U
+#define HAL_XSPI_SIZE_64KB               0x0FU
+#define HAL_XSPI_SIZE_128KB              0x10U
+#define HAL_XSPI_SIZE_256KB              0x11U
+#define HAL_XSPI_SIZE_512KB              0x12U
+#define HAL_XSPI_SIZE_1MB                0x13U
+#define HAL_XSPI_SIZE_2MB                0x14U
+#define HAL_XSPI_SIZE_4MB                0x15U
+#define HAL_XSPI_SIZE_8MB                0x16U
 #define HAL_XSPI_SIZE_16MB               0x17U
 #define HAL_XSPI_SIZE_32MB               0x18U
 #define HAL_XSPI_SIZE_64MB               0x19U

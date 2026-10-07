@@ -1,60 +1,60 @@
 # STM32N6 External Memory Driver Suite
-### Suite di Driver C per Memorie Flash & PSRAM Esterne Infineon e ISSI
+### C Driver Suite for Infineon & ISSI External Flash and PSRAM Memories
 
 [![CI Test Suite](https://github.com/ALENOC/stm32n6-extmem-drivers/actions/workflows/ci.yml/badge.svg)](https://github.com/ALENOC/stm32n6-extmem-drivers/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Platform](https://img.shields.io/badge/Platform-STM32N6%20(Cortex--M55)-blue.svg)](https://www.st.com/en/microcontrollers-microprocessors/stm32n6-series.html)
 [![Standard](https://img.shields.io/badge/C%20Standard-C11%20%2F%20Cube--BSP-green.svg)](https://www.st.com)
 
-Una suite di driver C modulare, ad alte prestazioni e conforme agli standard architetturali **STM32Cube BSP** di STMicroelectronics, progettata per interfacciare il microcontrollore **STM32N6** (core ARM Cortex-M55 + NPU Neural-ART) con l'intera gamma di memorie esterne ad alta velocità di **Infineon Technologies** e **Integrated Silicon Solution, Inc. (ISSI)**.
+A production-grade, modular C driver suite compliant with STMicroelectronics **STM32Cube BSP** architectural standards, designed to interface the **STM32N6** microcontroller family (ARM Cortex-M55 core + Neural-ART NPU) with the complete spectrum of high-speed external memories from **Infineon Technologies** and **Integrated Silicon Solution, Inc. (ISSI)**.
 
-Supporta interfacce **XSPI1**, **XSPI2**, **XSPI3** (Single, Quad, Octal DTR fino a 200 MHz, HyperBus™) e **FMC** (bus parallelo asincrono a 16-bit).
-
----
-
-## 📋 Indice dei Contenuti
-- [Caratteristiche Principali](#-caratteristiche-principali)
-- [Matrice dei Dispositivi Supportati](#-matrice-dei-dispositivi-supportati)
-- [Struttura del Repository](#-struttura-del-repository)
-- [Integrazione Rapida in STM32CubeIDE](#-integrazione-rapida-in-stm32cubeide)
-- [Esempi di Codice](#-esempi-di-codice)
-  - [Inizializzazione con Auto-Discovery](#1-inizializzazione-con-auto-discovery)
-  - [Esecuzione Diretta in Place (XIP Memory-Mapped)](#2-abilitazione-xip-memory-mapped)
-  - [Scrittura e Lettura PSRAM ad Alto Throughput](#3-scrittura-e-lettura-psram)
-- [Suite di Test & Simulazione Host](#-suite-di-test--simulazione-host)
-- [Documentazione Dettagliata](#-documentazione-dettagliata)
-- [Disclaimer & Limitazione di Responsabilità](#-disclaimer--limitazione-di-responsabilit)
-- [Licenza](#-licenza)
+Supports **XSPI1**, **XSPI2**, **XSPI3** (Single, Quad, Octal DTR up to 200 MHz, HyperBus™) and **FMC** (16-bit asynchronous parallel bus) interfaces.
 
 ---
 
-## 🚀 Caratteristiche Principali
+## 📋 Table of Contents
+- [Key Features](#-key-features)
+- [Supported Devices Matrix](#-supported-devices-matrix)
+- [Repository Structure](#-repository-structure)
+- [Quick Integration into STM32CubeIDE](#-quick-integration-into-stm32cubeide)
+- [Code Examples](#-code-examples)
+  - [1. Initialization with Auto-Discovery](#1-initialization-with-auto-discovery)
+  - [2. Execute-In-Place (XIP Memory-Mapped Mode)](#2-execute-in-place-xip-memory-mapped-mode)
+  - [3. High-Throughput PSRAM Read & Write](#3-high-throughput-psram-read--write)
+- [Unit Test Suite & Host Simulation](#-unit-test-suite--host-simulation)
+- [Detailed Documentation](#-detailed-documentation)
+- [Disclaimer & Limitation of Liability](#-disclaimer--limitation-of-liability)
+- [License](#-license)
 
-- **Copertura Completa Infineon Technologies**:
-  - **SEMPER™ Octal NOR Flash** (`S28HS512T`, `S28HL512T`, `S28HS256T`, `S28HL256T`, `S28HS01GT`, `S28HS02GT`): protocollo xSPI Profile 1.0 (8D-8D-8D DDR fino a 200 MHz / 400 MB/s).
-  - **HyperFlash™** (`S26KS512S`, `S26KL512S`, `S26KS256S`, `S26KL256S`, `S26KS128S`, `S26KL128S`): interfaccia nativa Cypress HyperBus™ a 1.8V / 3.0V.
-  - **HyperRAM™** (`S27KS0641`, `S27KL0641`, `S27KS128`, `S27KL128`, `S27KS256`, `S27KL256`, `S27KS512`, serie `S27HS/HL` 2.0 e 3.0).
+---
+
+## 🚀 Key Features
+
+- **Comprehensive Infineon Technologies Coverage**:
+  - **SEMPER™ Octal NOR Flash** (`S28HS512T`, `S28HL512T`, `S28HS256T`, `S28HL256T`, `S28HS01GT`, `S28HS02GT`): xSPI Profile 1.0 protocol (8D-8D-8D DDR up to 200 MHz / 400 MB/s).
+  - **HyperFlash™** (`S26KS512S`, `S26KL512S`, `S26KS256S`, `S26KL256S`, `S26KS128S`, `S26KL128S`): native Cypress HyperBus™ interface at 1.8V / 3.0V.
+  - **HyperRAM™** (`S27KS0641`, `S27KL0641`, `S27KS128`, `S27KL128`, `S27KS256`, `S27KL256`, `S27KS512`, `S27HS/HL` 2.0 and 3.0 series).
   - **SEMPER™ / FL Quad SPI Flash** (`S25HL512T`, `S25HS512T`, `S25FL256L`, `S25FL128L`, `S25FL512S`).
-- **Copertura Completa ISSI (Integrated Silicon Solution Inc.)**:
-  - **Octal NOR Flash** (`IS25LX064`, `IS25WX064`, `IS25LX128`, `IS25WX128`, `IS25LX256`, `IS25WX256`, `IS25LX512`, `IS25WX512`): modalità DTR xSPI Profile 1.0/2.0.
+- **Comprehensive ISSI (Integrated Silicon Solution Inc.) Coverage**:
+  - **Octal NOR Flash** (`IS25LX064`, `IS25WX064`, `IS25LX128`, `IS25WX128`, `IS25LX256`, `IS25WX256`, `IS25LX512`, `IS25WX512`): xSPI Profile 1.0/2.0 DTR mode.
   - **Quad SPI NOR Flash** (`IS25LP064/128/256/512`, `IS25WP064/128/256/512`).
-  - **Octal PSRAM xSPI Profile 2.0** (`IS66WVO8M8`, `IS66WVO16M8`, `IS66WVO32M8`, `IS66WVO64M8` e serie automotive `IS67WVO`).
-  - **HyperRAM™ PSRAM** (`IS66WVH8M8`, `IS66WVH16M8`, `IS66WVH32M8` e serie automotive `IS67WVH`).
+  - **Octal PSRAM xSPI Profile 2.0** (`IS66WVO8M8`, `IS66WVO16M8`, `IS66WVO32M8`, `IS66WVO64M8` and automotive `IS67WVO` series).
+  - **HyperRAM™ PSRAM** (`IS66WVH8M8`, `IS66WVH16M8`, `IS66WVH32M8` and automotive `IS67WVH` series).
   - **Quad SPI PSRAM** (`IS66WVS1M8`, `IS66WVS2M8`, `IS66WVS4M8`, `IS66WVS16M8`).
-  - **PSRAM/SRAM Parallele su FMC** (`IS66WV / IS67WV 51216 / 102416` a 16-bit).
-- **Auto-Discovery e Riconoscimento Automatico**:
-  - Parser integrato JEDEC JESD216 SFDP (Serial Flash Discoverable Parameters) per configurazione dinamica di comandi, dummy cycle e settori.
-  - Interrogazione JEDEC ID (0x9F) e registri HyperBus (ID0, ID1) con database di ricerca chip.
-- **Supporto XIP (Execute-in-Place)**:
-  - Mappatura istantanea in spazio indirizzi CPU a `0x90000000` (XSPI1), `0x70000000` (XSPI2), `0x60000000` (FMC).
-- **Gestione Cache Cortex-M55**:
-  - Routine di pulizia e invalidazione D-Cache (`SCB_CleanInvalidateDCache_by_Addr`) conformi ad ARMv8.1-M per garantire coerenza dei dati con DMA e memory-mapped I/O.
+  - **Parallel Asynchronous PSRAM/SRAM via FMC** (`IS66WV / IS67WV 51216 / 102416` 16-bit).
+- **Auto-Discovery and Automatic Recognition**:
+  - Built-in JEDEC JESD216 SFDP (Serial Flash Discoverable Parameters) parser for dynamic detection of command sets, dummy cycles, and sector topologies.
+  - JEDEC ID (0x9F) and HyperBus registers (ID0, ID1) interrogation coupled with a chip database lookup.
+- **Execute-In-Place (XIP) Memory-Mapped Mode**:
+  - Single-call transition into memory-mapped address space: `0x90000000` (XSPI1), `0x70000000` (XSPI2), `0x60000000` (FMC).
+- **ARM Cortex-M55 D-Cache Management**:
+  - Built-in cache clean and invalidate routines (`SCB_CleanInvalidateDCache_by_Addr`) compliant with ARMv8.1-M architecture to guarantee cache coherence with DMA and hardware peripherals.
 
 ---
 
-## 📊 Matrice dei Dispositivi Supportati
+## 📊 Supported Devices Matrix
 
-| Produttore | Famiglia Memoria | Interfaccia Bus | Clock Max | Modalità Principale | Driver Componente |
+| Manufacturer | Memory Family | Bus Interface | Max Clock | Primary Mode | Component Driver |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Infineon** | SEMPER™ Octal NOR (`S28HS/S28HL`) | XSPI1 / XSPI2 | 200 MHz | 8D-8D-8D (Octal DTR) | `s28hs512t` |
 | **Infineon** | HyperFlash™ (`S26KS/S26KL`) | XSPI1 / XSPI2 | 166 MHz | HyperBus™ | `s26ks512s` |
@@ -65,13 +65,13 @@ Supporta interfacce **XSPI1**, **XSPI2**, **XSPI3** (Single, Quad, Octal DTR fin
 | **ISSI** | Octal PSRAM (`IS66WVO/IS67WVO`) | XSPI1 / XSPI2 | 200 MHz | xSPI Profile 2.0 (8D-8D-8D) | `is66wvo32m8` |
 | **ISSI** | HyperRAM™ PSRAM (`IS66WVH/IS67WVH`) | XSPI1 / XSPI2 | 200 MHz | HyperBus™ DDR | `is66wvh16m8` |
 | **ISSI** | Quad SPI PSRAM (`IS66WVS/IS67WVS`) | XSPI1 / XSPI2 / XSPI3 | 104 MHz | 1-4-4 Quad SPI | `is66wvs16m8` |
-| **ISSI/IFX** | Parallel Asynch PSRAM (`IS66WV/CY62`) | FMC (16-bit) | Asincrono (~10-55ns) | 16-bit Parallel SRAM/PSRAM | `is66wv_fmc` |
+| **ISSI/IFX** | Parallel Asynch PSRAM (`IS66WV/CY62`) | FMC (16-bit) | Asynchronous (~10-55ns) | 16-bit Parallel SRAM/PSRAM | `is66wv_fmc` |
 
-*Per la matrice esaustiva con part number specifici, codici d'ordine e package, consultare [Docs/Supported_Memories_Matrix.md](Docs/Supported_Memories_Matrix.md).*
+*For the comprehensive matrix including ordering part numbers, packages, and voltage options, refer to [Docs/Supported_Memories_Matrix.md](Docs/Supported_Memories_Matrix.md).*
 
 ---
 
-## 📁 Struttura del Repository
+## 📁 Repository Structure
 
 ```text
 stm32n6-extmem-drivers/
@@ -79,64 +79,64 @@ stm32n6-extmem-drivers/
 │   └── BSP/
 │       ├── Components/
 │       │   ├── Common/              # extmem_common.h, sfdp.h, sfdp.c
-│       │   ├── s28hs512t/           # Driver Infineon SEMPER Octal Flash
-│       │   ├── s26ks512s/           # Driver Infineon HyperFlash
-│       │   ├── s27ks0641/           # Driver Infineon HyperRAM
-│       │   ├── s25hl512t/           # Driver Infineon Quad SPI Flash
-│       │   ├── is25lx256/           # Driver ISSI Octal Flash
-│       │   ├── is25lp256/           # Driver ISSI Quad SPI Flash
-│       │   ├── is66wvo32m8/         # Driver ISSI Octal PSRAM
-│       │   ├── is66wvh16m8/         # Driver ISSI HyperRAM PSRAM
-│       │   ├── is66wvs16m8/         # Driver ISSI Quad PSRAM
-│       │   └── is66wv_fmc/          # Driver PSRAM Parallela per FMC
-│       └── STM32N6_ExtMem/          # Driver Manager di Alto Livello
+│       │   ├── s28hs512t/           # Infineon SEMPER Octal Flash Driver
+│       │   ├── s26ks512s/           # Infineon HyperFlash Driver
+│       │   ├── s27ks0641/           # Infineon HyperRAM Driver
+│       │   ├── s25hl512t/           # Infineon Quad SPI Flash Driver
+│       │   ├── is25lx256/           # ISSI Octal Flash Driver
+│       │   ├── is25lp256/           # ISSI Quad SPI Flash Driver
+│       │   ├── is66wvo32m8/         # ISSI Octal PSRAM Driver
+│       │   ├── is66wvh16m8/         # ISSI HyperRAM PSRAM Driver
+│       │   ├── is66wvs16m8/         # ISSI Quad PSRAM Driver
+│       │   └── is66wv_fmc/          # FMC Parallel PSRAM Driver
+│       └── STM32N6_ExtMem/          # High-Level Unified Manager
 │           ├── stm32n6_extmem.h
 │           ├── stm32n6_extmem.c
 │           ├── stm32n6_extmem_conf.h
 │           ├── stm32n6_extmem_conf_template.h
 │           └── stm32n6_extmem_devices.h
 ├── Examples/
-│   ├── extmem_demo.c                # Diagnostica hardware, autotest ed esecuzione XIP
-│   └── extmem_benchmark.c           # Benchmark di lettura/scrittura in MB/s
+│   ├── extmem_demo.c                # Hardware diagnostics, self-test & XIP execution
+│   └── extmem_benchmark.c           # Read/Write throughput benchmark in MB/s
 ├── Tests/
-│   ├── mock_hal.h                   # Mock dell'HAL STM32N6 (XSPI, FMC, Cache, RCC)
-│   ├── mock_hal.c                   # Simulatore di registri e array di memoria
-│   ├── extmem_unit_tests.h          # Dichiarazioni dei test di unità
-│   ├── extmem_unit_tests.c          # 12 test di unità esaustivi
-│   └── main_test.c                  # Test runner per host Linux/macOS/Windows
+│   ├── mock_hal.h                   # STM32N6 HAL Mock (XSPI, FMC, Cache, RCC)
+│   ├── mock_hal.c                   # Register, bus transaction and memory array simulator
+│   ├── extmem_unit_tests.h          # Unit test definitions
+│   ├── extmem_unit_tests.c          # 12 exhaustive unit tests
+│   └── main_test.c                  # Host test runner for Linux/macOS/Windows
 ├── Docs/
-│   ├── STM32CubeIDE_Integration_Guide.md # Guida passo-passo integrazione CubeIDE
-│   ├── Supported_Memories_Matrix.md      # Matrice comparativa dettagliata
-│   └── Hardware_Design_and_Pinout.md     # Pinout STM32N6, layout PCB a 200MHz, VDDIO
+│   ├── STM32CubeIDE_Integration_Guide.md # Step-by-step CubeIDE setup & Linker guide
+│   ├── Supported_Memories_Matrix.md      # In-depth memory comparison matrix
+│   └── Hardware_Design_and_Pinout.md     # STM32N6 pinout, 200MHz PCB layout, VDDIO domains
 ├── .github/
 │   └── workflows/
-│       └── ci.yml                   # Continuous Integration con GitHub Actions
-├── Makefile                         # Compilazione ed esecuzione test suite
-├── LICENSE                          # Licenza MIT e Disclaimer di responsabilità
+│       └── ci.yml                   # Continuous Integration with GitHub Actions
+├── Makefile                         # Host test suite compilation and execution
+├── LICENSE                          # MIT License and Disclaimer of Liability
 └── README.md
 ```
 
 ---
 
-## 🛠 Integrazione Rapida in STM32CubeIDE
+## 🛠 Quick Integration into STM32CubeIDE
 
-1. **Copia delle Cartelle**:
-   Copiare `Drivers/BSP/` nel proprio progetto STM32CubeIDE sotto `Drivers/BSP/`.
-2. **Include Paths**:
-   Aggiungere in *Project Properties -> C/C++ Build -> Settings -> Tool Settings -> MCU GCC Compiler -> Include paths*:
+1. **Copy Driver Folders**:
+   Copy `Drivers/BSP/` into your STM32CubeIDE project root under `Drivers/BSP/`.
+2. **Add Include Paths**:
+   Navigate to *Project Properties -> C/C++ Build -> Settings -> Tool Settings -> MCU GCC Compiler -> Include paths* and add:
    - `../Drivers/BSP/STM32N6_ExtMem`
    - `../Drivers/BSP/Components/Common`
-   - `../Drivers/BSP/Components/s28hs512t` (e le cartelle dei componenti desiderati)
-3. **Configurazione dei Parametri**:
-   Copiare `stm32n6_extmem_conf_template.h` come `stm32n6_extmem_conf.h` e impostare le frequenze desiderate.
-4. **Guida Completa con Linker Script ed MPU**:
-   Consultare [Docs/STM32CubeIDE_Integration_Guide.md](Docs/STM32CubeIDE_Integration_Guide.md) per l'allocazione delle sezioni `.extmem_text` (codice XIP) e `.extmem_ram` (framebuffer / buffer NPU).
+   - `../Drivers/BSP/Components/s28hs512t` (along with any other required component directories)
+3. **Configure Settings**:
+   Copy `stm32n6_extmem_conf_template.h` to `stm32n6_extmem_conf.h` and tune clock prescalers and timeout thresholds.
+4. **Linker Script and MPU Setup**:
+   Refer to [Docs/STM32CubeIDE_Integration_Guide.md](Docs/STM32CubeIDE_Integration_Guide.md) for configuring Cortex-M55 MPU regions and linker sections (`.extmem_text` for XIP firmware and `.extmem_ram` for framebuffers/NPU tensors).
 
 ---
 
-## 💻 Esempi di Codice
+## 💻 Code Examples
 
-### 1. Inizializzazione con Auto-Discovery
+### 1. Initialization with Auto-Discovery
 ```c
 #include "stm32n6_extmem.h"
 
@@ -144,60 +144,60 @@ ExtMem_HandleTypeDef hextmem = {0};
 
 void Memory_Setup(void)
 {
-  /* Configurazione porta XSPI1, prescaler 2 (200 MHz), alimentazione VDDIO a 1.8V */
+  /* Configure XSPI1 bus, prescaler 2 (200 MHz), VDDIO power domain at 1.8V */
   hextmem.Config.Bus            = EXTMEM_BUS_XSPI1;
   hextmem.Config.ClockPrescaler = 2;
   hextmem.Config.Force1V8       = true;
 
-  /* Riconoscimento automatico tramite SFDP / JEDEC ID / HyperBus ID */
+  /* Automatic chip detection via SFDP / JEDEC ID / HyperBus ID */
   if (ExtMem_Init(&hextmem) == EXTMEM_OK)
   {
-    printf("Rilevato chip: %s (%ld MB)\r\n", 
+    printf("Detected memory: %s (%ld MB)\r\n", 
            ExtMem_GetDeviceName(&hextmem), 
            hextmem.Geometry.TotalSizeBytes / (1024 * 1024));
   }
 }
 ```
 
-### 2. Abilitazione XIP (Memory-Mapped)
+### 2. Execute-In-Place (XIP Memory-Mapped Mode)
 ```c
-/* Passaggio in modalità XIP a 0x90000000 */
+/* Transition into XIP mode at base address 0x90000000 */
 if (ExtMem_EnableMemoryMapped(&hextmem) == EXTMEM_OK)
 {
-  /* Accesso diretto da CPU senza transazioni software */
+  /* Direct CPU pointer dereferencing without software transaction overhead */
   const uint32_t *pExternalCode = (const uint32_t *)hextmem.MemoryMappedBase;
-  printf("Primo vettore: 0x%08lX\r\n", pExternalCode[0]);
+  printf("First vector table entry: 0x%08lX\r\n", pExternalCode[0]);
 }
 ```
 
-### 3. Scrittura e Lettura PSRAM
+### 3. High-Throughput PSRAM Read & Write
 ```c
 uint8_t txData[1024];
 uint8_t rxData[1024];
 
-/* Inizializza buffer con dati di test */
+/* Initialize buffer with test payload */
 memset(txData, 0xA5, sizeof(txData));
 
-/* Scrittura a 200 MHz DDR (Octal o HyperRAM) */
+/* Write at 200 MHz DDR (Octal DTR or HyperRAM) */
 ExtMem_Write(&hextmem, 0x00000000, txData, sizeof(txData));
 
-/* Lettura */
+/* Read back */
 ExtMem_Read(&hextmem, 0x00000000, rxData, sizeof(rxData));
 ```
 
 ---
 
-## 🧪 Suite di Test & Simulazione Host
+## 🧪 Unit Test Suite & Host Simulation
 
-Il progetto include un harness di test automatico con un **Mock Hardware Abstraction Layer** (`Tests/mock_hal.c`) che emula integralmente il comportamento dei controller STM32N6 XSPI/FMC e delle memorie Infineon/ISSI su qualsiasi macchina di sviluppo (Linux, macOS, Windows) senza necessità di avere l'hardware fisico collegato.
+The repository includes a comprehensive automated test harness featuring a **Mock Hardware Abstraction Layer** (`Tests/mock_hal.c`) that fully emulates STM32N6 XSPI/FMC peripherals and Infineon/ISSI device behavior on any desktop environment (Linux, macOS, Windows) without requiring target hardware.
 
-### Esecuzione Locale dei Test
+### Running Tests Locally
 ```bash
-# Compilazione ed esecuzione dei 12 test di unità
+# Compile and execute the 12 unit tests
 make test
 ```
 
-### Output Atteso
+### Expected Output
 ```text
 ====================================================================
   STM32N6 External Memory Driver Suite - Host Unit Tests
@@ -243,28 +243,28 @@ Test Results Summary:
 
 ---
 
-## 📚 Documentazione Dettagliata
+## 📚 Detailed Documentation
 
-- [Guida all'Integrazione STM32CubeIDE](Docs/STM32CubeIDE_Integration_Guide.md)
-- [Matrice di Compatibilità delle Memorie](Docs/Supported_Memories_Matrix.md)
-- [Linee Guida di Design Hardware & Routing PCB](Docs/Hardware_Design_and_Pinout.md)
+- [STM32CubeIDE Integration Guide](Docs/STM32CubeIDE_Integration_Guide.md)
+- [Supported Memories Matrix](Docs/Supported_Memories_Matrix.md)
+- [Hardware Design & High-Speed PCB Routing Guidelines](Docs/Hardware_Design_and_Pinout.md)
 
 ---
 
-## ⚠️ Disclaimer & Limitazione di Responsabilità
+## ⚠️ Disclaimer & Limitation of Liability
 
 > [!CAUTION]
-> **PROGETTO COMMUNITY A SCOPO DIDATTICO ED ESEMPLIFICATIVO**
+> **COMMUNITY PROJECT PROVIDED FOR EDUCATIONAL AND DEMONSTRATION PURPOSES ONLY**
 > 
-> Questo repository, il codice sorgente, i driver e la documentazione sono distribuiti **esclusivamente a scopo dimostrativo, didattico e di riferimento aperto per la community degli sviluppatori embedded**.
+> This repository, source code, drivers, and associated documentation are distributed **strictly for demonstration, reference, and educational purposes for the open embedded engineering community**.
 > 
-> 1. **Assenza di Garanzia**: Il software viene fornito "COSÌ COM'È" (*AS-IS*), senza garanzie di alcun tipo, esplicite o implicite, incluse, a titolo esemplificativo, garanzie di commerciabilità, idoneità per uno scopo specifico o non violazione.
-> 2. **Esclusione Totale di Responsabilità**: In nessun caso l'autore ([ALENOC](https://github.com/ALENOC)), i manutentori o i contributori potranno essere ritenuti responsabili per qualsivoglia danno diretto, indiretto, incidentale, speciale, punitivo o consequenziale (inclusi, senza limitazione, danneggiamento di microcontrollori STM32N6, memorie esterne, schede PCB, perdita di dati, interruzione dell'attività economica o malfunzionamenti hardware/software), derivante dall'uso o dall'impossibilità d'uso di questo codice.
-> 3. **Verifica Hardware Mandataria**: È esclusiva responsabilità dell'utente o dell'integratore verificare la compatibilità elettrica (tensioni 1.8V vs 3.3V, livelli logici I/O, domini VDDIO), le temporizzazioni di setup/hold a 200 MHz, i datasheets ufficiali di STMicroelectronics, Infineon Technologies e ISSI, nonché effettuare tutte le necessarie validazioni e test di sicurezza prima di impiegare questo codice in qualsiasi prototipo o prodotto.
+> 1. **No Warranty**: This software is provided "AS IS", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, or non-infringement.
+> 2. **Complete Exclusion of Liability**: In no event shall the author ([ALENOC](https://github.com/ALENOC)), maintainers, or contributors be liable for any direct, indirect, incidental, special, exemplary, punitive, or consequential damages (including, but not limited to, damage to STM32N6 microcontrollers, external memories, PCB hardware, loss of data, business interruption, or equipment failure) arising in any way out of the use of or inability to use this software.
+> 3. **Mandatory Hardware Verification**: It is the sole responsibility of the user or system integrator to independently verify electrical compatibility (1.8V vs 3.3V operating domains, logic levels, VDDIO rails), high-speed setup and hold timings up to 200 MHz, official datasheets from STMicroelectronics, Infineon Technologies, and ISSI, and to perform thorough validation and safety testing prior to incorporating any code into prototypes, commercial hardware, or production firmware.
 
 ---
 
-## 📄 Licenza
+## 📄 License
 
-Rilasciato sotto licenza open-source [MIT License](LICENSE).
+Released under the open-source [MIT License](LICENSE).  
 Copyright (c) 2026 Alessandro Nocivelli (ALENOC) & Community Contributors.

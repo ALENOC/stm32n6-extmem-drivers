@@ -21,19 +21,25 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ===============================================================================
-DISCLAIMER / DICHIARAZIONE DI NON RESPONSABILITÀ (COMMUNITY & EDUCATIONAL USE)
+DISCLAIMER & LIMITATION OF LIABILITY (COMMUNITY & EDUCATIONAL USE)
 ===============================================================================
-Questo repository e le relative librerie software sono un progetto open-source
-sviluppato dalla community a solo scopo dimostrativo, didattico e di esempio.
-Gli autori e contributori declinano esplicitamente ogni responsabilità civile,
-penale o commerciale per:
-- Eventuali malfunzionamenti, bug o comportamenti imprevisti delle librerie;
-- Danni diretti o indiretti a componenti hardware, microcontrollori STM32N6,
-  memorie esterne, schede PCB o apparecchiature collegate;
-- Perdite di dati o malfunzionamenti in sistemi operativi, di produzione,
-  mission-critical o industriali.
+This repository, source code, drivers, and associated documentation are an
+open-source community project distributed strictly for demonstration, reference,
+and educational purposes.
 
-L'utente finale è l'unico responsabile della validazione, verifica elettrica,
-rispetto delle specifiche dei datasheets ufficiali di STMicroelectronics,
-Infineon Technologies e Integrated Silicon Solution Inc. (ISSI), nonché dei
-test di conformità e sicurezza del proprio hardware e firmware.
+The author (Alessandro Nocentini / ALENOC), maintainers, and contributors
+explicitly disclaim all civil, criminal, commercial, and operational liability
+for:
+- Any software malfunction, defect, bug, or unexpected driver behavior;
+- Any direct, indirect, incidental, special, exemplary, or consequential damages
+  to electronic hardware, STM32N6 microcontrollers, external memories, PCB
+  assemblies, or connected peripherals;
+- Any data loss, corruption, or downtime in operating systems, production
+  environments, industrial machinery, or mission-critical applications.
+
+The end user or system integrator bears sole and absolute responsibility for
+independent electrical validation, voltage rail verification (1.8V vs 3.3V logic
+levels and VDDIO domains), compliance with official datasheets from
+STMicroelectronics, Infineon Technologies, Integrated Silicon Solution Inc. (ISSI),
+and Micron Technology, as well as rigorous hardware qualification and functional
+safety testing prior to deploying in production hardware or firmware.

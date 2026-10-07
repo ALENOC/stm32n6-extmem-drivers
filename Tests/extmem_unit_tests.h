@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file    extmem_unit_tests.h
   * @author  STM32N6 External Memory Driver Suite Team
-  * @brief   Unit test definitions for all Infineon & ISSI memory drivers.
+  * @brief   Unit test definitions for all Infineon, ISSI & Micron memory drivers.
   ******************************************************************************
   */
 

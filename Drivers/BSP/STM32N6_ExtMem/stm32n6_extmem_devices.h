@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file    stm32n6_extmem_devices.h
   * @author  STM32N6 External Memory Driver Suite Team
-  * @brief   Comprehensive device registry and database for Infineon & ISSI
+  * @brief   Comprehensive device registry and database for Infineon, ISSI & Micron
   *          Flash and PSRAM external memories compatible with STM32N6.
   ******************************************************************************
   * @attention
@@ -39,7 +39,7 @@ typedef struct {
   uint8_t           DefaultWriteDummyCycles;
 } ExtMem_DeviceDescriptor_t;
 
-/* Database of Supported Infineon & ISSI Devices */
+/* Database of Supported Infineon, ISSI & Micron Devices */
 static const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
   /* ========================================================================= */
   /* INFINEON SEMPER(TM) OCTAL NOR FLASH (S28HS / S28HL)                      */

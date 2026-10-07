@@ -1,27 +1,27 @@
-# Guida Completa all'Integrazione in STM32CubeIDE
-## STM32N6 External Memory Driver Suite (Infineon & ISSI)
+# Complete STM32CubeIDE Integration Guide
+## STM32N6 External Memory Driver Suite (Infineon, ISSI & Micron)
 
-Questa guida illustra passo dopo passo come integrare la libreria in qualsiasi progetto **STM32CubeIDE** per microcontrollori della serie **STM32N6** (STM32N657, STM32N647, STM32N655, ecc.).
+This step-by-step guide explains how to integrate the external memory driver suite into any **STM32CubeIDE** project targeting the **STM32N6** microcontroller family (STM32N657, STM32N647, STM32N655, etc.).
 
 ---
 
-### Indice
-1. [Struttura delle Directory nel Progetto](#1-struttura-delle-directory-nel-progetto)
-2. [Configurazione di STM32CubeMX (Pinout & Clocks)](#2-configurazione-di-stm32cubemx-pinout--clocks)
-3. [Configurazione di Include Paths in STM32CubeIDE](#3-configurazione-di-include-paths-in-stm32cubeide)
-4. [Configurazione MPU e D-Cache per Cortex-M55](#4-configurazione-mpu-e-d-cache-per-cortex-m55)
-5. [Configurazione del Linker Script (.ld) per XIP](#5-configurazione-del-linker-script-ld-per-xip)
-6. [Esempio di Codice in main.c](#6-esempio-di-codice-in-mainc)
+### Table of Contents
+1. [Project Directory Structure](#1-project-directory-structure)
+2. [STM32CubeMX Configuration (Pinout & Clocks)](#2-stm32cubemx-configuration-pinout--clocks)
+3. [Include Paths Configuration in STM32CubeIDE](#3-include-paths-configuration-in-stm32cubeide)
+4. [MPU and D-Cache Configuration for Cortex-M55](#4-mpu-and-d-cache-configuration-for-cortex-m55)
+5. [Linker Script (.ld) Configuration for XIP](#5-linker-script-ld-configuration-for-xip)
+6. [Application Code Example in main.c](#6-application-code-example-in-mainc)
 7. [Troubleshooting & Best Practices](#7-troubleshooting--best-practices)
 
 ---
 
-### 1. Struttura delle Directory nel Progetto
+### 1. Project Directory Structure
 
-Copiare la cartella `Drivers/BSP` all'interno del proprio workspace STM32CubeIDE:
+Copy the `Drivers/BSP` directory into your STM32CubeIDE project root:
 
 ```text
-MioProgetto_STM32N6/
+MyProject_STM32N6/
 ├── Core/
 │   ├── Inc/
 │   │   ├── main.h
@@ -44,34 +44,38 @@ MioProgetto_STM32N6/
 │       │   ├── is66wvo32m8/         <-- ISSI Octal PSRAM
 │       │   ├── is66wvh16m8/         <-- ISSI HyperRAM PSRAM
 │       │   ├── is66wvs16m8/         <-- ISSI Quad PSRAM
-│       │   └── is66wv_fmc/          <-- Parallel PSRAM (FMC)
+│       │   ├── is62wvs/             <-- ISSI Serial Static RAM
+│       │   ├── is66wv_fmc/          <-- Parallel PSRAM / SRAM (FMC)
+│       │   ├── is29gl_fmc/          <-- ISSI / Micron FMC Parallel NOR Flash
+│       │   ├── mt35xu512a/          <-- Micron Xccela Octal NOR Flash
+│       │   └── mt25qu512a/          <-- Micron MT25Q Quad SPI Flash
 │       └── STM32N6_ExtMem/          <-- stm32n6_extmem.h/.c, stm32n6_extmem_conf.h
 ```
 
 ---
 
-### 2. Configurazione di STM32CubeMX (Pinout & Clocks)
+### 2. STM32CubeMX Configuration (Pinout & Clocks)
 
-1. **Abilitare la periferica XSPI (XSPI1, XSPI2 o XSPI3)**:
-   - Selezionare **XSPI1** (o XSPI2/3) in CubeMX.
+1. **Enable XSPI Peripherals (XSPI1, XSPI2, or XSPI3)**:
+   - Select **XSPI1** (or XSPI2/3) in CubeMX.
    - **Mode**:
-     - Per memorie Octal (S28HS, IS25LX, IS66WVO): *Octal Mode* (8 linee I/O + DQS + CLK + NCS).
-     - Per memorie HyperBus (S26KS HyperFlash, S27KS HyperRAM, IS66WVH): *HyperBus Mode*.
-     - Per memorie Quad (S25HL, IS25LP, IS66WVS): *Quad Mode*.
+     - For Octal memories (Infineon S28HS, ISSI IS25LX, ISSI IS66WVO, Micron MT35XU): *Octal Mode* (8 I/O lines + DQS + CLK + NCS).
+     - For HyperBus memories (Infineon S26KS HyperFlash, S27KS HyperRAM, ISSI IS66WVH): *HyperBus Mode*.
+     - For Quad memories (Infineon S25HL, ISSI IS25LP, ISSI IS66WVS, Micron MT25QU): *Quad Mode*.
 2. **Clock Configuration**:
-   - Assicurarsi che la frequenza sorgente `XSPI_CLK` sia impostata a 400 MHz (o 200/266 MHz).
-   - Con prescaler `2`, la memoria lavorerà a 200 MHz DDR (400 MB/s).
+   - Ensure the `XSPI_CLK` source clock is configured to 400 MHz (or 200/266 MHz).
+   - With prescaler `2`, the memory operates at 200 MHz DDR (400 MB/s).
 3. **Power / VDDIO Range**:
-   - Per frequenze superiori a 133 MHz, è mandatorio impostare il dominio `VDDIO` a **1.8V**.
+   - For clock frequencies above 133 MHz, the `VDDIO` power domain **must be set to 1.8V**.
    - In CubeMX: *System Core* -> *PWR* -> *VDDIO2 Range* = **1.8V**.
 
 ---
 
-### 3. Configurazione di Include Paths in STM32CubeIDE
+### 3. Include Paths Configuration in STM32CubeIDE
 
-Nel menu di STM32CubeIDE:
-1. Fare clic destro sul progetto -> **Properties** -> **C/C++ Build** -> **Settings**.
-2. Sotto **Tool Settings** -> **MCU GCC Compiler** -> **Include paths**, aggiungere:
+In the STM32CubeIDE project properties:
+1. Right-click the project -> **Properties** -> **C/C++ Build** -> **Settings**.
+2. Under **Tool Settings** -> **MCU GCC Compiler** -> **Include paths**, add:
    - `../Drivers/BSP/STM32N6_ExtMem`
    - `../Drivers/BSP/Components/Common`
    - `../Drivers/BSP/Components/s28hs512t`
@@ -83,23 +87,27 @@ Nel menu di STM32CubeIDE:
    - `../Drivers/BSP/Components/is66wvo32m8`
    - `../Drivers/BSP/Components/is66wvh16m8`
    - `../Drivers/BSP/Components/is66wvs16m8`
+   - `../Drivers/BSP/Components/is62wvs`
    - `../Drivers/BSP/Components/is66wv_fmc`
+   - `../Drivers/BSP/Components/is29gl_fmc`
+   - `../Drivers/BSP/Components/mt35xu512a`
+   - `../Drivers/BSP/Components/mt25qu512a`
 
 ---
 
-### 4. Configurazione MPU e D-Cache per Cortex-M55
+### 4. MPU and D-Cache Configuration for Cortex-M55
 
-L'Arm Cortex-M55 dispone di cache I-Cache e D-Cache (32 KB ciascuna). Per massimizzare le prestazioni ed evitare inconsistenze di memoria durante trasferimenti DMA o polling:
+The ARM Cortex-M55 features 32 KB I-Cache and 32 KB D-Cache. To maximize throughput while avoiding cache incoherency during DMA transfers or register polling:
 
 ```c
 void MPU_Config_ExtMem(void)
 {
   MPU_Region_InitTypeDef MPU_InitStruct = {0};
 
-  /* Disabilita temporaneamente la MPU */
+  /* Temporarily disable MPU */
   HAL_MPU_Disable();
 
-  /* Regione XSPI1: Base 0x90000000, Dimensione 64MB */
+  /* XSPI1 Region: Base 0x90000000, Size 64MB */
   MPU_InitStruct.Enable           = MPU_REGION_ENABLE;
   MPU_InitStruct.Number           = MPU_REGION_NUMBER1;
   MPU_InitStruct.BaseAddress      = 0x90000000U;
@@ -114,10 +122,10 @@ void MPU_Config_ExtMem(void)
 
   HAL_MPU_ConfigRegion(&MPU_InitStruct);
 
-  /* Abilita MPU con gestione dei fault */
+  /* Enable MPU with default fault handling */
   HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
 
-  /* Abilita I-Cache e D-Cache */
+  /* Enable Instruction and Data Caches */
   SCB_EnableICache();
   SCB_EnableDCache();
 }
@@ -125,9 +133,9 @@ void MPU_Config_ExtMem(void)
 
 ---
 
-### 5. Configurazione del Linker Script (.ld) per XIP
+### 5. Linker Script (.ld) Configuration for XIP
 
-Nel linker script (`STM32N657xx_FLASH.ld`), aggiungere la regione della memoria esterna nel blocco `MEMORY`:
+In your linker script (`STM32N657xx_FLASH.ld`), add the external memory regions inside the `MEMORY` block:
 
 ```ld
 MEMORY
@@ -135,15 +143,15 @@ MEMORY
   ITCM_RAM   (rwx) : ORIGIN = 0x00000000, LENGTH = 64K
   DTCM_RAM   (rw)  : ORIGIN = 0x20000000, LENGTH = 128K
   AXI_SRAM   (rwx) : ORIGIN = 0x24000000, LENGTH = 1024K
-  /* Memoria Esterna Flash su XSPI1 (Memory-Mapped) */
+  /* External Flash on XSPI1 (Memory-Mapped) */
   XSPI1_MEM  (rx)  : ORIGIN = 0x90000000, LENGTH = 64M
-  /* Memoria Esterna PSRAM su XSPI2 (Memory-Mapped) */
+  /* External PSRAM on XSPI2 (Memory-Mapped) */
   XSPI2_RAM  (rwx) : ORIGIN = 0x70000000, LENGTH = 32M
 }
 
 SECTIONS
 {
-  /* Sezione per codice ed asset eseguiti direttamente da Flash Esterna (XIP) */
+  /* Section for code and assets executed directly from External Flash (XIP) */
   .extmem_text :
   {
     . = ALIGN(4);
@@ -154,7 +162,7 @@ SECTIONS
     . = ALIGN(4);
   } > XSPI1_MEM
 
-  /* Sezione per grandi buffer grafici, modelli AI o heap su PSRAM esterna */
+  /* Section for large framebuffers, AI tensors, or heap in External PSRAM */
   .extmem_ram (NOLOAD) :
   {
     . = ALIGN(32);
@@ -165,7 +173,7 @@ SECTIONS
 }
 ```
 
-Per collocare funzioni o variabili in memoria esterna nel codice C:
+To assign functions or buffers to external memory in C source code:
 ```c
 __attribute__((section(".extmem_text"))) void HeavyNeuralNetworkFunction(void) { ... }
 __attribute__((section(".extmem_ram"))) uint8_t FrameBuffer[1920 * 1080 * 2];
@@ -173,7 +181,7 @@ __attribute__((section(".extmem_ram"))) uint8_t FrameBuffer[1920 * 1080 * 2];
 
 ---
 
-### 6. Esempio di Codice in main.c
+### 6. Application Code Example in main.c
 
 ```c
 #include "main.h"
@@ -188,7 +196,7 @@ int main(void)
   SystemClock_Config();
   MPU_Config_ExtMem();
 
-  /* 1. Inizializzazione Flash Esterna (es. Infineon S28HS512T o ISSI IS25LX256 su XSPI1) */
+  /* 1. External Flash Initialization (e.g. Infineon S28HS, ISSI IS25LX, or Micron MT35XU on XSPI1) */
   hExtFlash.Config.Bus            = EXTMEM_BUS_XSPI1;
   hExtFlash.Config.ClockPrescaler = 2;    /* 200 MHz */
   hExtFlash.Config.Force1V8       = true; /* 1.8V */
@@ -197,10 +205,10 @@ int main(void)
     Error_Handler();
   }
 
-  /* Abilita Memory Mapped Mode per XIP immediato */
+  /* Enable Memory-Mapped mode for direct CPU execution (XIP) */
   ExtMem_EnableMemoryMapped(&hExtFlash);
 
-  /* 2. Inizializzazione PSRAM Esterna (es. ISSI IS66WVO o Infineon HyperRAM su XSPI2) */
+  /* 2. External PSRAM Initialization (e.g. ISSI IS66WVO or Infineon HyperRAM on XSPI2) */
   hExtRam.Config.Bus            = EXTMEM_BUS_XSPI2;
   hExtRam.Config.ClockPrescaler = 2;    /* 200 MHz */
   hExtRam.Config.Force1V8       = true;
@@ -210,13 +218,21 @@ int main(void)
   }
   ExtMem_EnableMemoryMapped(&hExtRam);
 
-  /* Accesso diretto da puntatore in RAM Esterna a 0x70000000 */
+  /* Direct pointer access to external PSRAM at 0x70000000 */
   volatile uint32_t *pPsram = (volatile uint32_t *)hExtRam.MemoryMappedBase;
   pPsram[0] = 0xDEADBEEF;
 
   while (1)
   {
-    // Ciclo applicativo
+    /* Main application loop */
   }
 }
 ```
+
+---
+
+### 7. Troubleshooting & Best Practices
+
+- **Dummy Cycles Mismatch**: If reading in memory-mapped mode returns corrupted data or phase-shifted bytes, verify that the dummy cycles configured in `stm32n6_extmem_conf.h` or discovered via SFDP match the memory's volatile configuration register.
+- **Cache Invalidation**: Whenever performing DMA transfers from external memory into internal SRAM, invoke `SCB_InvalidateDCache_by_Addr()` on the target buffer to avoid stale cache hits.
+- **VDDIO Voltage Rails**: Ensure the hardware VDDIO supply rail matches the configuration register (`PWR_VDDIO_RANGE_1V8` for 1.8V vs `PWR_VDDIO_RANGE_3V3` for 3.3V). Running a 1.8V device at 3.3V can cause permanent damage.

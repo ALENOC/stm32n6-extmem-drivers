@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file    extmem_demo.c
   * @author  STM32N6 External Memory Driver Suite Team
-  * @brief   Demonstration and self-test application for Infineon & ISSI
+  * @brief   Demonstration and self-test application for Infineon, ISSI & Micron
   *          Flash and PSRAM external memories on STM32N6.
   *          Can be called directly from main() in STM32CubeIDE projects.
   ******************************************************************************

@@ -4,7 +4,7 @@
   * @author  STM32N6 External Memory Driver Suite Team
   * @brief   Unified High-Level External Memory Driver Suite for STM32N6.
   *          Provides seamless initialization, auto-detection, memory mapping (XIP),
-  *          read, write, erase, and power management for all Infineon & ISSI
+  *          read, write, erase, and power management for all Infineon, ISSI & Micron
   *          Flash and PSRAM devices.
   ******************************************************************************
   * @attention

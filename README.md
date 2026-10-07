@@ -267,4 +267,4 @@ Test Results Summary:
 ## 📄 License
 
 Released under the open-source [MIT License](LICENSE).  
-Copyright (c) 2026 Alessandro Nocivelli (ALENOC) & Community Contributors.
+Copyright (c) 2026 Alessandro Nocentini (ALENOC) & Community Contributors.

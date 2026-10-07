@@ -107,6 +107,7 @@ typedef enum {
 #define FMC_NORSRAM_EXTENDED_DEVICE      ((void *)0x60000000)
 #define FMC_DATA_ADDRESS_MUX_DISABLE     0x00U
 #define FMC_MEMORY_TYPE_PSRAM            0x00U
+#define FMC_MEMORY_TYPE_NOR              0x08U
 #define FMC_NORSRAM_MEM_BUS_WIDTH_16     0x00U
 #define FMC_BURST_ACCESS_MODE_DISABLE    0x00U
 #define FMC_WAIT_SIGNAL_POLARITY_LOW     0x00U
@@ -119,6 +120,7 @@ typedef enum {
 #define FMC_CONTINUOUS_CLOCK_SYNC_ONLY   0x00U
 #define FMC_PAGE_SIZE_NONE               0x00U
 #define FMC_ACCESS_MODE_A                0x00U
+#define FMC_ACCESS_MODE_B                0x01U
 
 #define PWR_VDDIO2                       0x02U
 #define PWR_VDDIO_RANGE_1V8              0x00U

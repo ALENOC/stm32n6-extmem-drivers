@@ -32,6 +32,7 @@ bool test_issi_is66wvo32m8_octal_psram(void);
 bool test_issi_is66wvh16m8_hyperram(void);
 bool test_issi_is66wvs16m8_quad_psram(void);
 bool test_issi_is66wv_fmc_parallel_psram(void);
+bool test_issi_is29gl_fmc_parallel_nor_flash(void);
 bool test_extmem_manager_unified_autodetect(void);
 
 #ifdef __cplusplus

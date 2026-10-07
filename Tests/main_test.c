@@ -41,6 +41,7 @@ static const TestCase_t s_test_cases[] = {
   { "ISSI HyperRAM PSRAM (IS66WVH16M8)",                test_issi_is66wvh16m8_hyperram },
   { "ISSI Quad SPI PSRAM (IS66WVS16M8)",                test_issi_is66wvs16m8_quad_psram },
   { "ISSI FMC 16-bit Parallel PSRAM (IS66WV51216)",     test_issi_is66wv_fmc_parallel_psram },
+  { "ISSI FMC 16-bit Parallel NOR Flash (IS29GL512)",   test_issi_is29gl_fmc_parallel_nor_flash },
   { "STM32N6 ExtMem Unified Manager & Auto-Detect",     test_extmem_manager_unified_autodetect }
 };
 

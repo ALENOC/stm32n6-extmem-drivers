@@ -38,6 +38,7 @@ extern "C" {
 #include "../Components/is66wvh16m8/is66wvh16m8.h"
 #include "../Components/is66wvs16m8/is66wvs16m8.h"
 #include "../Components/is66wv_fmc/is66wv_fmc.h"
+#include "../Components/is29gl_fmc/is29gl_fmc.h"
 #include "../Components/Common/sfdp.h"
 
 /* Configuration Structure ---------------------------------------------------*/

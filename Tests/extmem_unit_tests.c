@@ -282,7 +282,31 @@ bool test_issi_is66wv_fmc_parallel_psram(void)
   return true;
 }
 
-/* 12. High-Level ExtMem Manager Unified Auto-Detection & Operations */
+/* 12. ISSI IS29GL Parallel NOR Flash via FMC (16-bit) */
+bool test_issi_is29gl_fmc_parallel_nor_flash(void)
+{
+  MockHAL_Reset();
+  SRAM_HandleTypeDef hsram = {0};
+  IS29GL_FMC_Timing_t timing = { .AddressSetupTime = 4, .AddressHoldTime = 2, .DataSetupTime = 7, .BusTurnAroundDuration = 2 };
+
+  ASSERT_EQ(IS29GL_FMC_Init(&hsram, FMC_NORSRAM_BANK1, &timing), IS29GL_FMC_OK);
+  ASSERT_EQ(IS29GL_FMC_Reset(0x60000000), IS29GL_FMC_OK);
+
+  uint8_t tx[8] = {0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0};
+  uint8_t rx[8] = {0};
+
+  ASSERT_EQ(IS29GL_FMC_ProgramBuffer(0x60000000, 0x00002000, tx, sizeof(tx)), IS29GL_FMC_OK);
+  ASSERT_EQ(IS29GL_FMC_Read(0x60000000, 0x00002000, rx, sizeof(rx)), IS29GL_FMC_OK);
+  ASSERT_EQ(memcmp(tx, rx, sizeof(tx)), 0);
+
+  ASSERT_EQ(IS29GL_FMC_EraseSector(0x60000000, 0x00002000), IS29GL_FMC_OK);
+  ASSERT_EQ(IS29GL_FMC_Read(0x60000000, 0x00002000, rx, sizeof(rx)), IS29GL_FMC_OK);
+  for (int i = 0; i < 8; i++) ASSERT_EQ(rx[i], 0xFF);
+
+  return true;
+}
+
+/* 13. High-Level ExtMem Manager Unified Auto-Detection & Operations */
 bool test_extmem_manager_unified_autodetect(void)
 {
   MockHAL_Reset();

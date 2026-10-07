@@ -119,16 +119,37 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
   {
     hextmem->MemoryMappedBase = EXTMEM_FMC_BANK1_BASE_ADDR;
     hextmem->ActiveMode       = EXTMEM_MODE_PARALLEL_16BIT;
-    hextmem->Geometry.Type    = EXTMEM_TYPE_PSRAM_PARALLEL_FMC;
-    hextmem->Geometry.IsNonVolatile = false;
-    hextmem->Geometry.SupportsMemoryMapped = true;
-    hextmem->Geometry.TotalSizeBytes = 4 * 1024 * 1024;
-    strncpy(hextmem->Geometry.DeviceName, "IS66WV_Parallel_FMC", sizeof(hextmem->Geometry.DeviceName) - 1);
 
-    IS66WV_FMC_Timing_t timing = { .AddressSetupTime = 3, .AddressHoldTime = 1, .DataSetupTime = 5, .BusTurnAroundDuration = 1 };
-    if (IS66WV_FMC_Init(&hextmem->hsram, FMC_NORSRAM_BANK1, &timing) != IS66WV_FMC_OK)
+    if (hextmem->Config.ForcedDeviceType == EXTMEM_TYPE_NOR_PARALLEL_FMC)
     {
-      return EXTMEM_ERROR;
+      hextmem->Geometry.Type = EXTMEM_TYPE_NOR_PARALLEL_FMC;
+      hextmem->Geometry.IsNonVolatile = true;
+      hextmem->Geometry.SupportsMemoryMapped = true;
+      hextmem->Geometry.PageSizeBytes = 0;
+      hextmem->Geometry.SectorSizeBytes = 128 * 1024;
+      hextmem->Geometry.BlockSizeBytes = 128 * 1024;
+      hextmem->Geometry.TotalSizeBytes = 64 * 1024 * 1024;
+      strncpy(hextmem->Geometry.DeviceName, "IS29GL_Parallel_FMC", sizeof(hextmem->Geometry.DeviceName) - 1);
+
+      IS29GL_FMC_Timing_t norTiming = { .AddressSetupTime = 4, .AddressHoldTime = 2, .DataSetupTime = 7, .BusTurnAroundDuration = 2 };
+      if (IS29GL_FMC_Init(&hextmem->hsram, FMC_NORSRAM_BANK1, &norTiming) != IS29GL_FMC_OK)
+      {
+        return EXTMEM_ERROR;
+      }
+    }
+    else
+    {
+      hextmem->Geometry.Type    = EXTMEM_TYPE_PSRAM_PARALLEL_FMC;
+      hextmem->Geometry.IsNonVolatile = false;
+      hextmem->Geometry.SupportsMemoryMapped = true;
+      hextmem->Geometry.TotalSizeBytes = 4 * 1024 * 1024;
+      strncpy(hextmem->Geometry.DeviceName, "IS66WV_Parallel_FMC", sizeof(hextmem->Geometry.DeviceName) - 1);
+
+      IS66WV_FMC_Timing_t timing = { .AddressSetupTime = 3, .AddressHoldTime = 1, .DataSetupTime = 5, .BusTurnAroundDuration = 1 };
+      if (IS66WV_FMC_Init(&hextmem->hsram, FMC_NORSRAM_BANK1, &timing) != IS66WV_FMC_OK)
+      {
+        return EXTMEM_ERROR;
+      }
     }
     hextmem->State = EXTMEM_STATE_MEMORY_MAPPED;
     return EXTMEM_OK;
@@ -199,7 +220,8 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
     IS66WVH16M8_Init(&hextmem->hxspi, prescaler, HAL_XSPI_SIZE_16MB);
     hextmem->ActiveMode = EXTMEM_MODE_HYPERBUS;
   }
-  else if (hextmem->Geometry.Type == EXTMEM_TYPE_HYPERFLASH_INFINEON)
+  else if (hextmem->Geometry.Type == EXTMEM_TYPE_HYPERFLASH_INFINEON ||
+           hextmem->Geometry.Type == EXTMEM_TYPE_HYPERFLASH_ISSI)
   {
     S26KS512S_Init(&hextmem->hxspi, prescaler);
     hextmem->ActiveMode = EXTMEM_MODE_HYPERBUS;
@@ -337,6 +359,7 @@ int32_t ExtMem_EnableMemoryMapped(ExtMem_HandleTypeDef *hextmem)
       break;
 
     case EXTMEM_TYPE_HYPERFLASH_INFINEON:
+    case EXTMEM_TYPE_HYPERFLASH_ISSI:
       ret = S26KS512S_EnableMemoryMappedMode(&hextmem->hxspi);
       break;
 
@@ -365,6 +388,7 @@ int32_t ExtMem_EnableMemoryMapped(ExtMem_HandleTypeDef *hextmem)
       break;
 
     case EXTMEM_TYPE_PSRAM_PARALLEL_FMC:
+    case EXTMEM_TYPE_NOR_PARALLEL_FMC:
       ret = EXTMEM_OK; /* FMC is permanently mapped at 0x60000000 */
       break;
 
@@ -418,6 +442,7 @@ int32_t ExtMem_Read(ExtMem_HandleTypeDef *hextmem, uint32_t Address, uint8_t *pD
       return IS25LX256_Read(&hextmem->hxspi, hextmem->ActiveMode, Address, pData, Size, hextmem->DummyCycles);
 
     case EXTMEM_TYPE_HYPERFLASH_INFINEON:
+    case EXTMEM_TYPE_HYPERFLASH_ISSI:
       return S26KS512S_Read(&hextmem->hxspi, Address, pData, Size);
 
     case EXTMEM_TYPE_HYPERRAM_INFINEON:
@@ -440,6 +465,9 @@ int32_t ExtMem_Read(ExtMem_HandleTypeDef *hextmem, uint32_t Address, uint8_t *pD
 
     case EXTMEM_TYPE_PSRAM_PARALLEL_FMC:
       return IS66WV_FMC_Read(hextmem->MemoryMappedBase, Address, pData, Size);
+
+    case EXTMEM_TYPE_NOR_PARALLEL_FMC:
+      return IS29GL_FMC_Read(hextmem->MemoryMappedBase, Address, pData, Size);
 
     default:
       return EXTMEM_NOT_SUPPORTED;
@@ -492,6 +520,12 @@ int32_t ExtMem_Write(ExtMem_HandleTypeDef *hextmem, uint32_t Address, const uint
     }
   }
 
+  /* Parallel NOR Flash FMC programming */
+  if (hextmem->Geometry.Type == EXTMEM_TYPE_NOR_PARALLEL_FMC)
+  {
+    return IS29GL_FMC_ProgramBuffer(hextmem->MemoryMappedBase, Address, pData, Size);
+  }
+
   /* Flash Page Program with page boundary splitting */
   uint32_t pageSize = (hextmem->Geometry.PageSizeBytes > 0) ? hextmem->Geometry.PageSizeBytes : 256;
   uint32_t currAddr = Address;
@@ -513,6 +547,7 @@ int32_t ExtMem_Write(ExtMem_HandleTypeDef *hextmem, uint32_t Address, const uint
         status = IS25LX256_PageProgram(&hextmem->hxspi, hextmem->ActiveMode, currAddr, pCurrData, chunk);
         break;
       case EXTMEM_TYPE_HYPERFLASH_INFINEON:
+      case EXTMEM_TYPE_HYPERFLASH_ISSI:
         status = S26KS512S_ProgramBuffer(&hextmem->hxspi, currAddr, pCurrData, chunk);
         break;
       case EXTMEM_TYPE_NOR_QUAD_INFINEON:
@@ -572,11 +607,14 @@ int32_t ExtMem_EraseSector(ExtMem_HandleTypeDef *hextmem, uint32_t SectorAddress
     case EXTMEM_TYPE_NOR_OCTAL_ISSI:
       return IS25LX256_EraseSector4K(&hextmem->hxspi, hextmem->ActiveMode, SectorAddress);
     case EXTMEM_TYPE_HYPERFLASH_INFINEON:
+    case EXTMEM_TYPE_HYPERFLASH_ISSI:
       return S26KS512S_EraseSector(&hextmem->hxspi, SectorAddress);
     case EXTMEM_TYPE_NOR_QUAD_INFINEON:
       return S25HL512T_EraseSector4K(&hextmem->hxspi, SectorAddress);
     case EXTMEM_TYPE_NOR_QUAD_ISSI:
       return IS25LP256_EraseSector4K(&hextmem->hxspi, SectorAddress);
+    case EXTMEM_TYPE_NOR_PARALLEL_FMC:
+      return IS29GL_FMC_EraseSector(hextmem->MemoryMappedBase, SectorAddress);
     default:
       return EXTMEM_NOT_SUPPORTED;
   }
@@ -594,11 +632,14 @@ int32_t ExtMem_EraseBlock(ExtMem_HandleTypeDef *hextmem, uint32_t BlockAddress)
     case EXTMEM_TYPE_NOR_OCTAL_ISSI:
       return IS25LX256_EraseBlock64K(&hextmem->hxspi, hextmem->ActiveMode, BlockAddress);
     case EXTMEM_TYPE_HYPERFLASH_INFINEON:
+    case EXTMEM_TYPE_HYPERFLASH_ISSI:
       return S26KS512S_EraseSector(&hextmem->hxspi, BlockAddress);
     case EXTMEM_TYPE_NOR_QUAD_INFINEON:
       return S25HL512T_EraseBlock64K(&hextmem->hxspi, BlockAddress);
     case EXTMEM_TYPE_NOR_QUAD_ISSI:
       return IS25LP256_EraseBlock64K(&hextmem->hxspi, BlockAddress);
+    case EXTMEM_TYPE_NOR_PARALLEL_FMC:
+      return IS29GL_FMC_EraseSector(hextmem->MemoryMappedBase, BlockAddress);
     default:
       return EXTMEM_NOT_SUPPORTED;
   }
@@ -616,11 +657,14 @@ int32_t ExtMem_EraseChip(ExtMem_HandleTypeDef *hextmem)
     case EXTMEM_TYPE_NOR_OCTAL_ISSI:
       return IS25LX256_ChipErase(&hextmem->hxspi, hextmem->ActiveMode);
     case EXTMEM_TYPE_HYPERFLASH_INFINEON:
+    case EXTMEM_TYPE_HYPERFLASH_ISSI:
       return S26KS512S_EraseChip(&hextmem->hxspi);
     case EXTMEM_TYPE_NOR_QUAD_INFINEON:
       return S25HL512T_ChipErase(&hextmem->hxspi);
     case EXTMEM_TYPE_NOR_QUAD_ISSI:
       return IS25LP256_ChipErase(&hextmem->hxspi);
+    case EXTMEM_TYPE_NOR_PARALLEL_FMC:
+      return IS29GL_FMC_EraseChip(hextmem->MemoryMappedBase);
     default:
       return EXTMEM_NOT_SUPPORTED;
   }

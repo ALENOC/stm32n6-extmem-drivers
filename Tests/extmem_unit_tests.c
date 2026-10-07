@@ -73,7 +73,7 @@ bool test_infineon_s26ks512s_hyperflash(void)
   MockHAL_Reset();
   XSPI_HandleTypeDef hxspi = {0};
 
-  ASSERT_EQ(S26KS512S_Init(&hxspi, 2), S26KS512S_OK);
+  ASSERT_EQ(S26KS512S_Init(&hxspi, 2, HAL_XSPI_SIZE_64MB), S26KS512S_OK);
 
   uint8_t data[8] = {0xAA, 0x55, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
   uint8_t rdata[8] = {0};
@@ -493,5 +493,244 @@ bool test_extmem_manager_unified_autodetect(void)
   ASSERT_EQ(hextmem.State, EXTMEM_STATE_INDIRECT);
 
   ASSERT_EQ(ExtMem_DeInit(&hextmem), EXTMEM_OK);
+  return true;
+}
+
+/* 17. Multi-Density Auto-Detection & Shared Component Drivers */
+bool test_multi_density_shared_drivers(void)
+{
+  /* --- Test A: Infineon SEMPER Octal family sharing s28hs512t driver --- */
+  {
+    /* S28HS256T: 256 Mbit = 32 MBytes */
+    MockHAL_Reset();
+    MockHAL_SetEmulatedChip(0x34, 0x5B, 0x19);
+
+    ExtMem_HandleTypeDef hextmem = {0};
+    hextmem.Config.Bus      = EXTMEM_BUS_XSPI1;
+    hextmem.Config.Force1V8 = true;
+    ASSERT_EQ(ExtMem_Init(&hextmem), EXTMEM_OK);
+    ASSERT_EQ(hextmem.Geometry.TotalSizeBytes, (32U * 1024U * 1024U));
+    ASSERT_EQ(hextmem.hxspi.Init.MemorySize, HAL_XSPI_SIZE_32MB);
+    ASSERT_EQ(hextmem.Geometry.PageSizeBytes, 256U);
+    ASSERT_EQ(strcmp(ExtMem_GetDeviceName(&hextmem), "S28HS256T"), 0);
+    ASSERT_EQ(ExtMem_DeInit(&hextmem), EXTMEM_OK);
+
+    /* S28HS01GT: 1 Gbit = 128 MBytes, 512-byte page buffer */
+    MockHAL_Reset();
+    MockHAL_SetEmulatedChip(0x34, 0x5B, 0x1B);
+    memset(&hextmem, 0, sizeof(hextmem));
+    hextmem.Config.Bus      = EXTMEM_BUS_XSPI1;
+    hextmem.Config.Force1V8 = true;
+    ASSERT_EQ(ExtMem_Init(&hextmem), EXTMEM_OK);
+    ASSERT_EQ(hextmem.Geometry.TotalSizeBytes, (128U * 1024U * 1024U));
+    ASSERT_EQ(hextmem.hxspi.Init.MemorySize, HAL_XSPI_SIZE_128MB);
+    ASSERT_EQ(hextmem.Geometry.PageSizeBytes, 512U);
+    ASSERT_EQ(strcmp(ExtMem_GetDeviceName(&hextmem), "S28HS01GT"), 0);
+    ASSERT_EQ(ExtMem_DeInit(&hextmem), EXTMEM_OK);
+
+    /* S28HS02GT: 2 Gbit = 256 MBytes */
+    MockHAL_Reset();
+    MockHAL_SetEmulatedChip(0x34, 0x5B, 0x1C);
+    memset(&hextmem, 0, sizeof(hextmem));
+    hextmem.Config.Bus      = EXTMEM_BUS_XSPI1;
+    hextmem.Config.Force1V8 = true;
+    ASSERT_EQ(ExtMem_Init(&hextmem), EXTMEM_OK);
+    ASSERT_EQ(hextmem.Geometry.TotalSizeBytes, (256U * 1024U * 1024U));
+    ASSERT_EQ(hextmem.hxspi.Init.MemorySize, HAL_XSPI_SIZE_256MB);
+    ASSERT_EQ(hextmem.Geometry.PageSizeBytes, 512U);
+    ASSERT_EQ(strcmp(ExtMem_GetDeviceName(&hextmem), "S28HS02GT"), 0);
+    ASSERT_EQ(ExtMem_DeInit(&hextmem), EXTMEM_OK);
+  }
+
+  /* --- Test B: ISSI Quad NOR family sharing is25lp256 driver --- */
+  {
+    /* IS25LP064D: 64 Mbit = 8 MBytes (24-bit addressing) */
+    MockHAL_Reset();
+    MockHAL_SetEmulatedChip(0x9D, 0x60, 0x17);
+
+    ExtMem_HandleTypeDef hextmem = {0};
+    hextmem.Config.Bus = EXTMEM_BUS_XSPI1;
+    ASSERT_EQ(ExtMem_Init(&hextmem), EXTMEM_OK);
+    ASSERT_EQ(hextmem.Geometry.TotalSizeBytes, (8U * 1024U * 1024U));
+    ASSERT_EQ(hextmem.hxspi.Init.MemorySize, HAL_XSPI_SIZE_8MB);
+    ASSERT_EQ(strcmp(ExtMem_GetDeviceName(&hextmem), "IS25LP064D"), 0);
+
+    /* Test read / write on 8MB flash */
+    uint8_t wdata[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    uint8_t rdata[16] = {0};
+    ASSERT_EQ(ExtMem_Write(&hextmem, 0x00001000, wdata, sizeof(wdata)), EXTMEM_OK);
+    ASSERT_EQ(ExtMem_Read(&hextmem, 0x00001000, rdata, sizeof(rdata)), EXTMEM_OK);
+    ASSERT_EQ(memcmp(wdata, rdata, sizeof(wdata)), 0);
+    ASSERT_EQ(ExtMem_DeInit(&hextmem), EXTMEM_OK);
+
+    /* IS25LP256D: 256 Mbit = 32 MBytes (32-bit addressing) */
+    MockHAL_Reset();
+    MockHAL_SetEmulatedChip(0x9D, 0x60, 0x19);
+    memset(&hextmem, 0, sizeof(hextmem));
+    hextmem.Config.Bus = EXTMEM_BUS_XSPI1;
+    ASSERT_EQ(ExtMem_Init(&hextmem), EXTMEM_OK);
+    ASSERT_EQ(hextmem.Geometry.TotalSizeBytes, (32U * 1024U * 1024U));
+    ASSERT_EQ(hextmem.hxspi.Init.MemorySize, HAL_XSPI_SIZE_32MB);
+    ASSERT_EQ(strcmp(ExtMem_GetDeviceName(&hextmem), "IS25LP256D"), 0);
+    ASSERT_EQ(ExtMem_DeInit(&hextmem), EXTMEM_OK);
+  }
+
+  /* --- Test C: Micron Quad NOR family sharing mt25qu512a driver --- */
+  {
+    /* MT25QU128ABA: 128 Mbit = 16 MBytes (24-bit addressing) */
+    MockHAL_Reset();
+    MockHAL_SetEmulatedChip(0x2C, 0xBB, 0x18);
+
+    ExtMem_HandleTypeDef hextmem = {0};
+    hextmem.Config.Bus      = EXTMEM_BUS_XSPI1;
+    hextmem.Config.Force1V8 = true;
+    ASSERT_EQ(ExtMem_Init(&hextmem), EXTMEM_OK);
+    ASSERT_EQ(hextmem.Geometry.TotalSizeBytes, (16U * 1024U * 1024U));
+    ASSERT_EQ(hextmem.hxspi.Init.MemorySize, HAL_XSPI_SIZE_16MB);
+    ASSERT_EQ(strcmp(ExtMem_GetDeviceName(&hextmem), "MT25QU128ABA"), 0);
+    ASSERT_EQ(ExtMem_DeInit(&hextmem), EXTMEM_OK);
+
+    /* MT25QU512ABB: 512 Mbit = 64 MBytes (32-bit addressing) */
+    MockHAL_Reset();
+    MockHAL_SetEmulatedChip(0x2C, 0xBB, 0x20);
+    memset(&hextmem, 0, sizeof(hextmem));
+    hextmem.Config.Bus      = EXTMEM_BUS_XSPI1;
+    hextmem.Config.Force1V8 = true;
+    ASSERT_EQ(ExtMem_Init(&hextmem), EXTMEM_OK);
+    ASSERT_EQ(hextmem.Geometry.TotalSizeBytes, (64U * 1024U * 1024U));
+    ASSERT_EQ(hextmem.hxspi.Init.MemorySize, HAL_XSPI_SIZE_64MB);
+    ASSERT_EQ(strcmp(ExtMem_GetDeviceName(&hextmem), "MT25QU512ABB"), 0);
+    ASSERT_EQ(ExtMem_DeInit(&hextmem), EXTMEM_OK);
+  }
+
+  /* --- Test D: ISSI Octal PSRAM sharing is66wvo32m8 driver --- */
+  {
+    /* IS66WVO8M8: 64 Mbit = 8 MBytes */
+    MockHAL_Reset();
+    ExtMem_HandleTypeDef hextmem = {0};
+    hextmem.Config.Bus              = EXTMEM_BUS_XSPI1;
+    hextmem.Config.ForcedPartNumber = "IS66WVO8M8";
+    ASSERT_EQ(ExtMem_Init(&hextmem), EXTMEM_OK);
+    ASSERT_EQ(hextmem.Geometry.Type, EXTMEM_TYPE_PSRAM_OCTAL_ISSI);
+    ASSERT_EQ(hextmem.Geometry.TotalSizeBytes, (8U * 1024U * 1024U));
+    ASSERT_EQ(hextmem.hxspi.Init.MemorySize, HAL_XSPI_SIZE_8MB);
+    ASSERT_EQ(ExtMem_DeInit(&hextmem), EXTMEM_OK);
+
+    /* IS66WVO64M8: 512 Mbit = 64 MBytes */
+    memset(&hextmem, 0, sizeof(hextmem));
+    hextmem.Config.Bus              = EXTMEM_BUS_XSPI1;
+    hextmem.Config.ForcedPartNumber = "IS66WVO64M8";
+    ASSERT_EQ(ExtMem_Init(&hextmem), EXTMEM_OK);
+    ASSERT_EQ(hextmem.Geometry.TotalSizeBytes, (64U * 1024U * 1024U));
+    ASSERT_EQ(hextmem.hxspi.Init.MemorySize, HAL_XSPI_SIZE_64MB);
+    ASSERT_EQ(ExtMem_DeInit(&hextmem), EXTMEM_OK);
+  }
+
+  /* --- Test E: FMC Parallel NOR (IS29GL) & PSRAM (IS66WV) --- */
+  {
+    /* IS29GL064: 64 Mbit = 8 MBytes */
+    ExtMem_HandleTypeDef hextmem = {0};
+    hextmem.Config.Bus              = EXTMEM_BUS_FMC_SRAM_BANK1_1;
+    hextmem.Config.ForcedDeviceType = EXTMEM_TYPE_NOR_PARALLEL_FMC;
+    hextmem.Config.ForcedPartNumber = "IS29GL064";
+    ASSERT_EQ(ExtMem_Init(&hextmem), EXTMEM_OK);
+    ASSERT_EQ(hextmem.Geometry.TotalSizeBytes, (8U * 1024U * 1024U));
+    ASSERT_EQ(strcmp(ExtMem_GetDeviceName(&hextmem), "IS29GL064"), 0);
+    ASSERT_EQ(ExtMem_DeInit(&hextmem), EXTMEM_OK);
+
+    /* IS66WV102416: 16 Mbit = 2 MBytes */
+    memset(&hextmem, 0, sizeof(hextmem));
+    hextmem.Config.Bus              = EXTMEM_BUS_FMC_SRAM_BANK1_1;
+    hextmem.Config.ForcedDeviceType = EXTMEM_TYPE_PSRAM_PARALLEL_FMC;
+    hextmem.Config.ForcedPartNumber = "IS66WV102416";
+    ASSERT_EQ(ExtMem_Init(&hextmem), EXTMEM_OK);
+    ASSERT_EQ(hextmem.Geometry.TotalSizeBytes, (2U * 1024U * 1024U));
+    ASSERT_EQ(strcmp(ExtMem_GetDeviceName(&hextmem), "IS66WV102416"), 0);
+    ASSERT_EQ(ExtMem_DeInit(&hextmem), EXTMEM_OK);
+  }
+
+  return true;
+}
+
+/* 18. Boundary Protection & Bounds Checking */
+bool test_boundary_protection_and_bounds_checking(void)
+{
+  MockHAL_Reset();
+  MockHAL_SetEmulatedChip(0x9D, 0x60, 0x17); /* 8MB Flash: IS25LP064D */
+
+  ExtMem_HandleTypeDef hextmem = {0};
+  hextmem.Config.Bus = EXTMEM_BUS_XSPI1;
+  ASSERT_EQ(ExtMem_Init(&hextmem), EXTMEM_OK);
+  ASSERT_EQ(hextmem.Geometry.TotalSizeBytes, (8U * 1024U * 1024U));
+
+  uint32_t capacity = hextmem.Geometry.TotalSizeBytes;
+  uint8_t buf[64] = {0};
+
+  /* 1. Valid access within boundaries */
+  ASSERT_EQ(ExtMem_Read(&hextmem, capacity - 64, buf, sizeof(buf)), EXTMEM_OK);
+  ASSERT_EQ(ExtMem_Write(&hextmem, capacity - 64, buf, sizeof(buf)), EXTMEM_OK);
+
+  /* 2. Read starting at capacity boundary -> must fail */
+  ASSERT_EQ(ExtMem_Read(&hextmem, capacity, buf, 1), EXTMEM_INVALID_PARAM);
+
+  /* 3. Read spanning beyond capacity boundary -> must fail */
+  ASSERT_EQ(ExtMem_Read(&hextmem, capacity - 32, buf, 64), EXTMEM_INVALID_PARAM);
+
+  /* 4. Write starting beyond capacity boundary -> must fail */
+  ASSERT_EQ(ExtMem_Write(&hextmem, capacity, buf, 1), EXTMEM_INVALID_PARAM);
+
+  /* 5. Write spanning beyond capacity boundary -> must fail */
+  ASSERT_EQ(ExtMem_Write(&hextmem, capacity - 32, buf, 64), EXTMEM_INVALID_PARAM);
+
+  /* 6. Erase Sector starting beyond capacity boundary -> must fail */
+  ASSERT_EQ(ExtMem_EraseSector(&hextmem, capacity), EXTMEM_INVALID_PARAM);
+
+  /* 7. Erase Block spanning beyond capacity boundary -> must fail */
+  ASSERT_EQ(ExtMem_EraseBlock(&hextmem, capacity), EXTMEM_INVALID_PARAM);
+
+  ASSERT_EQ(ExtMem_DeInit(&hextmem), EXTMEM_OK);
+  return true;
+}
+
+/* 19. Hardware Register DEVSIZE Calculation per RM0486 */
+bool test_rm0486_devsize_register_calculation(void)
+{
+  /*
+   * According to RM0486 Section XSPI_DCR1:
+   * DEVSIZE[4:0] defines device size in bytes as: 2^(DEVSIZE + 1)
+   * Therefore: DEVSIZE = log2(CapacityBytes) - 1
+   */
+  struct {
+    uint32_t CapacityBytes;
+    uint32_t ExpectedDevSize;
+  } testVectors[] = {
+    { 64 * 1024,          HAL_XSPI_SIZE_64KB   }, /* 2^16 -> 15 (0x0F) */
+    { 128 * 1024,         HAL_XSPI_SIZE_128KB  }, /* 2^17 -> 16 (0x10) */
+    { 256 * 1024,         HAL_XSPI_SIZE_256KB  }, /* 2^18 -> 17 (0x11) */
+    { 512 * 1024,         HAL_XSPI_SIZE_512KB  }, /* 2^19 -> 18 (0x12) */
+    { 1 * 1024 * 1024,    HAL_XSPI_SIZE_1MB    }, /* 2^20 -> 19 (0x13) */
+    { 2 * 1024 * 1024,    HAL_XSPI_SIZE_2MB    }, /* 2^21 -> 20 (0x14) */
+    { 4 * 1024 * 1024,    HAL_XSPI_SIZE_4MB    }, /* 2^22 -> 21 (0x15) */
+    { 8 * 1024 * 1024,    HAL_XSPI_SIZE_8MB    }, /* 2^23 -> 22 (0x16) */
+    { 16 * 1024 * 1024,   HAL_XSPI_SIZE_16MB   }, /* 2^24 -> 23 (0x17) */
+    { 32 * 1024 * 1024,   HAL_XSPI_SIZE_32MB   }, /* 2^25 -> 24 (0x18) */
+    { 64 * 1024 * 1024,   HAL_XSPI_SIZE_64MB   }, /* 2^26 -> 25 (0x19) */
+    { 128 * 1024 * 1024,  HAL_XSPI_SIZE_128MB  }, /* 2^27 -> 26 (0x1A) */
+    { 256 * 1024 * 1024,  HAL_XSPI_SIZE_256MB  }  /* 2^28 -> 27 (0x1B) */
+  };
+
+  size_t count = sizeof(testVectors) / sizeof(testVectors[0]);
+  for (size_t i = 0; i < count; i++)
+  {
+    ExtMem_HandleTypeDef hextmem = {0};
+    hextmem.Config.Bus                 = EXTMEM_BUS_XSPI1;
+    hextmem.Config.ForcedDeviceType    = EXTMEM_TYPE_NOR_OCTAL_SEMPER;
+    hextmem.Config.ForcedCapacityBytes = testVectors[i].CapacityBytes;
+
+    ASSERT_EQ(ExtMem_Init(&hextmem), EXTMEM_OK);
+    ASSERT_EQ(hextmem.hxspi.Init.MemorySize, testVectors[i].ExpectedDevSize);
+    ASSERT_EQ(ExtMem_DeInit(&hextmem), EXTMEM_OK);
+  }
+
   return true;
 }

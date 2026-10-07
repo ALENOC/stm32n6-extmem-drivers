@@ -54,14 +54,14 @@ static int32_t HyperFlash_ReadWord(XSPI_HandleTypeDef *Ctx, uint32_t Addr, uint1
   return S26KS512S_OK;
 }
 
-int32_t S26KS512S_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler)
+int32_t S26KS512S_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_t MemorySize)
 {
   XSPI_HyperbusCfgTypeDef sHyperbusCfg = {0};
 
   Ctx->Init.FifoThresholdByte       = 8;
   Ctx->Init.MemoryType              = HAL_XSPI_MEMTYPE_HYPERBUS;
   Ctx->Init.MemoryMode              = HAL_XSPI_SINGLE_MEM;
-  Ctx->Init.MemorySize              = HAL_XSPI_SIZE_64MB;
+  Ctx->Init.MemorySize              = (MemorySize > 0) ? MemorySize : HAL_XSPI_SIZE_64MB;
   Ctx->Init.MemorySelect            = HAL_XSPI_CSSEL_NCS1;
   Ctx->Init.ChipSelectHighTimeCycle = 4;
   Ctx->Init.ClockMode               = HAL_XSPI_CLOCK_MODE_0;

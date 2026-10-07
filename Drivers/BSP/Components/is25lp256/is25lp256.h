@@ -33,9 +33,16 @@ extern "C" {
 #define IS25LP_ERROR                     (-1)
 #define IS25LP_TIMEOUT                   (-3)
 
-/* Commands */
+/* Commands - Standard 3-byte / 24-bit addressing */
 #define IS25LP_CMD_READ_ID               0x9FU
 #define IS25LP_CMD_READ_SFDP             0x5AU
+#define IS25LP_CMD_READ_FAST             0x0BU
+#define IS25LP_CMD_READ_QUAD_IO          0xEBU
+#define IS25LP_CMD_PAGE_PROG_QUAD        0x32U
+#define IS25LP_CMD_SECTOR_ERASE_4K       0x20U
+#define IS25LP_CMD_BLOCK_ERASE_64K       0xD8U
+
+/* Commands - Dedicated 4-byte / 32-bit addressing */
 #define IS25LP_CMD_READ_FAST_4B          0x0CU
 #define IS25LP_CMD_READ_QUAD_IO_4B       0xECU
 #define IS25LP_CMD_READ_QUAD_OUT_4B      0x6CU
@@ -64,6 +71,13 @@ int32_t IS25LP256_ReadID(XSPI_HandleTypeDef *Ctx, uint8_t *pID);
 int32_t IS25LP256_WriteEnable(XSPI_HandleTypeDef *Ctx);
 int32_t IS25LP256_AutoPollingMemReady(XSPI_HandleTypeDef *Ctx, uint32_t Timeout);
 int32_t IS25LP256_EnableQuadMode(XSPI_HandleTypeDef *Ctx);
+int32_t IS25LP_Enter4ByteAddressMode(XSPI_HandleTypeDef *Ctx);
+int32_t IS25LP_Exit4ByteAddressMode(XSPI_HandleTypeDef *Ctx);
+int32_t IS25LP_ReadQuadEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size, uint8_t DummyCycles, uint32_t AddressWidth);
+int32_t IS25LP_PageProgramQuadEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *pData, uint32_t Size, uint32_t AddressWidth);
+int32_t IS25LP_EraseSector4KEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint32_t AddressWidth);
+int32_t IS25LP_EraseBlock64KEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint32_t AddressWidth);
+int32_t IS25LP_EnableMemoryMappedModeEx(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles, uint32_t AddressWidth);
 int32_t IS25LP256_ReadQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size, uint8_t DummyCycles);
 int32_t IS25LP256_PageProgramQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *pData, uint32_t Size);
 int32_t IS25LP256_EraseSector4K(XSPI_HandleTypeDef *Ctx, uint32_t Address);

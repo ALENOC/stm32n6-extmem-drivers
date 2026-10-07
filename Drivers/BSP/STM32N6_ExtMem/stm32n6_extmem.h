@@ -52,6 +52,8 @@ typedef struct {
   ExtMem_Type_t           ForcedDeviceType;    /*!< Optional: EXTMEM_TYPE_UNKNOWN for auto   */
   ExtMem_Mode_t           DesiredMode;         /*!< Desired protocol mode (e.g. OCTAL_DTR)    */
   uint32_t                IOPort;              /*!< Optional XSPIM Port: 0 (auto), 1, or 2    */
+  uint32_t                ForcedCapacityBytes; /*!< Optional: explicit capacity (0 for auto)  */
+  const char             *ForcedPartNumber;    /*!< Optional: explicit part number string     */
 } ExtMem_Config_t;
 
 /* Master External Memory Handle ---------------------------------------------*/

@@ -37,6 +37,9 @@ bool test_issi_is62wvs_serial_sram(void);
 bool test_micron_mt35xu512a_octal_flash(void);
 bool test_micron_mt25qu512a_quad_flash(void);
 bool test_extmem_manager_unified_autodetect(void);
+bool test_multi_density_shared_drivers(void);
+bool test_boundary_protection_and_bounds_checking(void);
+bool test_rm0486_devsize_register_calculation(void);
 
 #ifdef __cplusplus
 }

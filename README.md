@@ -54,6 +54,11 @@ Supports **XSPI1**, **XSPI2**, **XSPI3** (Single, Quad, Octal DTR up to 200 MHz,
   - JEDEC ID (0x9F) and HyperBus registers (ID0, ID1) interrogation coupled with a chip database lookup.
 - **Execute-In-Place (XIP) Memory-Mapped Mode**:
   - Single-call transition into memory-mapped address space: `0x90000000` (XSPI1), `0x70000000` (XSPI2), `0x60000000` (FMC).
+- **Multi-Density Shared Driver Architecture**:
+  - Memory chips within the same family sharing command opcodes and registers (e.g. `IS25LP` 32Mb to 512Mb, `MT25QU` 32Mb to 1Gb, `S28HS` 256Mb to 2Gb, `IS66WVO` 64Mb to 512Mb) use a unified component driver.
+  - **Dynamic Capacity & DEVSIZE Calculation**: Automatically maps memory density to the STM32N6 `XSPI_DCR1.DEVSIZE` register according to RM0486 ($2^{(\text{DEVSIZE} + 1)}$ bytes).
+  - **24-bit vs 32-bit Address Switching**: Seamlessly toggles 3-byte addressing for $\le 16\text{ MB}$ ($128\text{ Mb}$) and 4-byte addressing for $> 16\text{ MB}$ (with opcode switching or 4-byte address mode commands `0xB7`/`0xE9`).
+  - **Strict Boundary Protection**: All read, write, and erase operations strictly enforce address range validation against the verified chip geometry, protecting against memory corruption.
 - **ARM Cortex-M55 D-Cache Management**:
   - Built-in cache clean and invalidate routines (`SCB_CleanInvalidateDCache_by_Addr`) compliant with ARMv8.1-M architecture to guarantee cache coherence with DMA and hardware peripherals.
 
@@ -210,7 +215,7 @@ The repository includes a comprehensive automated test harness featuring a **Moc
 
 ### Running Tests Locally
 ```bash
-# Compile and execute the 16 unit tests
+# Compile and execute the 19 unit tests
 make test
 ```
 
@@ -222,48 +227,55 @@ make test
   Supported Peripherals: XSPI1, XSPI2, XSPI3, FMC
 ====================================================================
 
-[INFO] Running 16 unit tests...
+[INFO] Running 19 unit tests...
 
-[ RUN      ] [ 1/16] SFDP Discovery Parser (JEDEC JESD216)
-[       OK ] [ 1/16] SFDP Discovery Parser (JEDEC JESD216)
-[ RUN      ] [ 2/16] Infineon SEMPER Octal NOR Flash (S28HS512T)
-[       OK ] [ 2/16] Infineon SEMPER Octal NOR Flash (S28HS512T)
-[ RUN      ] [ 3/16] Infineon HyperFlash NOR Flash (S26KS512S)
-[       OK ] [ 3/16] Infineon HyperFlash NOR Flash (S26KS512S)
-[ RUN      ] [ 4/16] Infineon HyperRAM PSRAM (S27KS0641)
-[       OK ] [ 4/16] Infineon HyperRAM PSRAM (S27KS0641)
-[ RUN      ] [ 5/16] Infineon SEMPER/FL Quad NOR Flash (S25HL512T)
-[       OK ] [ 5/16] Infineon SEMPER/FL Quad NOR Flash (S25HL512T)
-[ RUN      ] [ 6/16] ISSI Octal NOR Flash (IS25LX256)
-[       OK ] [ 6/16] ISSI Octal NOR Flash (IS25LX256)
-[ RUN      ] [ 7/16] ISSI Quad NOR Flash (IS25LP256)
-[       OK ] [ 7/16] ISSI Quad NOR Flash (IS25LP256)
-[ RUN      ] [ 8/16] ISSI Octal PSRAM xSPI Profile 2.0 (IS66WVO32M8)
-[       OK ] [ 8/16] ISSI Octal PSRAM xSPI Profile 2.0 (IS66WVO32M8)
-[ RUN      ] [ 9/16] ISSI HyperRAM PSRAM (IS66WVH16M8)
-[       OK ] [ 9/16] ISSI HyperRAM PSRAM (IS66WVH16M8)
-[ RUN      ] [10/16] ISSI Quad SPI PSRAM (IS66WVS16M8)
-[       OK ] [10/16] ISSI Quad SPI PSRAM (IS66WVS16M8)
-[ RUN      ] [11/16] ISSI FMC 16-bit Parallel PSRAM (IS66WV51216)
-[       OK ] [11/16] ISSI FMC 16-bit Parallel PSRAM (IS66WV51216)
-[ RUN      ] [12/16] ISSI FMC 16-bit Parallel NOR Flash (IS29GL512)
-[       OK ] [12/16] ISSI FMC 16-bit Parallel NOR Flash (IS29GL512)
-[ RUN      ] [13/16] ISSI Serial SRAM (IS62WVS / IS65WVS)
-[       OK ] [13/16] ISSI Serial SRAM (IS62WVS / IS65WVS)
-[ RUN      ] [14/16] Micron Xccela Octal NOR Flash (MT35XU512ABA)
-[       OK ] [14/16] Micron Xccela Octal NOR Flash (MT35XU512ABA)
-[ RUN      ] [15/16] Micron Quad SPI NOR Flash (MT25QU512ABB)
-[       OK ] [15/16] Micron Quad SPI NOR Flash (MT25QU512ABB)
-[ RUN      ] [16/16] STM32N6 ExtMem Unified Manager & Auto-Detect
-[       OK ] [16/16] STM32N6 ExtMem Unified Manager & Auto-Detect
+[ RUN      ] [ 1/19] SFDP Discovery Parser (JEDEC JESD216)
+[       OK ] [ 1/19] SFDP Discovery Parser (JEDEC JESD216)
+[ RUN      ] [ 2/19] Infineon SEMPER Octal NOR Flash (S28HS512T)
+[       OK ] [ 2/19] Infineon SEMPER Octal NOR Flash (S28HS512T)
+[ RUN      ] [ 3/19] Infineon HyperFlash NOR Flash (S26KS512S)
+[       OK ] [ 3/19] Infineon HyperFlash NOR Flash (S26KS512S)
+[ RUN      ] [ 4/19] Infineon HyperRAM PSRAM (S27KS0641)
+[       OK ] [ 4/19] Infineon HyperRAM PSRAM (S27KS0641)
+[ RUN      ] [ 5/19] Infineon SEMPER/FL Quad NOR Flash (S25HL512T)
+[       OK ] [ 5/19] Infineon SEMPER/FL Quad NOR Flash (S25HL512T)
+[ RUN      ] [ 6/19] ISSI Octal NOR Flash (IS25LX256)
+[       OK ] [ 6/19] ISSI Octal NOR Flash (IS25LX256)
+[ RUN      ] [ 7/19] ISSI Quad NOR Flash (IS25LP256)
+[       OK ] [ 7/19] ISSI Quad NOR Flash (IS25LP256)
+[ RUN      ] [ 8/19] ISSI Octal PSRAM xSPI Profile 2.0 (IS66WVO32M8)
+[       OK ] [ 8/19] ISSI Octal PSRAM xSPI Profile 2.0 (IS66WVO32M8)
+[ RUN      ] [ 9/19] ISSI HyperRAM PSRAM (IS66WVH16M8)
+[       OK ] [ 9/19] ISSI HyperRAM PSRAM (IS66WVH16M8)
+[ RUN      ] [10/19] ISSI Quad SPI PSRAM (IS66WVS16M8)
+[       OK ] [10/19] ISSI Quad SPI PSRAM (IS66WVS16M8)
+[ RUN      ] [11/19] ISSI FMC 16-bit Parallel PSRAM (IS66WV51216)
+[       OK ] [11/19] ISSI FMC 16-bit Parallel PSRAM (IS66WV51216)
+[ RUN      ] [12/19] ISSI FMC 16-bit Parallel NOR Flash (IS29GL512)
+[       OK ] [12/19] ISSI FMC 16-bit Parallel NOR Flash (IS29GL512)
+[ RUN      ] [13/19] ISSI Serial SRAM (IS62WVS / IS65WVS)
+[       OK ] [13/19] ISSI Serial SRAM (IS62WVS / IS65WVS)
+[ RUN      ] [14/19] Micron Xccela Octal NOR Flash (MT35XU512ABA)
+[       OK ] [14/19] Micron Xccela Octal NOR Flash (MT35XU512ABA)
+[ RUN      ] [15/19] Micron Quad SPI NOR Flash (MT25QU512ABB)
+[       OK ] [15/19] Micron Quad SPI NOR Flash (MT25QU512ABB)
+[ RUN      ] [16/19] STM32N6 ExtMem Unified Manager & Auto-Detect
+[       OK ] [16/19] STM32N6 ExtMem Unified Manager & Auto-Detect
+[ RUN      ] [17/19] STM32N6 ExtMem Multi-Density & Shared Drivers
+[       OK ] [17/19] STM32N6 ExtMem Multi-Density & Shared Drivers
+[ RUN      ] [18/19] STM32N6 ExtMem Boundary Protection & Bounds Check
+[       OK ] [18/19] STM32N6 ExtMem Boundary Protection & Bounds Check
+[ RUN      ] [19/19] STM32N6 XSPI DEVSIZE Calculation (per RM0486)
+[       OK ] [19/19] STM32N6 XSPI DEVSIZE Calculation (per RM0486)
 
 ====================================================================
 Test Results Summary:
-  Total:   16
-  Passed:  16
+  Total:   19
+  Passed:  19
   Failed:  0
 ====================================================================
 >>> ALL TESTS PASSED SUCCESSFULLY! <<<
+```
 ```
 
 ---

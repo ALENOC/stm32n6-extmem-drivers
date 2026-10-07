@@ -78,12 +78,15 @@ static void ExtMem_MspInit_XSPI(XSPI_HandleTypeDef *hxspi, bool use1V8, uint32_t
 static uint32_t ExtMem_CalculateMemorySize(uint32_t totalSizeBytes)
 {
   if (totalSizeBytes == 0) return HAL_XSPI_SIZE_64MB;
-  uint32_t size = 0;
-  uint32_t temp = totalSizeBytes - 1;
-  while (temp >>= 1) {
-    size++;
+  uint32_t power = 0;
+  uint32_t temp = totalSizeBytes;
+  while (temp > 1)
+  {
+    temp >>= 1;
+    power++;
   }
-  return (size >= 1) ? (size - 1) : 0;
+  /* RM0486: external memory capacity is 2^(DEVSIZE + 1) bytes, so DEVSIZE = power - 1 */
+  return (power >= 1) ? (power - 1) : 0;
 }
 
 /* Cache Maintenance Helper for Cortex-M55 */
@@ -140,14 +143,34 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
 
     if (hextmem->Config.ForcedDeviceType == EXTMEM_TYPE_NOR_PARALLEL_FMC)
     {
+      const ExtMem_DeviceDescriptor_t *dev = NULL;
+      if (hextmem->Config.ForcedPartNumber != NULL)
+      {
+        dev = ExtMem_FindDeviceByPartNumber(hextmem->Config.ForcedPartNumber);
+      }
+      else if (hextmem->Config.ForcedCapacityBytes > 0)
+      {
+        dev = ExtMem_FindDeviceByTypeAndCapacity(EXTMEM_TYPE_NOR_PARALLEL_FMC, hextmem->Config.ForcedCapacityBytes);
+      }
+
+      if (dev != NULL)
+      {
+        hextmem->pDevice = dev;
+        hextmem->Geometry.TotalSizeBytes = (hextmem->Config.ForcedCapacityBytes > 0) ? hextmem->Config.ForcedCapacityBytes : dev->CapacityBytes;
+        strncpy(hextmem->Geometry.DeviceName, dev->PartNumber, sizeof(hextmem->Geometry.DeviceName) - 1);
+      }
+      else
+      {
+        hextmem->Geometry.TotalSizeBytes = (hextmem->Config.ForcedCapacityBytes > 0) ? hextmem->Config.ForcedCapacityBytes : (64 * 1024 * 1024);
+        strncpy(hextmem->Geometry.DeviceName, "IS29GL_Parallel_FMC", sizeof(hextmem->Geometry.DeviceName) - 1);
+      }
+
       hextmem->Geometry.Type = EXTMEM_TYPE_NOR_PARALLEL_FMC;
       hextmem->Geometry.IsNonVolatile = true;
       hextmem->Geometry.SupportsMemoryMapped = true;
       hextmem->Geometry.PageSizeBytes = 0;
       hextmem->Geometry.SectorSizeBytes = 128 * 1024;
       hextmem->Geometry.BlockSizeBytes = 128 * 1024;
-      hextmem->Geometry.TotalSizeBytes = 64 * 1024 * 1024;
-      strncpy(hextmem->Geometry.DeviceName, "IS29GL_Parallel_FMC", sizeof(hextmem->Geometry.DeviceName) - 1);
 
       IS29GL_FMC_Timing_t norTiming = { .AddressSetupTime = 4, .AddressHoldTime = 2, .DataSetupTime = 7, .BusTurnAroundDuration = 2 };
       if (IS29GL_FMC_Init(&hextmem->hsram, FMC_NORSRAM_BANK1, &norTiming) != IS29GL_FMC_OK)
@@ -157,11 +180,31 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
     }
     else
     {
+      const ExtMem_DeviceDescriptor_t *dev = NULL;
+      if (hextmem->Config.ForcedPartNumber != NULL)
+      {
+        dev = ExtMem_FindDeviceByPartNumber(hextmem->Config.ForcedPartNumber);
+      }
+      else if (hextmem->Config.ForcedCapacityBytes > 0)
+      {
+        dev = ExtMem_FindDeviceByTypeAndCapacity(EXTMEM_TYPE_PSRAM_PARALLEL_FMC, hextmem->Config.ForcedCapacityBytes);
+      }
+
+      if (dev != NULL)
+      {
+        hextmem->pDevice = dev;
+        hextmem->Geometry.TotalSizeBytes = (hextmem->Config.ForcedCapacityBytes > 0) ? hextmem->Config.ForcedCapacityBytes : dev->CapacityBytes;
+        strncpy(hextmem->Geometry.DeviceName, dev->PartNumber, sizeof(hextmem->Geometry.DeviceName) - 1);
+      }
+      else
+      {
+        hextmem->Geometry.TotalSizeBytes = (hextmem->Config.ForcedCapacityBytes > 0) ? hextmem->Config.ForcedCapacityBytes : (4 * 1024 * 1024);
+        strncpy(hextmem->Geometry.DeviceName, "IS66WV_Parallel_FMC", sizeof(hextmem->Geometry.DeviceName) - 1);
+      }
+
       hextmem->Geometry.Type    = EXTMEM_TYPE_PSRAM_PARALLEL_FMC;
       hextmem->Geometry.IsNonVolatile = false;
       hextmem->Geometry.SupportsMemoryMapped = true;
-      hextmem->Geometry.TotalSizeBytes = 4 * 1024 * 1024;
-      strncpy(hextmem->Geometry.DeviceName, "IS66WV_Parallel_FMC", sizeof(hextmem->Geometry.DeviceName) - 1);
 
       IS66WV_FMC_Timing_t timing = { .AddressSetupTime = 3, .AddressHoldTime = 1, .DataSetupTime = 5, .BusTurnAroundDuration = 1 };
       if (IS66WV_FMC_Init(&hextmem->hsram, FMC_NORSRAM_BANK1, &timing) != IS66WV_FMC_OK)
@@ -213,11 +256,14 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
   }
 
   /* Update XSPI DEVSIZE to match detected device capacity per RM0486 */
+  uint32_t memSize = ExtMem_CalculateMemorySize(hextmem->Geometry.TotalSizeBytes);
   if (hextmem->Geometry.TotalSizeBytes > 0)
   {
-    hextmem->hxspi.Init.MemorySize = ExtMem_CalculateMemorySize(hextmem->Geometry.TotalSizeBytes);
+    hextmem->hxspi.Init.MemorySize = memSize;
     HAL_XSPI_Init(&hextmem->hxspi);
   }
+
+  bool is4Byte = (hextmem->Geometry.TotalSizeBytes > (16U * 1024U * 1024U));
 
   /* Switch memory to its high performance mode */
   if (hextmem->Geometry.Type == EXTMEM_TYPE_NOR_OCTAL_SEMPER)
@@ -247,23 +293,23 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
   else if (hextmem->Geometry.Type == EXTMEM_TYPE_PSRAM_OCTAL_ISSI)
   {
     hextmem->DummyCycles = hextmem->pDevice ? hextmem->pDevice->DefaultReadDummyCycles : 5;
-    IS66WVO32M8_Init(&hextmem->hxspi, prescaler, HAL_XSPI_SIZE_32MB);
+    IS66WVO32M8_Init(&hextmem->hxspi, prescaler, memSize);
     hextmem->ActiveMode = EXTMEM_MODE_OCTAL_DTR;
   }
   else if (hextmem->Geometry.Type == EXTMEM_TYPE_HYPERRAM_INFINEON)
   {
-    S27KS0641_Init(&hextmem->hxspi, prescaler, HAL_XSPI_SIZE_32MB);
+    S27KS0641_Init(&hextmem->hxspi, prescaler, memSize);
     hextmem->ActiveMode = EXTMEM_MODE_HYPERBUS;
   }
   else if (hextmem->Geometry.Type == EXTMEM_TYPE_HYPERRAM_ISSI)
   {
-    IS66WVH16M8_Init(&hextmem->hxspi, prescaler, HAL_XSPI_SIZE_16MB);
+    IS66WVH16M8_Init(&hextmem->hxspi, prescaler, memSize);
     hextmem->ActiveMode = EXTMEM_MODE_HYPERBUS;
   }
   else if (hextmem->Geometry.Type == EXTMEM_TYPE_HYPERFLASH_INFINEON ||
            hextmem->Geometry.Type == EXTMEM_TYPE_HYPERFLASH_ISSI)
   {
-    S26KS512S_Init(&hextmem->hxspi, prescaler);
+    S26KS512S_Init(&hextmem->hxspi, prescaler, memSize);
     hextmem->ActiveMode = EXTMEM_MODE_HYPERBUS;
   }
   else if (hextmem->Geometry.Type == EXTMEM_TYPE_NOR_QUAD_INFINEON)
@@ -274,22 +320,31 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
   else if (hextmem->Geometry.Type == EXTMEM_TYPE_NOR_QUAD_ISSI)
   {
     IS25LP256_EnableQuadMode(&hextmem->hxspi);
+    if (is4Byte)
+    {
+      IS25LP_Enter4ByteAddressMode(&hextmem->hxspi);
+    }
     hextmem->ActiveMode = EXTMEM_MODE_QUAD_1_4_4;
   }
   else if (hextmem->Geometry.Type == EXTMEM_TYPE_NOR_QUAD_MICRON)
   {
     hextmem->DummyCycles = hextmem->pDevice ? hextmem->pDevice->DefaultReadDummyCycles : 10;
-    MT25QU_Enter4ByteAddressMode(&hextmem->hxspi);
+    if (is4Byte)
+    {
+      MT25QU_Enter4ByteAddressMode(&hextmem->hxspi);
+    }
     hextmem->ActiveMode = EXTMEM_MODE_QUAD_1_4_4;
   }
   else if (hextmem->Geometry.Type == EXTMEM_TYPE_PSRAM_QUAD_ISSI)
   {
+    IS66WVS16M8_Init(&hextmem->hxspi, prescaler, memSize);
     IS66WVS16M8_EnterQuadMode(&hextmem->hxspi);
     hextmem->ActiveMode = EXTMEM_MODE_QUAD_1_4_4;
   }
   else if (hextmem->Geometry.Type == EXTMEM_TYPE_SRAM_SERIAL_ISSI)
   {
     hextmem->DummyCycles = hextmem->pDevice ? hextmem->pDevice->DefaultReadDummyCycles : 2;
+    IS62WVS_Init(&hextmem->hxspi, prescaler, memSize);
     IS62WVS_WriteModeRegister(&hextmem->hxspi, IS62WVS_MODE_SEQUENTIAL);
     IS62WVS_EnterQuadMode(&hextmem->hxspi);
     hextmem->ActiveMode = EXTMEM_MODE_QUAD_1_4_4;
@@ -301,31 +356,66 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
 
 int32_t ExtMem_AutoDetect(ExtMem_HandleTypeDef *hextmem)
 {
+  /* If device part number is explicitly forced by user */
+  if (hextmem->Config.ForcedPartNumber != NULL)
+  {
+    const ExtMem_DeviceDescriptor_t *dev = ExtMem_FindDeviceByPartNumber(hextmem->Config.ForcedPartNumber);
+    if (dev != NULL)
+    {
+      hextmem->pDevice = dev;
+      strncpy(hextmem->Geometry.DeviceName, dev->PartNumber, sizeof(hextmem->Geometry.DeviceName) - 1);
+      hextmem->Geometry.Type            = dev->Type;
+      hextmem->Geometry.TotalSizeBytes  = (hextmem->Config.ForcedCapacityBytes > 0) ? hextmem->Config.ForcedCapacityBytes : dev->CapacityBytes;
+      hextmem->Geometry.PageSizeBytes   = dev->PageSizeBytes;
+      hextmem->Geometry.SectorSizeBytes = dev->SectorSizeBytes;
+      hextmem->Geometry.BlockSizeBytes  = dev->BlockSizeBytes;
+      hextmem->Geometry.MaxClockFreqMHz = dev->MaxClockFreqMHz;
+      hextmem->Geometry.SupportsDTR     = (dev->PreferredMode == EXTMEM_MODE_OCTAL_DTR || dev->PreferredMode == EXTMEM_MODE_HYPERBUS);
+      hextmem->Geometry.SupportsMemoryMapped = true;
+      hextmem->Geometry.IsNonVolatile   = (dev->PageSizeBytes > 0 || dev->Type == EXTMEM_TYPE_NOR_PARALLEL_FMC);
+      return EXTMEM_OK;
+    }
+  }
+
   /* If device type is explicitly forced by user, find matching database entry */
   if (hextmem->Config.ForcedDeviceType != EXTMEM_TYPE_UNKNOWN)
   {
-    for (size_t i = 0; i < EXTMEM_DEVICE_DATABASE_SIZE; i++)
+    const ExtMem_DeviceDescriptor_t *dev = NULL;
+    if (hextmem->Config.ForcedCapacityBytes > 0)
     {
-      if (ExtMem_DeviceDatabase[i].Type == hextmem->Config.ForcedDeviceType)
+      dev = ExtMem_FindDeviceByTypeAndCapacity(hextmem->Config.ForcedDeviceType, hextmem->Config.ForcedCapacityBytes);
+    }
+    if (dev == NULL)
+    {
+      for (size_t i = 0; i < EXTMEM_DEVICE_DATABASE_SIZE; i++)
       {
-        hextmem->pDevice = &ExtMem_DeviceDatabase[i];
-        strncpy(hextmem->Geometry.DeviceName, hextmem->pDevice->PartNumber, sizeof(hextmem->Geometry.DeviceName) - 1);
-        hextmem->Geometry.Type            = hextmem->pDevice->Type;
-        hextmem->Geometry.TotalSizeBytes  = hextmem->pDevice->CapacityBytes;
-        hextmem->Geometry.PageSizeBytes   = hextmem->pDevice->PageSizeBytes;
-        hextmem->Geometry.SectorSizeBytes = hextmem->pDevice->SectorSizeBytes;
-        hextmem->Geometry.BlockSizeBytes  = hextmem->pDevice->BlockSizeBytes;
-        hextmem->Geometry.MaxClockFreqMHz = hextmem->pDevice->MaxClockFreqMHz;
-        hextmem->Geometry.SupportsDTR     = (hextmem->pDevice->PreferredMode == EXTMEM_MODE_OCTAL_DTR || hextmem->pDevice->PreferredMode == EXTMEM_MODE_HYPERBUS);
-        hextmem->Geometry.SupportsMemoryMapped = true;
-        hextmem->Geometry.IsNonVolatile   = (hextmem->pDevice->Type != EXTMEM_TYPE_SRAM_SERIAL_ISSI &&
-                                             hextmem->pDevice->Type != EXTMEM_TYPE_PSRAM_QUAD_ISSI &&
-                                             hextmem->pDevice->Type != EXTMEM_TYPE_PSRAM_OCTAL_ISSI &&
-                                             hextmem->pDevice->Type != EXTMEM_TYPE_HYPERRAM_INFINEON &&
-                                             hextmem->pDevice->Type != EXTMEM_TYPE_HYPERRAM_ISSI &&
-                                             hextmem->pDevice->Type != EXTMEM_TYPE_PSRAM_PARALLEL_FMC);
-        return EXTMEM_OK;
+        if (ExtMem_DeviceDatabase[i].Type == hextmem->Config.ForcedDeviceType)
+        {
+          dev = &ExtMem_DeviceDatabase[i];
+          break;
+        }
       }
+    }
+
+    if (dev != NULL)
+    {
+      hextmem->pDevice = dev;
+      strncpy(hextmem->Geometry.DeviceName, dev->PartNumber, sizeof(hextmem->Geometry.DeviceName) - 1);
+      hextmem->Geometry.Type            = dev->Type;
+      hextmem->Geometry.TotalSizeBytes  = (hextmem->Config.ForcedCapacityBytes > 0) ? hextmem->Config.ForcedCapacityBytes : dev->CapacityBytes;
+      hextmem->Geometry.PageSizeBytes   = dev->PageSizeBytes;
+      hextmem->Geometry.SectorSizeBytes = dev->SectorSizeBytes;
+      hextmem->Geometry.BlockSizeBytes  = dev->BlockSizeBytes;
+      hextmem->Geometry.MaxClockFreqMHz = dev->MaxClockFreqMHz;
+      hextmem->Geometry.SupportsDTR     = (dev->PreferredMode == EXTMEM_MODE_OCTAL_DTR || dev->PreferredMode == EXTMEM_MODE_HYPERBUS);
+      hextmem->Geometry.SupportsMemoryMapped = true;
+      hextmem->Geometry.IsNonVolatile   = (dev->Type != EXTMEM_TYPE_SRAM_SERIAL_ISSI &&
+                                           dev->Type != EXTMEM_TYPE_PSRAM_QUAD_ISSI &&
+                                           dev->Type != EXTMEM_TYPE_PSRAM_OCTAL_ISSI &&
+                                           dev->Type != EXTMEM_TYPE_HYPERRAM_INFINEON &&
+                                           dev->Type != EXTMEM_TYPE_HYPERRAM_ISSI &&
+                                           dev->Type != EXTMEM_TYPE_PSRAM_PARALLEL_FMC);
+      return EXTMEM_OK;
     }
   }
 
@@ -342,7 +432,7 @@ int32_t ExtMem_AutoDetect(ExtMem_HandleTypeDef *hextmem)
       hextmem->pDevice = dev;
       strncpy(hextmem->Geometry.DeviceName, dev->PartNumber, sizeof(hextmem->Geometry.DeviceName) - 1);
       hextmem->Geometry.Type            = dev->Type;
-      hextmem->Geometry.TotalSizeBytes  = dev->CapacityBytes;
+      hextmem->Geometry.TotalSizeBytes  = (hextmem->Config.ForcedCapacityBytes > 0) ? hextmem->Config.ForcedCapacityBytes : dev->CapacityBytes;
       hextmem->Geometry.PageSizeBytes   = dev->PageSizeBytes;
       hextmem->Geometry.SectorSizeBytes = dev->SectorSizeBytes;
       hextmem->Geometry.BlockSizeBytes  = dev->BlockSizeBytes;
@@ -361,7 +451,7 @@ int32_t ExtMem_AutoDetect(ExtMem_HandleTypeDef *hextmem)
   {
     strncpy(hextmem->Geometry.DeviceName, "JEDEC_SFDP_Flash", sizeof(hextmem->Geometry.DeviceName) - 1);
     hextmem->Geometry.Type            = (sfdpParams.SupportsOctal_8D_8D_8D) ? EXTMEM_TYPE_NOR_OCTAL_SEMPER : EXTMEM_TYPE_NOR_QUAD_ISSI;
-    hextmem->Geometry.TotalSizeBytes  = sfdpParams.DensityBytes;
+    hextmem->Geometry.TotalSizeBytes  = (hextmem->Config.ForcedCapacityBytes > 0) ? hextmem->Config.ForcedCapacityBytes : sfdpParams.DensityBytes;
     hextmem->Geometry.PageSizeBytes   = sfdpParams.PageSizeBytes;
     hextmem->Geometry.SectorSizeBytes = 4096;
     hextmem->Geometry.BlockSizeBytes  = sfdpParams.SectorSizeBytes;
@@ -388,19 +478,21 @@ int32_t ExtMem_AutoDetect(ExtMem_HandleTypeDef *hextmem)
   if (S27KS0641_ReadRegister(&hextmem->hxspi, S27KS_REG_ID0, &hyperId0) == S27KS_OK && hyperId0 != 0x0000 && hyperId0 != 0xFFFF)
   {
     uint8_t mfg = (uint8_t)(hyperId0 & 0x0F);
+    uint32_t capacity = (hextmem->Config.ForcedCapacityBytes > 0) ? hextmem->Config.ForcedCapacityBytes : (8 * 1024 * 1024);
+
     if (mfg == 0x01) /* Cypress / Infineon */
     {
-      hextmem->pDevice = ExtMem_FindDevice(0x01, 0x00, 0x01);
-      strncpy(hextmem->Geometry.DeviceName, "S27KS_HyperRAM", sizeof(hextmem->Geometry.DeviceName) - 1);
+      hextmem->pDevice = ExtMem_FindDeviceByTypeAndCapacity(EXTMEM_TYPE_HYPERRAM_INFINEON, capacity);
+      strncpy(hextmem->Geometry.DeviceName, hextmem->pDevice ? hextmem->pDevice->PartNumber : "S27KS_HyperRAM", sizeof(hextmem->Geometry.DeviceName) - 1);
       hextmem->Geometry.Type = EXTMEM_TYPE_HYPERRAM_INFINEON;
     }
     else /* ISSI */
     {
-      hextmem->pDevice = ExtMem_FindDevice(0x0F, 0x00, 0x02);
-      strncpy(hextmem->Geometry.DeviceName, "IS66WVH_HyperRAM", sizeof(hextmem->Geometry.DeviceName) - 1);
+      hextmem->pDevice = ExtMem_FindDeviceByTypeAndCapacity(EXTMEM_TYPE_HYPERRAM_ISSI, capacity);
+      strncpy(hextmem->Geometry.DeviceName, hextmem->pDevice ? hextmem->pDevice->PartNumber : "IS66WVH_HyperRAM", sizeof(hextmem->Geometry.DeviceName) - 1);
       hextmem->Geometry.Type = EXTMEM_TYPE_HYPERRAM_ISSI;
     }
-    hextmem->Geometry.TotalSizeBytes  = 16 * 1024 * 1024;
+    hextmem->Geometry.TotalSizeBytes  = capacity;
     hextmem->Geometry.SupportsDTR     = true;
     hextmem->Geometry.SupportsMemoryMapped = true;
     hextmem->Geometry.IsNonVolatile   = false;
@@ -465,12 +557,18 @@ int32_t ExtMem_EnableMemoryMapped(ExtMem_HandleTypeDef *hextmem)
       break;
 
     case EXTMEM_TYPE_NOR_QUAD_ISSI:
-      ret = IS25LP256_EnableMemoryMappedMode(&hextmem->hxspi, 6);
+    {
+      bool is4B = (hextmem->Geometry.TotalSizeBytes > (16U * 1024U * 1024U));
+      ret = IS25LP_EnableMemoryMappedModeEx(&hextmem->hxspi, 6, is4B ? HAL_XSPI_ADDRESS_32_BITS : HAL_XSPI_ADDRESS_24_BITS);
       break;
+    }
 
     case EXTMEM_TYPE_NOR_QUAD_MICRON:
-      ret = MT25QU_EnableMemoryMappedMode(&hextmem->hxspi, hextmem->DummyCycles);
+    {
+      bool is4B = (hextmem->Geometry.TotalSizeBytes > (16U * 1024U * 1024U));
+      ret = MT25QU_EnableMemoryMappedModeEx(&hextmem->hxspi, hextmem->DummyCycles, is4B ? HAL_XSPI_ADDRESS_32_BITS : HAL_XSPI_ADDRESS_24_BITS);
       break;
+    }
 
     case EXTMEM_TYPE_PSRAM_QUAD_ISSI:
       ret = IS66WVS16M8_EnableMemoryMappedMode(&hextmem->hxspi, 6);
@@ -519,6 +617,13 @@ int32_t ExtMem_Read(ExtMem_HandleTypeDef *hextmem, uint32_t Address, uint8_t *pD
 {
   if (hextmem == NULL || pData == NULL || Size == 0) return EXTMEM_INVALID_PARAM;
 
+  /* Boundary check against total device capacity */
+  if (hextmem->Geometry.TotalSizeBytes > 0 &&
+      ((uint64_t)Address + Size > (uint64_t)hextmem->Geometry.TotalSizeBytes))
+  {
+    return EXTMEM_INVALID_PARAM;
+  }
+
   if (hextmem->State == EXTMEM_STATE_MEMORY_MAPPED)
   {
     volatile uint8_t *pSrc = (volatile uint8_t *)(uintptr_t)(hextmem->MemoryMappedBase + Address);
@@ -554,10 +659,16 @@ int32_t ExtMem_Read(ExtMem_HandleTypeDef *hextmem, uint32_t Address, uint8_t *pD
       return S25HL512T_ReadQuad(&hextmem->hxspi, Address, pData, Size, 6);
 
     case EXTMEM_TYPE_NOR_QUAD_ISSI:
-      return IS25LP256_ReadQuad(&hextmem->hxspi, Address, pData, Size, 6);
+    {
+      bool is4B = (hextmem->Geometry.TotalSizeBytes > (16U * 1024U * 1024U));
+      return IS25LP_ReadQuadEx(&hextmem->hxspi, Address, pData, Size, 6, is4B ? HAL_XSPI_ADDRESS_32_BITS : HAL_XSPI_ADDRESS_24_BITS);
+    }
 
     case EXTMEM_TYPE_NOR_QUAD_MICRON:
-      return MT25QU_ReadQuad(&hextmem->hxspi, Address, pData, Size, hextmem->DummyCycles);
+    {
+      bool is4B = (hextmem->Geometry.TotalSizeBytes > (16U * 1024U * 1024U));
+      return MT25QU_ReadQuadEx(&hextmem->hxspi, Address, pData, Size, hextmem->DummyCycles, is4B ? HAL_XSPI_ADDRESS_32_BITS : HAL_XSPI_ADDRESS_24_BITS);
+    }
 
     case EXTMEM_TYPE_PSRAM_QUAD_ISSI:
       return IS66WVS16M8_ReadQuad(&hextmem->hxspi, Address, pData, Size, 6);
@@ -579,6 +690,13 @@ int32_t ExtMem_Read(ExtMem_HandleTypeDef *hextmem, uint32_t Address, uint8_t *pD
 int32_t ExtMem_Write(ExtMem_HandleTypeDef *hextmem, uint32_t Address, const uint8_t *pData, uint32_t Size)
 {
   if (hextmem == NULL || pData == NULL || Size == 0) return EXTMEM_INVALID_PARAM;
+
+  /* Boundary check against total device capacity */
+  if (hextmem->Geometry.TotalSizeBytes > 0 &&
+      ((uint64_t)Address + Size > (uint64_t)hextmem->Geometry.TotalSizeBytes))
+  {
+    return EXTMEM_INVALID_PARAM;
+  }
 
   /* If Memory Mapped, PSRAM and FMC can be written directly */
   if (hextmem->State == EXTMEM_STATE_MEMORY_MAPPED)
@@ -637,6 +755,8 @@ int32_t ExtMem_Write(ExtMem_HandleTypeDef *hextmem, uint32_t Address, const uint
   uint32_t currAddr = Address;
   uint32_t endAddr  = Address + Size;
   const uint8_t *pCurrData = pData;
+  bool is4Byte = (hextmem->Geometry.TotalSizeBytes > (16U * 1024U * 1024U));
+  uint32_t addrWidth = is4Byte ? HAL_XSPI_ADDRESS_32_BITS : HAL_XSPI_ADDRESS_24_BITS;
 
   while (currAddr < endAddr)
   {
@@ -663,10 +783,10 @@ int32_t ExtMem_Write(ExtMem_HandleTypeDef *hextmem, uint32_t Address, const uint
         status = S25HL512T_PageProgramQuad(&hextmem->hxspi, currAddr, pCurrData, chunk);
         break;
       case EXTMEM_TYPE_NOR_QUAD_ISSI:
-        status = IS25LP256_PageProgramQuad(&hextmem->hxspi, currAddr, pCurrData, chunk);
+        status = IS25LP_PageProgramQuadEx(&hextmem->hxspi, currAddr, pCurrData, chunk, addrWidth);
         break;
       case EXTMEM_TYPE_NOR_QUAD_MICRON:
-        status = MT25QU_PageProgramQuad(&hextmem->hxspi, currAddr, pCurrData, chunk);
+        status = MT25QU_PageProgramQuadEx(&hextmem->hxspi, currAddr, pCurrData, chunk, addrWidth);
         break;
       default:
         return EXTMEM_NOT_SUPPORTED;
@@ -710,7 +830,18 @@ int32_t ExtMem_WriteDMA(ExtMem_HandleTypeDef *hextmem, uint32_t Address, const u
 int32_t ExtMem_EraseSector(ExtMem_HandleTypeDef *hextmem, uint32_t SectorAddress)
 {
   if (!hextmem->Geometry.IsNonVolatile) return EXTMEM_OK; /* RAM needs no erase */
+
+  /* Boundary check against total device capacity */
+  if (hextmem->Geometry.TotalSizeBytes > 0 &&
+      ((uint64_t)SectorAddress + hextmem->Geometry.SectorSizeBytes > (uint64_t)hextmem->Geometry.TotalSizeBytes))
+  {
+    return EXTMEM_INVALID_PARAM;
+  }
+
   if (hextmem->State == EXTMEM_STATE_MEMORY_MAPPED) ExtMem_DisableMemoryMapped(hextmem);
+
+  bool is4Byte = (hextmem->Geometry.TotalSizeBytes > (16U * 1024U * 1024U));
+  uint32_t addrWidth = is4Byte ? HAL_XSPI_ADDRESS_32_BITS : HAL_XSPI_ADDRESS_24_BITS;
 
   switch (hextmem->Geometry.Type)
   {
@@ -726,9 +857,9 @@ int32_t ExtMem_EraseSector(ExtMem_HandleTypeDef *hextmem, uint32_t SectorAddress
     case EXTMEM_TYPE_NOR_QUAD_INFINEON:
       return S25HL512T_EraseSector4K(&hextmem->hxspi, SectorAddress);
     case EXTMEM_TYPE_NOR_QUAD_ISSI:
-      return IS25LP256_EraseSector4K(&hextmem->hxspi, SectorAddress);
+      return IS25LP_EraseSector4KEx(&hextmem->hxspi, SectorAddress, addrWidth);
     case EXTMEM_TYPE_NOR_QUAD_MICRON:
-      return MT25QU_EraseSector4K(&hextmem->hxspi, SectorAddress);
+      return MT25QU_EraseSector4KEx(&hextmem->hxspi, SectorAddress, addrWidth);
     case EXTMEM_TYPE_NOR_PARALLEL_FMC:
       return IS29GL_FMC_EraseSector(hextmem->MemoryMappedBase, SectorAddress);
     default:
@@ -739,7 +870,18 @@ int32_t ExtMem_EraseSector(ExtMem_HandleTypeDef *hextmem, uint32_t SectorAddress
 int32_t ExtMem_EraseBlock(ExtMem_HandleTypeDef *hextmem, uint32_t BlockAddress)
 {
   if (!hextmem->Geometry.IsNonVolatile) return EXTMEM_OK;
+
+  /* Boundary check against total device capacity */
+  if (hextmem->Geometry.TotalSizeBytes > 0 &&
+      ((uint64_t)BlockAddress + hextmem->Geometry.BlockSizeBytes > (uint64_t)hextmem->Geometry.TotalSizeBytes))
+  {
+    return EXTMEM_INVALID_PARAM;
+  }
+
   if (hextmem->State == EXTMEM_STATE_MEMORY_MAPPED) ExtMem_DisableMemoryMapped(hextmem);
+
+  bool is4Byte = (hextmem->Geometry.TotalSizeBytes > (16U * 1024U * 1024U));
+  uint32_t addrWidth = is4Byte ? HAL_XSPI_ADDRESS_32_BITS : HAL_XSPI_ADDRESS_24_BITS;
 
   switch (hextmem->Geometry.Type)
   {
@@ -755,9 +897,9 @@ int32_t ExtMem_EraseBlock(ExtMem_HandleTypeDef *hextmem, uint32_t BlockAddress)
     case EXTMEM_TYPE_NOR_QUAD_INFINEON:
       return S25HL512T_EraseBlock64K(&hextmem->hxspi, BlockAddress);
     case EXTMEM_TYPE_NOR_QUAD_ISSI:
-      return IS25LP256_EraseBlock64K(&hextmem->hxspi, BlockAddress);
+      return IS25LP_EraseBlock64KEx(&hextmem->hxspi, BlockAddress, addrWidth);
     case EXTMEM_TYPE_NOR_QUAD_MICRON:
-      return MT25QU_EraseBlock64K(&hextmem->hxspi, BlockAddress);
+      return MT25QU_EraseBlock64KEx(&hextmem->hxspi, BlockAddress, addrWidth);
     case EXTMEM_TYPE_NOR_PARALLEL_FMC:
       return IS29GL_FMC_EraseSector(hextmem->MemoryMappedBase, BlockAddress);
     default:

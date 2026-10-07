@@ -20,6 +20,7 @@ extern "C" {
 #endif
 
 #include "extmem_common.h"
+#include <string.h>
 
 /* Memory Device Descriptor */
 typedef struct {
@@ -1006,6 +1007,38 @@ static const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .DefaultReadDummyCycles  = 5,
     .DefaultWriteDummyCycles = 5
   },
+  {
+    .PartNumber              = "IS66WVO8M8",
+    .Type                    = EXTMEM_TYPE_PSRAM_OCTAL_ISSI,
+    .ManufacturerID          = 0x9D,
+    .MemoryTypeID            = 0x00,
+    .DensityID               = 0x04,
+    .CapacityBytes           = 8 * 1024 * 1024,
+    .PageSizeBytes           = 0,
+    .SectorSizeBytes         = 0,
+    .BlockSizeBytes          = 0,
+    .VoltageNominal          = 1.8f,
+    .MaxClockFreqMHz         = 200,
+    .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
+    .DefaultReadDummyCycles  = 5,
+    .DefaultWriteDummyCycles = 5
+  },
+  {
+    .PartNumber              = "IS67WVO8M8",
+    .Type                    = EXTMEM_TYPE_PSRAM_OCTAL_ISSI,
+    .ManufacturerID          = 0x9D,
+    .MemoryTypeID            = 0x00,
+    .DensityID               = 0x04,
+    .CapacityBytes           = 8 * 1024 * 1024,
+    .PageSizeBytes           = 0,
+    .SectorSizeBytes         = 0,
+    .BlockSizeBytes          = 0,
+    .VoltageNominal          = 1.8f,
+    .MaxClockFreqMHz         = 200,
+    .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
+    .DefaultReadDummyCycles  = 5,
+    .DefaultWriteDummyCycles = 5
+  },
 
   /* ========================================================================= */
   /* ISSI HYPERRAM PSRAM (IS66WVH / IS67WVH)                                   */
@@ -1295,12 +1328,60 @@ static const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
   /* PARALLEL ASYNCHRONOUS PSRAM / SRAM (FMC)                                  */
   /* ========================================================================= */
   {
+    .PartNumber              = "IS66WV409616",
+    .Type                    = EXTMEM_TYPE_PSRAM_PARALLEL_FMC,
+    .ManufacturerID          = 0x00,
+    .MemoryTypeID            = 0x00,
+    .DensityID               = 0x00,
+    .CapacityBytes           = 8 * 1024 * 1024,    /* 64 Mbits = 8 MBytes */
+    .PageSizeBytes           = 0,
+    .SectorSizeBytes         = 0,
+    .BlockSizeBytes          = 0,
+    .VoltageNominal          = 3.0f,
+    .MaxClockFreqMHz         = 100,
+    .PreferredMode           = EXTMEM_MODE_PARALLEL_16BIT,
+    .DefaultReadDummyCycles  = 0,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
     .PartNumber              = "IS66WV204816",
     .Type                    = EXTMEM_TYPE_PSRAM_PARALLEL_FMC,
     .ManufacturerID          = 0x00,
     .MemoryTypeID            = 0x00,
     .DensityID               = 0x00,
-    .CapacityBytes           = 4 * 1024 * 1024,
+    .CapacityBytes           = 4 * 1024 * 1024,    /* 32 Mbits = 4 MBytes */
+    .PageSizeBytes           = 0,
+    .SectorSizeBytes         = 0,
+    .BlockSizeBytes          = 0,
+    .VoltageNominal          = 3.0f,
+    .MaxClockFreqMHz         = 100,
+    .PreferredMode           = EXTMEM_MODE_PARALLEL_16BIT,
+    .DefaultReadDummyCycles  = 0,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "IS66WV102416",
+    .Type                    = EXTMEM_TYPE_PSRAM_PARALLEL_FMC,
+    .ManufacturerID          = 0x00,
+    .MemoryTypeID            = 0x00,
+    .DensityID               = 0x00,
+    .CapacityBytes           = 2 * 1024 * 1024,    /* 16 Mbits = 2 MBytes */
+    .PageSizeBytes           = 0,
+    .SectorSizeBytes         = 0,
+    .BlockSizeBytes          = 0,
+    .VoltageNominal          = 3.0f,
+    .MaxClockFreqMHz         = 100,
+    .PreferredMode           = EXTMEM_MODE_PARALLEL_16BIT,
+    .DefaultReadDummyCycles  = 0,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "IS66WV51216",
+    .Type                    = EXTMEM_TYPE_PSRAM_PARALLEL_FMC,
+    .ManufacturerID          = 0x00,
+    .MemoryTypeID            = 0x00,
+    .DensityID               = 0x00,
+    .CapacityBytes           = 1 * 1024 * 1024,    /* 8 Mbits = 1 MByte */
     .PageSizeBytes           = 0,
     .SectorSizeBytes         = 0,
     .BlockSizeBytes          = 0,
@@ -1710,9 +1791,21 @@ static const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
 
 #define EXTMEM_DEVICE_DATABASE_SIZE  (sizeof(ExtMem_DeviceDatabase) / sizeof(ExtMem_DeviceDatabase[0]))
 
-/* Lookup helper */
+/* Lookup helper with exact match priority */
 static inline const ExtMem_DeviceDescriptor_t* ExtMem_FindDevice(uint8_t mfg, uint8_t memType, uint8_t density)
 {
+  /* Pass 1: Exact match on all three identification bytes */
+  for (size_t i = 0; i < EXTMEM_DEVICE_DATABASE_SIZE; i++)
+  {
+    if (ExtMem_DeviceDatabase[i].ManufacturerID == mfg &&
+        ExtMem_DeviceDatabase[i].MemoryTypeID == memType &&
+        ExtMem_DeviceDatabase[i].DensityID == density)
+    {
+      return &ExtMem_DeviceDatabase[i];
+    }
+  }
+
+  /* Pass 2: Wildcard match if manufacturer matches and generic descriptors exist */
   for (size_t i = 0; i < EXTMEM_DEVICE_DATABASE_SIZE; i++)
   {
     if (ExtMem_DeviceDatabase[i].ManufacturerID == mfg)
@@ -1723,6 +1816,48 @@ static inline const ExtMem_DeviceDescriptor_t* ExtMem_FindDevice(uint8_t mfg, ui
         {
           return &ExtMem_DeviceDatabase[i];
         }
+      }
+    }
+  }
+  return NULL;
+}
+
+/* Lookup helper by exact or partial part number */
+static inline const ExtMem_DeviceDescriptor_t* ExtMem_FindDeviceByPartNumber(const char *partNumber)
+{
+  if (partNumber == NULL) return NULL;
+
+  /* Pass 1: Exact match */
+  for (size_t i = 0; i < EXTMEM_DEVICE_DATABASE_SIZE; i++)
+  {
+    if (strcmp(ExtMem_DeviceDatabase[i].PartNumber, partNumber) == 0)
+    {
+      return &ExtMem_DeviceDatabase[i];
+    }
+  }
+
+  /* Pass 2: Substring / prefix match */
+  for (size_t i = 0; i < EXTMEM_DEVICE_DATABASE_SIZE; i++)
+  {
+    if (strstr(ExtMem_DeviceDatabase[i].PartNumber, partNumber) != NULL ||
+        strstr(partNumber, ExtMem_DeviceDatabase[i].PartNumber) != NULL)
+    {
+      return &ExtMem_DeviceDatabase[i];
+    }
+  }
+  return NULL;
+}
+
+/* Lookup helper by device type and explicit capacity in bytes */
+static inline const ExtMem_DeviceDescriptor_t* ExtMem_FindDeviceByTypeAndCapacity(ExtMem_Type_t type, uint32_t capacityBytes)
+{
+  for (size_t i = 0; i < EXTMEM_DEVICE_DATABASE_SIZE; i++)
+  {
+    if (ExtMem_DeviceDatabase[i].Type == type)
+    {
+      if (capacityBytes == 0 || ExtMem_DeviceDatabase[i].CapacityBytes == capacityBytes)
+      {
+        return &ExtMem_DeviceDatabase[i];
       }
     }
   }

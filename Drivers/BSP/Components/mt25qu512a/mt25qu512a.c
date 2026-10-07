@@ -138,6 +138,26 @@ int32_t MT25QU_Enter4ByteAddressMode(XSPI_HandleTypeDef *Ctx)
   return (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? MT25Q_OK : MT25Q_ERROR;
 }
 
+int32_t MT25QU_Exit4ByteAddressMode(XSPI_HandleTypeDef *Ctx)
+{
+  XSPI_RegularCmdTypeDef sCmd = {0};
+
+  if (MT25QU_WriteEnable(Ctx) != MT25Q_OK) return MT25Q_ERROR;
+
+  sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
+  sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
+  sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_8_BITS;
+  sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
+  sCmd.Instruction        = MT25Q_CMD_EXIT_4BYTE_ADDR;
+  sCmd.AddressMode        = HAL_XSPI_ADDRESS_NONE;
+  sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
+  sCmd.DataMode           = HAL_XSPI_DATA_NONE;
+  sCmd.DummyCycles        = 0;
+  sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
+
+  return (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? MT25Q_OK : MT25Q_ERROR;
+}
+
 int32_t MT25QU_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_t MemorySize)
 {
   Ctx->Init.FifoThresholdByte       = 4;
@@ -159,10 +179,14 @@ int32_t MT25QU_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_t M
   if (MT25QU_Reset(Ctx) != MT25Q_OK) return MT25Q_ERROR;
 
   /* If memory is > 128Mb (16MB), enter 4-byte address mode */
-  return MT25QU_Enter4ByteAddressMode(Ctx);
+  if (MemorySize > HAL_XSPI_SIZE_16MB)
+  {
+    return MT25QU_Enter4ByteAddressMode(Ctx);
+  }
+  return MT25Q_OK;
 }
 
-int32_t MT25QU_ReadQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size, uint8_t DummyCycles)
+int32_t MT25QU_ReadQuadEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size, uint8_t DummyCycles, uint32_t AddressWidth)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
@@ -172,7 +196,7 @@ int32_t MT25QU_ReadQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pDat
   sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
   sCmd.Instruction        = MT25Q_CMD_FAST_READ_QUAD;
   sCmd.AddressMode        = HAL_XSPI_ADDRESS_4_LINES;
-  sCmd.AddressWidth       = HAL_XSPI_ADDRESS_32_BITS;
+  sCmd.AddressWidth       = AddressWidth;
   sCmd.AddressDTRMode     = HAL_XSPI_ADDRESS_DTR_DISABLE;
   sCmd.Address            = Address;
   sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
@@ -186,7 +210,12 @@ int32_t MT25QU_ReadQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pDat
   return (HAL_XSPI_Receive(Ctx, pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? MT25Q_OK : MT25Q_ERROR;
 }
 
-int32_t MT25QU_PageProgramQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *pData, uint32_t Size)
+int32_t MT25QU_ReadQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size, uint8_t DummyCycles)
+{
+  return MT25QU_ReadQuadEx(Ctx, Address, pData, Size, DummyCycles, HAL_XSPI_ADDRESS_32_BITS);
+}
+
+int32_t MT25QU_PageProgramQuadEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *pData, uint32_t Size, uint32_t AddressWidth)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
@@ -198,7 +227,7 @@ int32_t MT25QU_PageProgramQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, const 
   sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
   sCmd.Instruction        = MT25Q_CMD_PAGE_PROGRAM_QUAD;
   sCmd.AddressMode        = HAL_XSPI_ADDRESS_1_LINE;
-  sCmd.AddressWidth       = HAL_XSPI_ADDRESS_32_BITS;
+  sCmd.AddressWidth       = AddressWidth;
   sCmd.AddressDTRMode     = HAL_XSPI_ADDRESS_DTR_DISABLE;
   sCmd.Address            = Address;
   sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
@@ -214,7 +243,12 @@ int32_t MT25QU_PageProgramQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, const 
   return MT25QU_AutoPollingMemReady(Ctx, HAL_XSPI_TIMEOUT_DEFAULT_VALUE);
 }
 
-int32_t MT25QU_EraseSector4K(XSPI_HandleTypeDef *Ctx, uint32_t Address)
+int32_t MT25QU_PageProgramQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *pData, uint32_t Size)
+{
+  return MT25QU_PageProgramQuadEx(Ctx, Address, pData, Size, HAL_XSPI_ADDRESS_32_BITS);
+}
+
+int32_t MT25QU_EraseSector4KEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint32_t AddressWidth)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
@@ -226,7 +260,7 @@ int32_t MT25QU_EraseSector4K(XSPI_HandleTypeDef *Ctx, uint32_t Address)
   sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
   sCmd.Instruction        = MT25Q_CMD_SUBSECTOR_ERASE_4K;
   sCmd.AddressMode        = HAL_XSPI_ADDRESS_1_LINE;
-  sCmd.AddressWidth       = HAL_XSPI_ADDRESS_32_BITS;
+  sCmd.AddressWidth       = AddressWidth;
   sCmd.AddressDTRMode     = HAL_XSPI_ADDRESS_DTR_DISABLE;
   sCmd.Address            = Address;
   sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
@@ -238,7 +272,12 @@ int32_t MT25QU_EraseSector4K(XSPI_HandleTypeDef *Ctx, uint32_t Address)
   return MT25QU_AutoPollingMemReady(Ctx, 2000);
 }
 
-int32_t MT25QU_EraseBlock64K(XSPI_HandleTypeDef *Ctx, uint32_t Address)
+int32_t MT25QU_EraseSector4K(XSPI_HandleTypeDef *Ctx, uint32_t Address)
+{
+  return MT25QU_EraseSector4KEx(Ctx, Address, HAL_XSPI_ADDRESS_32_BITS);
+}
+
+int32_t MT25QU_EraseBlock64KEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint32_t AddressWidth)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
@@ -250,7 +289,7 @@ int32_t MT25QU_EraseBlock64K(XSPI_HandleTypeDef *Ctx, uint32_t Address)
   sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
   sCmd.Instruction        = MT25Q_CMD_SECTOR_ERASE_64K;
   sCmd.AddressMode        = HAL_XSPI_ADDRESS_1_LINE;
-  sCmd.AddressWidth       = HAL_XSPI_ADDRESS_32_BITS;
+  sCmd.AddressWidth       = AddressWidth;
   sCmd.AddressDTRMode     = HAL_XSPI_ADDRESS_DTR_DISABLE;
   sCmd.Address            = Address;
   sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
@@ -260,6 +299,11 @@ int32_t MT25QU_EraseBlock64K(XSPI_HandleTypeDef *Ctx, uint32_t Address)
 
   if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT25Q_ERROR;
   return MT25QU_AutoPollingMemReady(Ctx, 3000);
+}
+
+int32_t MT25QU_EraseBlock64K(XSPI_HandleTypeDef *Ctx, uint32_t Address)
+{
+  return MT25QU_EraseBlock64KEx(Ctx, Address, HAL_XSPI_ADDRESS_32_BITS);
 }
 
 int32_t MT25QU_EraseChip(XSPI_HandleTypeDef *Ctx)
@@ -283,7 +327,7 @@ int32_t MT25QU_EraseChip(XSPI_HandleTypeDef *Ctx)
   return MT25QU_AutoPollingMemReady(Ctx, 60000);
 }
 
-int32_t MT25QU_EnableMemoryMappedMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles)
+int32_t MT25QU_EnableMemoryMappedModeEx(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles, uint32_t AddressWidth)
 {
   XSPI_RegularCmdTypeDef   sCmd = {0};
   XSPI_MemoryMappedTypeDef sMem = {0};
@@ -294,7 +338,7 @@ int32_t MT25QU_EnableMemoryMappedMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycl
   sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
   sCmd.Instruction        = MT25Q_CMD_FAST_READ_QUAD;
   sCmd.AddressMode        = HAL_XSPI_ADDRESS_4_LINES;
-  sCmd.AddressWidth       = HAL_XSPI_ADDRESS_32_BITS;
+  sCmd.AddressWidth       = AddressWidth;
   sCmd.AddressDTRMode     = HAL_XSPI_ADDRESS_DTR_DISABLE;
   sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
   sCmd.DataMode           = HAL_XSPI_DATA_4_LINES;
@@ -306,6 +350,11 @@ int32_t MT25QU_EnableMemoryMappedMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycl
 
   sMem.TimeOutActivation = HAL_XSPI_TIMEOUT_COUNTER_DISABLE;
   return (HAL_XSPI_MemoryMapped(Ctx, &sMem) == HAL_OK) ? MT25Q_OK : MT25Q_ERROR;
+}
+
+int32_t MT25QU_EnableMemoryMappedMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles)
+{
+  return MT25QU_EnableMemoryMappedModeEx(Ctx, DummyCycles, HAL_XSPI_ADDRESS_32_BITS);
 }
 
 int32_t MT25QU_Reset(XSPI_HandleTypeDef *Ctx)

@@ -45,7 +45,10 @@ static const TestCase_t s_test_cases[] = {
   { "ISSI Serial SRAM (IS62WVS / IS65WVS)",             test_issi_is62wvs_serial_sram },
   { "Micron Xccela Octal NOR Flash (MT35XU512ABA)",     test_micron_mt35xu512a_octal_flash },
   { "Micron Quad SPI NOR Flash (MT25QU512ABB)",         test_micron_mt25qu512a_quad_flash },
-  { "STM32N6 ExtMem Unified Manager & Auto-Detect",     test_extmem_manager_unified_autodetect }
+  { "STM32N6 ExtMem Unified Manager & Auto-Detect",     test_extmem_manager_unified_autodetect },
+  { "STM32N6 ExtMem Multi-Density & Shared Drivers",    test_multi_density_shared_drivers },
+  { "STM32N6 ExtMem Boundary Protection & Bounds Check",test_boundary_protection_and_bounds_checking },
+  { "STM32N6 XSPI DEVSIZE Calculation (per RM0486)",    test_rm0486_devsize_register_calculation }
 };
 
 int main(int argc, char *argv[])

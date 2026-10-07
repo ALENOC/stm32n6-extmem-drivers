@@ -61,7 +61,7 @@ extern "C" {
 #define S26KS_INITIAL_LATENCY_CYCLES     16U
 
 /* Exported Functions --------------------------------------------------------*/
-int32_t S26KS512S_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler);
+int32_t S26KS512S_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_t MemorySize);
 int32_t S26KS512S_Read(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size);
 int32_t S26KS512S_ProgramWord(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint16_t Data);
 int32_t S26KS512S_ProgramBuffer(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *pData, uint32_t Size);

@@ -1,7 +1,7 @@
 # Supported Memories Matrix
-## Complete Infineon & ISSI Flash and PSRAM Matrix for STM32N6
+## Complete Infineon, ISSI & Micron Flash and PSRAM Matrix for STM32N6
 
-The following matrix lists all Flash and PSRAM parts from **Infineon Technologies** and **ISSI (Integrated Silicon Solution, Inc.)** that are electrically compatible with STM32N6 **XSPI (Octal/Quad/HyperBus)** and **FMC** controllers and fully supported by this driver suite:
+The following matrix lists all Flash and PSRAM parts from **Infineon Technologies**, **ISSI (Integrated Silicon Solution, Inc.)**, and **Micron Technology** that are electrically compatible with STM32N6 **XSPI (Octal/Quad/HyperBus)** and **FMC** controllers and fully supported by this driver suite:
 
 | Manufacturer | Family / Part Number | Memory Technology | Bus Interface / Protocol | Operating Voltage | Max Frequency | Component Driver |
 |:---|:---|:---|:---|:---|:---|:---|
@@ -85,3 +85,27 @@ The following matrix lists all Flash and PSRAM parts from **Infineon Technologie
 | **ISSI** | `IS66WV102416` (16Mb)| Parallel PSRAM | 16-bit Parallel Asynchronous FMC | 3.0V | 55 ns | `is66wv_fmc` |
 | **ISSI** | `IS66WV204816` (32Mb)| Parallel PSRAM | 16-bit Parallel Asynchronous FMC | 3.0V | 55 ns | `is66wv_fmc` |
 | **ISSI** | `IS66WV409616` (64Mb)| Parallel PSRAM | 16-bit Parallel Asynchronous FMC | 3.0V | 55 ns | `is66wv_fmc` |
+| **Micron** | `MT35XU02G` (2Gb) | Xccela™ Octal NOR Flash | Octal SPI (8D-8D-8D, DQS) | 1.8V | 200 MHz | `mt35xu512a` |
+| **Micron** | `MT35XU01GBBA` (1Gb) | Xccela™ Octal NOR Flash | Octal SPI (8D-8D-8D, DQS) | 1.8V | 200 MHz | `mt35xu512a` |
+| **Micron** | `MT35XL01GBBA` (1Gb) | Xccela™ Octal NOR Flash | Octal SPI (8D-8D-8D, DQS) | 3.0V | 133 MHz | `mt35xu512a` |
+| **Micron** | `MT35XU512ABA` (512Mb)| Xccela™ Octal NOR Flash | Octal SPI (8D-8D-8D, DQS) | 1.8V | 200 MHz | `mt35xu512a` |
+| **Micron** | `MT35XL512ABA` (512Mb)| Xccela™ Octal NOR Flash | Octal SPI (8D-8D-8D, DQS) | 3.0V | 133 MHz | `mt35xu512a` |
+| **Micron** | `MT35XU256ABA` (256Mb)| Xccela™ Octal NOR Flash | Octal SPI (8D-8D-8D, DQS) | 1.8V | 200 MHz | `mt35xu512a` |
+| **Micron** | `MT35XL256ABA` (256Mb)| Xccela™ Octal NOR Flash | Octal SPI (8D-8D-8D, DQS) | 3.0V | 133 MHz | `mt35xu512a` |
+| **Micron** | `MT25QU01GBBB` (1Gb) | MT25Q Quad SPI Flash | Quad SPI (1-4-4, 4-byte Addr) | 1.8V | 133 MHz | `mt25qu512a` |
+| **Micron** | `MT25QL01GBBB` (1Gb) | MT25Q Quad SPI Flash | Quad SPI (1-4-4, 4-byte Addr) | 3.0V | 133 MHz | `mt25qu512a` |
+| **Micron** | `MT25QU512ABB` (512Mb)| MT25Q Quad SPI Flash | Quad SPI (1-4-4, 4-byte Addr) | 1.8V | 133 MHz | `mt25qu512a` |
+| **Micron** | `MT25QL512ABB` (512Mb)| MT25Q Quad SPI Flash | Quad SPI (1-4-4, 4-byte Addr) | 3.0V | 133 MHz | `mt25qu512a` |
+| **Micron** | `MT25QU256ABA` (256Mb)| MT25Q Quad SPI Flash | Quad SPI (1-4-4, 4-byte Addr) | 1.8V | 133 MHz | `mt25qu512a` |
+| **Micron** | `MT25QL256ABA` (256Mb)| MT25Q Quad SPI Flash | Quad SPI (1-4-4, 4-byte Addr) | 3.0V | 133 MHz | `mt25qu512a` |
+| **Micron** | `MT25QU128ABA` (128Mb)| MT25Q Quad SPI Flash | Quad SPI (1-4-4, 3/4-byte Addr)| 1.8V | 133 MHz | `mt25qu512a` |
+| **Micron** | `MT25QL128ABA` (128Mb)| MT25Q Quad SPI Flash | Quad SPI (1-4-4, 3/4-byte Addr)| 3.0V | 133 MHz | `mt25qu512a` |
+| **Micron** | `MT25QU064ABA` (64Mb) | MT25Q Quad SPI Flash | Quad SPI (1-4-4, 3-byte Addr) | 1.8V | 133 MHz | `mt25qu512a` |
+| **Micron** | `MT25QL064ABA` (64Mb) | MT25Q Quad SPI Flash | Quad SPI (1-4-4, 3-byte Addr) | 3.0V | 133 MHz | `mt25qu512a` |
+| **Micron** | `MT25QU032ABA` (32Mb) | MT25Q Quad SPI Flash | Quad SPI (1-4-4, 3-byte Addr) | 1.8V | 133 MHz | `mt25qu512a` |
+| **Micron** | `MT25QL032ABA` (32Mb) | MT25Q Quad SPI Flash | Quad SPI (1-4-4, 3-byte Addr) | 3.0V | 133 MHz | `mt25qu512a` |
+| **Micron** | `MT28EW01GABA` (1Gb) | Parallel NOR Flash | 16-bit Parallel Asynchronous FMC | 3.0V | 100 MHz (Page 25ns) | FMC NOR / `is29gl_fmc` |
+| **Micron** | `MT28EW512ABA` (512Mb)| Parallel NOR Flash | 16-bit Parallel Asynchronous FMC | 3.0V | 100 MHz (Page 25ns) | FMC NOR / `is29gl_fmc` |
+| **Micron** | `MT28EW256ABA` (256Mb)| Parallel NOR Flash | 16-bit Parallel Asynchronous FMC | 3.0V | 100 MHz (Page 25ns) | FMC NOR / `is29gl_fmc` |
+| **Micron** | `MT28EW128ABA` (128Mb)| Parallel NOR Flash | 16-bit Parallel Asynchronous FMC | 3.0V | 100 MHz (Page 25ns) | FMC NOR / `is29gl_fmc` |
+

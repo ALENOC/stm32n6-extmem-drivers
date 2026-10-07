@@ -204,6 +204,14 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
       hextmem->ActiveMode = EXTMEM_MODE_OCTAL_DTR;
     }
   }
+  else if (hextmem->Geometry.Type == EXTMEM_TYPE_NOR_OCTAL_MICRON)
+  {
+    hextmem->DummyCycles = hextmem->pDevice ? hextmem->pDevice->DefaultReadDummyCycles : 16;
+    if (MT35XU_EnterOctalDTRMode(&hextmem->hxspi, hextmem->DummyCycles) == MT35XU_OK)
+    {
+      hextmem->ActiveMode = EXTMEM_MODE_OCTAL_DTR;
+    }
+  }
   else if (hextmem->Geometry.Type == EXTMEM_TYPE_PSRAM_OCTAL_ISSI)
   {
     hextmem->DummyCycles = hextmem->pDevice ? hextmem->pDevice->DefaultReadDummyCycles : 5;
@@ -234,6 +242,12 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
   else if (hextmem->Geometry.Type == EXTMEM_TYPE_NOR_QUAD_ISSI)
   {
     IS25LP256_EnableQuadMode(&hextmem->hxspi);
+    hextmem->ActiveMode = EXTMEM_MODE_QUAD_1_4_4;
+  }
+  else if (hextmem->Geometry.Type == EXTMEM_TYPE_NOR_QUAD_MICRON)
+  {
+    hextmem->DummyCycles = hextmem->pDevice ? hextmem->pDevice->DefaultReadDummyCycles : 10;
+    MT25QU_Enter4ByteAddressMode(&hextmem->hxspi);
     hextmem->ActiveMode = EXTMEM_MODE_QUAD_1_4_4;
   }
   else if (hextmem->Geometry.Type == EXTMEM_TYPE_PSRAM_QUAD_ISSI)
@@ -393,6 +407,10 @@ int32_t ExtMem_EnableMemoryMapped(ExtMem_HandleTypeDef *hextmem)
       ret = IS25LX256_EnableMemoryMappedModeDTR(&hextmem->hxspi, hextmem->DummyCycles);
       break;
 
+    case EXTMEM_TYPE_NOR_OCTAL_MICRON:
+      ret = MT35XU_EnableMemoryMappedModeDTR(&hextmem->hxspi, hextmem->DummyCycles);
+      break;
+
     case EXTMEM_TYPE_HYPERFLASH_INFINEON:
     case EXTMEM_TYPE_HYPERFLASH_ISSI:
       ret = S26KS512S_EnableMemoryMappedMode(&hextmem->hxspi);
@@ -416,6 +434,10 @@ int32_t ExtMem_EnableMemoryMapped(ExtMem_HandleTypeDef *hextmem)
 
     case EXTMEM_TYPE_NOR_QUAD_ISSI:
       ret = IS25LP256_EnableMemoryMappedMode(&hextmem->hxspi, 6);
+      break;
+
+    case EXTMEM_TYPE_NOR_QUAD_MICRON:
+      ret = MT25QU_EnableMemoryMappedMode(&hextmem->hxspi, hextmem->DummyCycles);
       break;
 
     case EXTMEM_TYPE_PSRAM_QUAD_ISSI:
@@ -480,6 +502,9 @@ int32_t ExtMem_Read(ExtMem_HandleTypeDef *hextmem, uint32_t Address, uint8_t *pD
     case EXTMEM_TYPE_NOR_OCTAL_ISSI:
       return IS25LX256_Read(&hextmem->hxspi, hextmem->ActiveMode, Address, pData, Size, hextmem->DummyCycles);
 
+    case EXTMEM_TYPE_NOR_OCTAL_MICRON:
+      return MT35XU_Read(&hextmem->hxspi, hextmem->ActiveMode, Address, pData, Size, hextmem->DummyCycles);
+
     case EXTMEM_TYPE_HYPERFLASH_INFINEON:
     case EXTMEM_TYPE_HYPERFLASH_ISSI:
       return S26KS512S_Read(&hextmem->hxspi, Address, pData, Size);
@@ -498,6 +523,9 @@ int32_t ExtMem_Read(ExtMem_HandleTypeDef *hextmem, uint32_t Address, uint8_t *pD
 
     case EXTMEM_TYPE_NOR_QUAD_ISSI:
       return IS25LP256_ReadQuad(&hextmem->hxspi, Address, pData, Size, 6);
+
+    case EXTMEM_TYPE_NOR_QUAD_MICRON:
+      return MT25QU_ReadQuad(&hextmem->hxspi, Address, pData, Size, hextmem->DummyCycles);
 
     case EXTMEM_TYPE_PSRAM_QUAD_ISSI:
       return IS66WVS16M8_ReadQuad(&hextmem->hxspi, Address, pData, Size, 6);
@@ -592,6 +620,9 @@ int32_t ExtMem_Write(ExtMem_HandleTypeDef *hextmem, uint32_t Address, const uint
       case EXTMEM_TYPE_NOR_OCTAL_ISSI:
         status = IS25LX256_PageProgram(&hextmem->hxspi, hextmem->ActiveMode, currAddr, pCurrData, chunk);
         break;
+      case EXTMEM_TYPE_NOR_OCTAL_MICRON:
+        status = MT35XU_PageProgram(&hextmem->hxspi, hextmem->ActiveMode, currAddr, pCurrData, chunk);
+        break;
       case EXTMEM_TYPE_HYPERFLASH_INFINEON:
       case EXTMEM_TYPE_HYPERFLASH_ISSI:
         status = S26KS512S_ProgramBuffer(&hextmem->hxspi, currAddr, pCurrData, chunk);
@@ -601,6 +632,9 @@ int32_t ExtMem_Write(ExtMem_HandleTypeDef *hextmem, uint32_t Address, const uint
         break;
       case EXTMEM_TYPE_NOR_QUAD_ISSI:
         status = IS25LP256_PageProgramQuad(&hextmem->hxspi, currAddr, pCurrData, chunk);
+        break;
+      case EXTMEM_TYPE_NOR_QUAD_MICRON:
+        status = MT25QU_PageProgramQuad(&hextmem->hxspi, currAddr, pCurrData, chunk);
         break;
       default:
         return EXTMEM_NOT_SUPPORTED;
@@ -652,6 +686,8 @@ int32_t ExtMem_EraseSector(ExtMem_HandleTypeDef *hextmem, uint32_t SectorAddress
       return S28HS512T_EraseSector4K(&hextmem->hxspi, hextmem->ActiveMode, SectorAddress);
     case EXTMEM_TYPE_NOR_OCTAL_ISSI:
       return IS25LX256_EraseSector4K(&hextmem->hxspi, hextmem->ActiveMode, SectorAddress);
+    case EXTMEM_TYPE_NOR_OCTAL_MICRON:
+      return MT35XU_EraseSector4K(&hextmem->hxspi, hextmem->ActiveMode, SectorAddress);
     case EXTMEM_TYPE_HYPERFLASH_INFINEON:
     case EXTMEM_TYPE_HYPERFLASH_ISSI:
       return S26KS512S_EraseSector(&hextmem->hxspi, SectorAddress);
@@ -659,6 +695,8 @@ int32_t ExtMem_EraseSector(ExtMem_HandleTypeDef *hextmem, uint32_t SectorAddress
       return S25HL512T_EraseSector4K(&hextmem->hxspi, SectorAddress);
     case EXTMEM_TYPE_NOR_QUAD_ISSI:
       return IS25LP256_EraseSector4K(&hextmem->hxspi, SectorAddress);
+    case EXTMEM_TYPE_NOR_QUAD_MICRON:
+      return MT25QU_EraseSector4K(&hextmem->hxspi, SectorAddress);
     case EXTMEM_TYPE_NOR_PARALLEL_FMC:
       return IS29GL_FMC_EraseSector(hextmem->MemoryMappedBase, SectorAddress);
     default:
@@ -677,6 +715,8 @@ int32_t ExtMem_EraseBlock(ExtMem_HandleTypeDef *hextmem, uint32_t BlockAddress)
       return S28HS512T_EraseBlock256K(&hextmem->hxspi, hextmem->ActiveMode, BlockAddress);
     case EXTMEM_TYPE_NOR_OCTAL_ISSI:
       return IS25LX256_EraseBlock64K(&hextmem->hxspi, hextmem->ActiveMode, BlockAddress);
+    case EXTMEM_TYPE_NOR_OCTAL_MICRON:
+      return MT35XU_EraseBlock128K(&hextmem->hxspi, hextmem->ActiveMode, BlockAddress);
     case EXTMEM_TYPE_HYPERFLASH_INFINEON:
     case EXTMEM_TYPE_HYPERFLASH_ISSI:
       return S26KS512S_EraseSector(&hextmem->hxspi, BlockAddress);
@@ -684,6 +724,8 @@ int32_t ExtMem_EraseBlock(ExtMem_HandleTypeDef *hextmem, uint32_t BlockAddress)
       return S25HL512T_EraseBlock64K(&hextmem->hxspi, BlockAddress);
     case EXTMEM_TYPE_NOR_QUAD_ISSI:
       return IS25LP256_EraseBlock64K(&hextmem->hxspi, BlockAddress);
+    case EXTMEM_TYPE_NOR_QUAD_MICRON:
+      return MT25QU_EraseBlock64K(&hextmem->hxspi, BlockAddress);
     case EXTMEM_TYPE_NOR_PARALLEL_FMC:
       return IS29GL_FMC_EraseSector(hextmem->MemoryMappedBase, BlockAddress);
     default:
@@ -702,6 +744,8 @@ int32_t ExtMem_EraseChip(ExtMem_HandleTypeDef *hextmem)
       return S28HS512T_ChipErase(&hextmem->hxspi, hextmem->ActiveMode);
     case EXTMEM_TYPE_NOR_OCTAL_ISSI:
       return IS25LX256_ChipErase(&hextmem->hxspi, hextmem->ActiveMode);
+    case EXTMEM_TYPE_NOR_OCTAL_MICRON:
+      return MT35XU_EraseChip(&hextmem->hxspi, hextmem->ActiveMode);
     case EXTMEM_TYPE_HYPERFLASH_INFINEON:
     case EXTMEM_TYPE_HYPERFLASH_ISSI:
       return S26KS512S_EraseChip(&hextmem->hxspi);
@@ -709,6 +753,8 @@ int32_t ExtMem_EraseChip(ExtMem_HandleTypeDef *hextmem)
       return S25HL512T_ChipErase(&hextmem->hxspi);
     case EXTMEM_TYPE_NOR_QUAD_ISSI:
       return IS25LP256_ChipErase(&hextmem->hxspi);
+    case EXTMEM_TYPE_NOR_QUAD_MICRON:
+      return MT25QU_EraseChip(&hextmem->hxspi);
     case EXTMEM_TYPE_NOR_PARALLEL_FMC:
       return IS29GL_FMC_EraseChip(hextmem->MemoryMappedBase);
     default:

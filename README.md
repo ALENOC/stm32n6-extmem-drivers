@@ -1,12 +1,12 @@
 # STM32N6 External Memory Driver Suite
-### C Driver Suite for Infineon & ISSI External Flash and PSRAM Memories
+### C Driver Suite for Infineon, ISSI & Micron External Flash and PSRAM Memories
 
 [![CI Test Suite](https://github.com/ALENOC/stm32n6-extmem-drivers/actions/workflows/ci.yml/badge.svg)](https://github.com/ALENOC/stm32n6-extmem-drivers/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Platform](https://img.shields.io/badge/Platform-STM32N6%20(Cortex--M55)-blue.svg)](https://www.st.com/en/microcontrollers-microprocessors/stm32n6-series.html)
 [![Standard](https://img.shields.io/badge/C%20Standard-C11%20%2F%20Cube--BSP-green.svg)](https://www.st.com)
 
-A production-grade, modular C driver suite compliant with STMicroelectronics **STM32Cube BSP** architectural standards, designed to interface the **STM32N6** microcontroller family (ARM Cortex-M55 core + Neural-ART NPU) with the complete spectrum of high-speed external memories from **Infineon Technologies** and **Integrated Silicon Solution, Inc. (ISSI)**.
+A production-grade, modular C driver suite compliant with STMicroelectronics **STM32Cube BSP** architectural standards, designed to interface the **STM32N6** microcontroller family (ARM Cortex-M55 core + Neural-ART NPU) with the complete spectrum of high-speed external memories from **Infineon Technologies**, **Integrated Silicon Solution, Inc. (ISSI)**, and **Micron Technology**.
 
 Supports **XSPI1**, **XSPI2**, **XSPI3** (Single, Quad, Octal DTR up to 200 MHz, HyperBus™) and **FMC** (16-bit asynchronous parallel bus) interfaces.
 
@@ -43,7 +43,12 @@ Supports **XSPI1**, **XSPI2**, **XSPI3** (Single, Quad, Octal DTR up to 200 MHz,
   - **Octal PSRAM xSPI Profile 2.0** (`IS66WVO8M8`, `IS66WVO16M8`, `IS66WVO32M8`, `IS66WVO64M8` and automotive `IS67WVO` series).
   - **HyperRAM™ PSRAM** (`IS66WVH8M8`, `IS66WVH16M8`, `IS66WVH32M8` and automotive `IS67WVH` series).
   - **Quad SPI PSRAM** (`IS66WVS1M8`, `IS66WVS2M8`, `IS66WVS4M8`, `IS66WVS16M8`).
+  - **Serial Static RAM** (`IS62WVS / IS65WVS 0648 / 1288 / 2568 / 5128` SPI/SDI/SQI).
   - **Parallel Asynchronous PSRAM/SRAM via FMC** (`IS66WV / IS67WV 51216 / 102416 / 204816 / 409616` 16-bit).
+- **Comprehensive Micron Technology Coverage**:
+  - **Xccela™ Octal NOR Flash** (`MT35XU02G`, `MT35XU01G`, `MT35XL01G`, `MT35XU512A`, `MT35XL512A`, `MT35XU256A`, `MT35XL256A`): xSPI Profile 1.0 (8D-8D-8D DDR up to 200 MHz / 400 MB/s with DQS, Flag Status Register polling, 32-bit addressing).
+  - **MT25Q / N25Q Quad SPI NOR Flash** (`MT25QU` 1.8V & `MT25QL` 3.0V from 32Mb to 1Gb: `032/064/128/256/512/01G`): high-speed 1-4-4 Quad I/O up to 133 MHz with 4-byte address enter/exit support.
+  - **Parallel NOR Flash via FMC Bank 1** (`MT28EW128`, `MT28EW256`, `MT28EW512`, `MT28EW01G`): 16-bit Asynchronous Parallel CFI NOR Flash.
 - **Auto-Discovery and Automatic Recognition**:
   - Built-in JEDEC JESD216 SFDP (Serial Flash Discoverable Parameters) parser for dynamic detection of command sets, dummy cycles, and sector topologies.
   - JEDEC ID (0x9F) and HyperBus registers (ID0, ID1) interrogation coupled with a chip database lookup.
@@ -71,6 +76,9 @@ Supports **XSPI1**, **XSPI2**, **XSPI3** (Single, Quad, Octal DTR up to 200 MHz,
 | **ISSI** | Quad SPI PSRAM (`IS66WVS/IS67WVS`) | XSPI1 / XSPI2 / XSPI3 | 133 MHz | 1-4-4 Quad SPI | `is66wvs16m8` |
 | **ISSI** | Serial Static RAM (`IS62WVS/IS65WVS`) | XSPI1 / XSPI2 / XSPI3 | 45 MHz | SPI / SQI (1-1-1 / 1-4-4) | `is62wvs` |
 | **ISSI/IFX** | Parallel Asynch PSRAM (`IS66WV/CY62`) | FMC (16-bit) | Asynchronous (~10-55ns) | 16-bit Parallel SRAM/PSRAM | `is66wv_fmc` |
+| **Micron** | Xccela™ Octal NOR (`MT35XU/MT35XL`) | XSPI1 / XSPI2 | 200 MHz | 8D-8D-8D (Octal DTR) | `mt35xu512a` |
+| **Micron** | MT25Q Quad NOR (`MT25QU/MT25QL`) | XSPI1 / XSPI2 / XSPI3 | 133 MHz | 1-4-4 Quad SPI | `mt25qu512a` |
+| **Micron** | Parallel NOR Flash (`MT28EW`) | FMC (16-bit) | 100 MHz (70ns) | 16-bit Parallel CFI NOR | `is29gl_fmc` |
 
 *For the comprehensive matrix including ordering part numbers, packages, and voltage options, refer to [Docs/Supported_Memories_Matrix.md](Docs/Supported_Memories_Matrix.md).*
 
@@ -95,7 +103,9 @@ stm32n6-extmem-drivers/
 │       │   ├── is66wvs16m8/         # ISSI Quad PSRAM Driver
 │       │   ├── is62wvs/             # ISSI Serial Static RAM Driver
 │       │   ├── is66wv_fmc/          # FMC Parallel PSRAM Driver
-│       │   └── is29gl_fmc/          # ISSI IS29GL FMC Parallel NOR Flash Driver
+│       │   ├── is29gl_fmc/          # ISSI / Micron FMC Parallel NOR Flash Driver
+│       │   ├── mt35xu512a/          # Micron Xccela Octal NOR Flash Driver
+│       │   └── mt25qu512a/          # Micron MT25Q Quad SPI Flash Driver
 │       └── STM32N6_ExtMem/          # High-Level Unified Manager
 │           ├── stm32n6_extmem.h
 │           ├── stm32n6_extmem.c
@@ -109,7 +119,7 @@ stm32n6-extmem-drivers/
 │   ├── mock_hal.h                   # STM32N6 HAL Mock (XSPI, FMC, Cache, RCC)
 │   ├── mock_hal.c                   # Register, bus transaction and memory array simulator
 │   ├── extmem_unit_tests.h          # Unit test definitions
-│   ├── extmem_unit_tests.c          # 14 exhaustive unit tests
+│   ├── extmem_unit_tests.c          # 16 exhaustive unit tests
 │   └── main_test.c                  # Host test runner for Linux/macOS/Windows
 ├── Docs/
 │   ├── STM32CubeIDE_Integration_Guide.md # Step-by-step CubeIDE setup & Linker guide
@@ -196,11 +206,11 @@ ExtMem_Read(&hextmem, 0x00000000, rxData, sizeof(rxData));
 
 ## 🧪 Unit Test Suite & Host Simulation
 
-The repository includes a comprehensive automated test harness featuring a **Mock Hardware Abstraction Layer** (`Tests/mock_hal.c`) that fully emulates STM32N6 XSPI/FMC peripherals and Infineon/ISSI device behavior on any desktop environment (Linux, macOS, Windows) without requiring target hardware.
+The repository includes a comprehensive automated test harness featuring a **Mock Hardware Abstraction Layer** (`Tests/mock_hal.c`) that fully emulates STM32N6 XSPI/FMC peripherals and Infineon/ISSI/Micron device behavior on any desktop environment (Linux, macOS, Windows) without requiring target hardware.
 
 ### Running Tests Locally
 ```bash
-# Compile and execute the 14 unit tests
+# Compile and execute the 16 unit tests
 make test
 ```
 
@@ -212,41 +222,45 @@ make test
   Supported Peripherals: XSPI1, XSPI2, XSPI3, FMC
 ====================================================================
 
-[INFO] Running 14 unit tests...
+[INFO] Running 16 unit tests...
 
-[ RUN      ] [ 1/14] SFDP Discovery Parser (JEDEC JESD216)
-[       OK ] [ 1/14] SFDP Discovery Parser (JEDEC JESD216)
-[ RUN      ] [ 2/14] Infineon SEMPER Octal NOR Flash (S28HS512T)
-[       OK ] [ 2/14] Infineon SEMPER Octal NOR Flash (S28HS512T)
-[ RUN      ] [ 3/14] Infineon HyperFlash NOR Flash (S26KS512S)
-[       OK ] [ 3/14] Infineon HyperFlash NOR Flash (S26KS512S)
-[ RUN      ] [ 4/14] Infineon HyperRAM PSRAM (S27KS0641)
-[       OK ] [ 4/14] Infineon HyperRAM PSRAM (S27KS0641)
-[ RUN      ] [ 5/14] Infineon SEMPER/FL Quad NOR Flash (S25HL512T)
-[       OK ] [ 5/14] Infineon SEMPER/FL Quad NOR Flash (S25HL512T)
-[ RUN      ] [ 6/14] ISSI Octal NOR Flash (IS25LX256)
-[       OK ] [ 6/14] ISSI Octal NOR Flash (IS25LX256)
-[ RUN      ] [ 7/14] ISSI Quad NOR Flash (IS25LP256)
-[       OK ] [ 7/14] ISSI Quad NOR Flash (IS25LP256)
-[ RUN      ] [ 8/14] ISSI Octal PSRAM xSPI Profile 2.0 (IS66WVO32M8)
-[       OK ] [ 8/14] ISSI Octal PSRAM xSPI Profile 2.0 (IS66WVO32M8)
-[ RUN      ] [ 9/14] ISSI HyperRAM PSRAM (IS66WVH16M8)
-[       OK ] [ 9/14] ISSI HyperRAM PSRAM (IS66WVH16M8)
-[ RUN      ] [10/14] ISSI Quad SPI PSRAM (IS66WVS16M8)
-[       OK ] [10/14] ISSI Quad SPI PSRAM (IS66WVS16M8)
-[ RUN      ] [11/14] ISSI FMC 16-bit Parallel PSRAM (IS66WV51216)
-[       OK ] [11/14] ISSI FMC 16-bit Parallel PSRAM (IS66WV51216)
-[ RUN      ] [12/14] ISSI FMC 16-bit Parallel NOR Flash (IS29GL512)
-[       OK ] [12/14] ISSI FMC 16-bit Parallel NOR Flash (IS29GL512)
-[ RUN      ] [13/14] ISSI Serial SRAM (IS62WVS / IS65WVS)
-[       OK ] [13/14] ISSI Serial SRAM (IS62WVS / IS65WVS)
-[ RUN      ] [14/14] STM32N6 ExtMem Unified Manager & Auto-Detect
-[       OK ] [14/14] STM32N6 ExtMem Unified Manager & Auto-Detect
+[ RUN      ] [ 1/16] SFDP Discovery Parser (JEDEC JESD216)
+[       OK ] [ 1/16] SFDP Discovery Parser (JEDEC JESD216)
+[ RUN      ] [ 2/16] Infineon SEMPER Octal NOR Flash (S28HS512T)
+[       OK ] [ 2/16] Infineon SEMPER Octal NOR Flash (S28HS512T)
+[ RUN      ] [ 3/16] Infineon HyperFlash NOR Flash (S26KS512S)
+[       OK ] [ 3/16] Infineon HyperFlash NOR Flash (S26KS512S)
+[ RUN      ] [ 4/16] Infineon HyperRAM PSRAM (S27KS0641)
+[       OK ] [ 4/16] Infineon HyperRAM PSRAM (S27KS0641)
+[ RUN      ] [ 5/16] Infineon SEMPER/FL Quad NOR Flash (S25HL512T)
+[       OK ] [ 5/16] Infineon SEMPER/FL Quad NOR Flash (S25HL512T)
+[ RUN      ] [ 6/16] ISSI Octal NOR Flash (IS25LX256)
+[       OK ] [ 6/16] ISSI Octal NOR Flash (IS25LX256)
+[ RUN      ] [ 7/16] ISSI Quad NOR Flash (IS25LP256)
+[       OK ] [ 7/16] ISSI Quad NOR Flash (IS25LP256)
+[ RUN      ] [ 8/16] ISSI Octal PSRAM xSPI Profile 2.0 (IS66WVO32M8)
+[       OK ] [ 8/16] ISSI Octal PSRAM xSPI Profile 2.0 (IS66WVO32M8)
+[ RUN      ] [ 9/16] ISSI HyperRAM PSRAM (IS66WVH16M8)
+[       OK ] [ 9/16] ISSI HyperRAM PSRAM (IS66WVH16M8)
+[ RUN      ] [10/16] ISSI Quad SPI PSRAM (IS66WVS16M8)
+[       OK ] [10/16] ISSI Quad SPI PSRAM (IS66WVS16M8)
+[ RUN      ] [11/16] ISSI FMC 16-bit Parallel PSRAM (IS66WV51216)
+[       OK ] [11/16] ISSI FMC 16-bit Parallel PSRAM (IS66WV51216)
+[ RUN      ] [12/16] ISSI FMC 16-bit Parallel NOR Flash (IS29GL512)
+[       OK ] [12/16] ISSI FMC 16-bit Parallel NOR Flash (IS29GL512)
+[ RUN      ] [13/16] ISSI Serial SRAM (IS62WVS / IS65WVS)
+[       OK ] [13/16] ISSI Serial SRAM (IS62WVS / IS65WVS)
+[ RUN      ] [14/16] Micron Xccela Octal NOR Flash (MT35XU512ABA)
+[       OK ] [14/16] Micron Xccela Octal NOR Flash (MT35XU512ABA)
+[ RUN      ] [15/16] Micron Quad SPI NOR Flash (MT25QU512ABB)
+[       OK ] [15/16] Micron Quad SPI NOR Flash (MT25QU512ABB)
+[ RUN      ] [16/16] STM32N6 ExtMem Unified Manager & Auto-Detect
+[       OK ] [16/16] STM32N6 ExtMem Unified Manager & Auto-Detect
 
 ====================================================================
 Test Results Summary:
-  Total:   14
-  Passed:  14
+  Total:   16
+  Passed:  16
   Failed:  0
 ====================================================================
 >>> ALL TESTS PASSED SUCCESSFULLY! <<<
@@ -271,7 +285,7 @@ Test Results Summary:
 > 
 > 1. **No Warranty**: This software is provided "AS IS", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, or non-infringement.
 > 2. **Complete Exclusion of Liability**: In no event shall the author ([ALENOC](https://github.com/ALENOC)), maintainers, or contributors be liable for any direct, indirect, incidental, special, exemplary, punitive, or consequential damages (including, but not limited to, damage to STM32N6 microcontrollers, external memories, PCB hardware, loss of data, business interruption, or equipment failure) arising in any way out of the use of or inability to use this software.
-> 3. **Mandatory Hardware Verification**: It is the sole responsibility of the user or system integrator to independently verify electrical compatibility (1.8V vs 3.3V operating domains, logic levels, VDDIO rails), high-speed setup and hold timings up to 200 MHz, official datasheets from STMicroelectronics, Infineon Technologies, and ISSI, and to perform thorough validation and safety testing prior to incorporating any code into prototypes, commercial hardware, or production firmware.
+> 3. **Mandatory Hardware Verification**: It is the sole responsibility of the user or system integrator to independently verify electrical compatibility (1.8V vs 3.3V operating domains, logic levels, VDDIO rails), high-speed setup and hold timings up to 200 MHz, official datasheets from STMicroelectronics, Infineon Technologies, ISSI, and Micron Technology, and to perform thorough validation and safety testing prior to incorporating any code into prototypes, commercial hardware, or production firmware.
 
 ---
 

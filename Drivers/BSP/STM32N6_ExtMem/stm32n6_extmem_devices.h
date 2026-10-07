@@ -1325,6 +1325,386 @@ static const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .PreferredMode           = EXTMEM_MODE_PARALLEL_16BIT,
     .DefaultReadDummyCycles  = 0,
     .DefaultWriteDummyCycles = 0
+  },
+
+  /* ========================================================================= */
+  /* MICRON XCCELA(TM) OCTAL NOR FLASH (MT35XU / MT35XL)                       */
+  /* ========================================================================= */
+  {
+    .PartNumber              = "MT35XU02G",
+    .Type                    = EXTMEM_TYPE_NOR_OCTAL_MICRON,
+    .ManufacturerID          = 0x2C,
+    .MemoryTypeID            = 0x5B,
+    .DensityID               = 0x1C,
+    .CapacityBytes           = 256 * 1024 * 1024,  /* 2 Gbits = 256 MBytes */
+    .PageSizeBytes           = 256,
+    .SectorSizeBytes         = 4 * 1024,
+    .BlockSizeBytes          = 128 * 1024,
+    .VoltageNominal          = 1.8f,
+    .MaxClockFreqMHz         = 200,
+    .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
+    .DefaultReadDummyCycles  = 16,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "MT35XU01GBBA",
+    .Type                    = EXTMEM_TYPE_NOR_OCTAL_MICRON,
+    .ManufacturerID          = 0x2C,
+    .MemoryTypeID            = 0x5B,
+    .DensityID               = 0x1B,
+    .CapacityBytes           = 128 * 1024 * 1024,  /* 1 Gbit = 128 MBytes */
+    .PageSizeBytes           = 256,
+    .SectorSizeBytes         = 4 * 1024,
+    .BlockSizeBytes          = 128 * 1024,
+    .VoltageNominal          = 1.8f,
+    .MaxClockFreqMHz         = 200,
+    .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
+    .DefaultReadDummyCycles  = 16,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "MT35XL01GBBA",
+    .Type                    = EXTMEM_TYPE_NOR_OCTAL_MICRON,
+    .ManufacturerID          = 0x2C,
+    .MemoryTypeID            = 0x5A,
+    .DensityID               = 0x1B,
+    .CapacityBytes           = 128 * 1024 * 1024,  /* 1 Gbit = 128 MBytes */
+    .PageSizeBytes           = 256,
+    .SectorSizeBytes         = 4 * 1024,
+    .BlockSizeBytes          = 128 * 1024,
+    .VoltageNominal          = 3.0f,
+    .MaxClockFreqMHz         = 133,
+    .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
+    .DefaultReadDummyCycles  = 16,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "MT35XU512ABA",
+    .Type                    = EXTMEM_TYPE_NOR_OCTAL_MICRON,
+    .ManufacturerID          = 0x2C,
+    .MemoryTypeID            = 0x5B,
+    .DensityID               = 0x1A,
+    .CapacityBytes           = 64 * 1024 * 1024,   /* 512 Mbits = 64 MBytes */
+    .PageSizeBytes           = 256,
+    .SectorSizeBytes         = 4 * 1024,
+    .BlockSizeBytes          = 128 * 1024,
+    .VoltageNominal          = 1.8f,
+    .MaxClockFreqMHz         = 200,
+    .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
+    .DefaultReadDummyCycles  = 16,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "MT35XL512ABA",
+    .Type                    = EXTMEM_TYPE_NOR_OCTAL_MICRON,
+    .ManufacturerID          = 0x2C,
+    .MemoryTypeID            = 0x5A,
+    .DensityID               = 0x1A,
+    .CapacityBytes           = 64 * 1024 * 1024,   /* 512 Mbits = 64 MBytes */
+    .PageSizeBytes           = 256,
+    .SectorSizeBytes         = 4 * 1024,
+    .BlockSizeBytes          = 128 * 1024,
+    .VoltageNominal          = 3.0f,
+    .MaxClockFreqMHz         = 133,
+    .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
+    .DefaultReadDummyCycles  = 16,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "MT35XU256ABA",
+    .Type                    = EXTMEM_TYPE_NOR_OCTAL_MICRON,
+    .ManufacturerID          = 0x2C,
+    .MemoryTypeID            = 0x5B,
+    .DensityID               = 0x19,
+    .CapacityBytes           = 32 * 1024 * 1024,   /* 256 Mbits = 32 MBytes */
+    .PageSizeBytes           = 256,
+    .SectorSizeBytes         = 4 * 1024,
+    .BlockSizeBytes          = 128 * 1024,
+    .VoltageNominal          = 1.8f,
+    .MaxClockFreqMHz         = 200,
+    .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
+    .DefaultReadDummyCycles  = 16,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "MT35XL256ABA",
+    .Type                    = EXTMEM_TYPE_NOR_OCTAL_MICRON,
+    .ManufacturerID          = 0x2C,
+    .MemoryTypeID            = 0x5A,
+    .DensityID               = 0x19,
+    .CapacityBytes           = 32 * 1024 * 1024,   /* 256 Mbits = 32 MBytes */
+    .PageSizeBytes           = 256,
+    .SectorSizeBytes         = 4 * 1024,
+    .BlockSizeBytes          = 128 * 1024,
+    .VoltageNominal          = 3.0f,
+    .MaxClockFreqMHz         = 133,
+    .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
+    .DefaultReadDummyCycles  = 16,
+    .DefaultWriteDummyCycles = 0
+  },
+
+  /* ========================================================================= */
+  /* MICRON MT25Q / N25Q QUAD SPI NOR FLASH (MT25QU / MT25QL)                  */
+  /* ========================================================================= */
+  {
+    .PartNumber              = "MT25QU01GBBB",
+    .Type                    = EXTMEM_TYPE_NOR_QUAD_MICRON,
+    .ManufacturerID          = 0x2C,
+    .MemoryTypeID            = 0xBB,
+    .DensityID               = 0x21,
+    .CapacityBytes           = 128 * 1024 * 1024,  /* 1 Gbit = 128 MBytes */
+    .PageSizeBytes           = 256,
+    .SectorSizeBytes         = 4 * 1024,
+    .BlockSizeBytes          = 64 * 1024,
+    .VoltageNominal          = 1.8f,
+    .MaxClockFreqMHz         = 133,
+    .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
+    .DefaultReadDummyCycles  = 10,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "MT25QL01GBBB",
+    .Type                    = EXTMEM_TYPE_NOR_QUAD_MICRON,
+    .ManufacturerID          = 0x2C,
+    .MemoryTypeID            = 0xBA,
+    .DensityID               = 0x21,
+    .CapacityBytes           = 128 * 1024 * 1024,  /* 1 Gbit = 128 MBytes */
+    .PageSizeBytes           = 256,
+    .SectorSizeBytes         = 4 * 1024,
+    .BlockSizeBytes          = 64 * 1024,
+    .VoltageNominal          = 3.0f,
+    .MaxClockFreqMHz         = 133,
+    .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
+    .DefaultReadDummyCycles  = 10,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "MT25QU512ABB",
+    .Type                    = EXTMEM_TYPE_NOR_QUAD_MICRON,
+    .ManufacturerID          = 0x2C,
+    .MemoryTypeID            = 0xBB,
+    .DensityID               = 0x20,
+    .CapacityBytes           = 64 * 1024 * 1024,   /* 512 Mbits = 64 MBytes */
+    .PageSizeBytes           = 256,
+    .SectorSizeBytes         = 4 * 1024,
+    .BlockSizeBytes          = 64 * 1024,
+    .VoltageNominal          = 1.8f,
+    .MaxClockFreqMHz         = 133,
+    .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
+    .DefaultReadDummyCycles  = 10,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "MT25QL512ABB",
+    .Type                    = EXTMEM_TYPE_NOR_QUAD_MICRON,
+    .ManufacturerID          = 0x2C,
+    .MemoryTypeID            = 0xBA,
+    .DensityID               = 0x20,
+    .CapacityBytes           = 64 * 1024 * 1024,   /* 512 Mbits = 64 MBytes */
+    .PageSizeBytes           = 256,
+    .SectorSizeBytes         = 4 * 1024,
+    .BlockSizeBytes          = 64 * 1024,
+    .VoltageNominal          = 3.0f,
+    .MaxClockFreqMHz         = 133,
+    .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
+    .DefaultReadDummyCycles  = 10,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "MT25QU256ABA",
+    .Type                    = EXTMEM_TYPE_NOR_QUAD_MICRON,
+    .ManufacturerID          = 0x2C,
+    .MemoryTypeID            = 0xBB,
+    .DensityID               = 0x19,
+    .CapacityBytes           = 32 * 1024 * 1024,   /* 256 Mbits = 32 MBytes */
+    .PageSizeBytes           = 256,
+    .SectorSizeBytes         = 4 * 1024,
+    .BlockSizeBytes          = 64 * 1024,
+    .VoltageNominal          = 1.8f,
+    .MaxClockFreqMHz         = 133,
+    .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
+    .DefaultReadDummyCycles  = 10,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "MT25QL256ABA",
+    .Type                    = EXTMEM_TYPE_NOR_QUAD_MICRON,
+    .ManufacturerID          = 0x2C,
+    .MemoryTypeID            = 0xBA,
+    .DensityID               = 0x19,
+    .CapacityBytes           = 32 * 1024 * 1024,   /* 256 Mbits = 32 MBytes */
+    .PageSizeBytes           = 256,
+    .SectorSizeBytes         = 4 * 1024,
+    .BlockSizeBytes          = 64 * 1024,
+    .VoltageNominal          = 3.0f,
+    .MaxClockFreqMHz         = 133,
+    .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
+    .DefaultReadDummyCycles  = 10,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "MT25QU128ABA",
+    .Type                    = EXTMEM_TYPE_NOR_QUAD_MICRON,
+    .ManufacturerID          = 0x2C,
+    .MemoryTypeID            = 0xBB,
+    .DensityID               = 0x18,
+    .CapacityBytes           = 16 * 1024 * 1024,   /* 128 Mbits = 16 MBytes */
+    .PageSizeBytes           = 256,
+    .SectorSizeBytes         = 4 * 1024,
+    .BlockSizeBytes          = 64 * 1024,
+    .VoltageNominal          = 1.8f,
+    .MaxClockFreqMHz         = 133,
+    .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
+    .DefaultReadDummyCycles  = 10,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "MT25QL128ABA",
+    .Type                    = EXTMEM_TYPE_NOR_QUAD_MICRON,
+    .ManufacturerID          = 0x2C,
+    .MemoryTypeID            = 0xBA,
+    .DensityID               = 0x18,
+    .CapacityBytes           = 16 * 1024 * 1024,   /* 128 Mbits = 16 MBytes */
+    .PageSizeBytes           = 256,
+    .SectorSizeBytes         = 4 * 1024,
+    .BlockSizeBytes          = 64 * 1024,
+    .VoltageNominal          = 3.0f,
+    .MaxClockFreqMHz         = 133,
+    .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
+    .DefaultReadDummyCycles  = 10,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "MT25QU064ABA",
+    .Type                    = EXTMEM_TYPE_NOR_QUAD_MICRON,
+    .ManufacturerID          = 0x2C,
+    .MemoryTypeID            = 0xBB,
+    .DensityID               = 0x17,
+    .CapacityBytes           = 8 * 1024 * 1024,    /* 64 Mbits = 8 MBytes */
+    .PageSizeBytes           = 256,
+    .SectorSizeBytes         = 4 * 1024,
+    .BlockSizeBytes          = 64 * 1024,
+    .VoltageNominal          = 1.8f,
+    .MaxClockFreqMHz         = 133,
+    .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
+    .DefaultReadDummyCycles  = 10,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "MT25QL064ABA",
+    .Type                    = EXTMEM_TYPE_NOR_QUAD_MICRON,
+    .ManufacturerID          = 0x2C,
+    .MemoryTypeID            = 0xBA,
+    .DensityID               = 0x17,
+    .CapacityBytes           = 8 * 1024 * 1024,    /* 64 Mbits = 8 MBytes */
+    .PageSizeBytes           = 256,
+    .SectorSizeBytes         = 4 * 1024,
+    .BlockSizeBytes          = 64 * 1024,
+    .VoltageNominal          = 3.0f,
+    .MaxClockFreqMHz         = 133,
+    .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
+    .DefaultReadDummyCycles  = 10,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "MT25QU032ABA",
+    .Type                    = EXTMEM_TYPE_NOR_QUAD_MICRON,
+    .ManufacturerID          = 0x2C,
+    .MemoryTypeID            = 0xBB,
+    .DensityID               = 0x16,
+    .CapacityBytes           = 4 * 1024 * 1024,    /* 32 Mbits = 4 MBytes */
+    .PageSizeBytes           = 256,
+    .SectorSizeBytes         = 4 * 1024,
+    .BlockSizeBytes          = 64 * 1024,
+    .VoltageNominal          = 1.8f,
+    .MaxClockFreqMHz         = 133,
+    .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
+    .DefaultReadDummyCycles  = 10,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "MT25QL032ABA",
+    .Type                    = EXTMEM_TYPE_NOR_QUAD_MICRON,
+    .ManufacturerID          = 0x2C,
+    .MemoryTypeID            = 0xBA,
+    .DensityID               = 0x16,
+    .CapacityBytes           = 4 * 1024 * 1024,    /* 32 Mbits = 4 MBytes */
+    .PageSizeBytes           = 256,
+    .SectorSizeBytes         = 4 * 1024,
+    .BlockSizeBytes          = 64 * 1024,
+    .VoltageNominal          = 3.0f,
+    .MaxClockFreqMHz         = 133,
+    .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
+    .DefaultReadDummyCycles  = 10,
+    .DefaultWriteDummyCycles = 0
+  },
+
+  /* ========================================================================= */
+  /* MICRON MT28EW PARALLEL NOR FLASH (FMC BANK 1)                             */
+  /* ========================================================================= */
+  {
+    .PartNumber              = "MT28EW01GABA",
+    .Type                    = EXTMEM_TYPE_NOR_PARALLEL_FMC,
+    .ManufacturerID          = 0x00,
+    .MemoryTypeID            = 0x00,
+    .DensityID               = 0x00,
+    .CapacityBytes           = 128 * 1024 * 1024,  /* 1 Gbit = 128 MBytes */
+    .PageSizeBytes           = 0,
+    .SectorSizeBytes         = 128 * 1024,
+    .BlockSizeBytes          = 128 * 1024,
+    .VoltageNominal          = 3.0f,
+    .MaxClockFreqMHz         = 100,
+    .PreferredMode           = EXTMEM_MODE_PARALLEL_16BIT,
+    .DefaultReadDummyCycles  = 0,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "MT28EW512ABA",
+    .Type                    = EXTMEM_TYPE_NOR_PARALLEL_FMC,
+    .ManufacturerID          = 0x00,
+    .MemoryTypeID            = 0x00,
+    .DensityID               = 0x00,
+    .CapacityBytes           = 64 * 1024 * 1024,   /* 512 Mbits = 64 MBytes */
+    .PageSizeBytes           = 0,
+    .SectorSizeBytes         = 128 * 1024,
+    .BlockSizeBytes          = 128 * 1024,
+    .VoltageNominal          = 3.0f,
+    .MaxClockFreqMHz         = 100,
+    .PreferredMode           = EXTMEM_MODE_PARALLEL_16BIT,
+    .DefaultReadDummyCycles  = 0,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "MT28EW256ABA",
+    .Type                    = EXTMEM_TYPE_NOR_PARALLEL_FMC,
+    .ManufacturerID          = 0x00,
+    .MemoryTypeID            = 0x00,
+    .DensityID               = 0x00,
+    .CapacityBytes           = 32 * 1024 * 1024,   /* 256 Mbits = 32 MBytes */
+    .PageSizeBytes           = 0,
+    .SectorSizeBytes         = 128 * 1024,
+    .BlockSizeBytes          = 128 * 1024,
+    .VoltageNominal          = 3.0f,
+    .MaxClockFreqMHz         = 100,
+    .PreferredMode           = EXTMEM_MODE_PARALLEL_16BIT,
+    .DefaultReadDummyCycles  = 0,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "MT28EW128ABA",
+    .Type                    = EXTMEM_TYPE_NOR_PARALLEL_FMC,
+    .ManufacturerID          = 0x00,
+    .MemoryTypeID            = 0x00,
+    .DensityID               = 0x00,
+    .CapacityBytes           = 16 * 1024 * 1024,   /* 128 Mbits = 16 MBytes */
+    .PageSizeBytes           = 0,
+    .SectorSizeBytes         = 128 * 1024,
+    .BlockSizeBytes          = 128 * 1024,
+    .VoltageNominal          = 3.0f,
+    .MaxClockFreqMHz         = 100,
+    .PreferredMode           = EXTMEM_MODE_PARALLEL_16BIT,
+    .DefaultReadDummyCycles  = 0,
+    .DefaultWriteDummyCycles = 0
   }
 };
 

@@ -43,6 +43,8 @@ static const TestCase_t s_test_cases[] = {
   { "ISSI FMC 16-bit Parallel PSRAM (IS66WV51216)",     test_issi_is66wv_fmc_parallel_psram },
   { "ISSI FMC 16-bit Parallel NOR Flash (IS29GL512)",   test_issi_is29gl_fmc_parallel_nor_flash },
   { "ISSI Serial SRAM (IS62WVS / IS65WVS)",             test_issi_is62wvs_serial_sram },
+  { "Micron Xccela Octal NOR Flash (MT35XU512ABA)",     test_micron_mt35xu512a_octal_flash },
+  { "Micron Quad SPI NOR Flash (MT25QU512ABB)",         test_micron_mt25qu512a_quad_flash },
   { "STM32N6 ExtMem Unified Manager & Auto-Detect",     test_extmem_manager_unified_autodetect }
 };
 

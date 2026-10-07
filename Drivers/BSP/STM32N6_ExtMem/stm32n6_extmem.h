@@ -40,6 +40,8 @@ extern "C" {
 #include "../Components/is62wvs/is62wvs.h"
 #include "../Components/is66wv_fmc/is66wv_fmc.h"
 #include "../Components/is29gl_fmc/is29gl_fmc.h"
+#include "../Components/mt35xu512a/mt35xu512a.h"
+#include "../Components/mt25qu512a/mt25qu512a.h"
 #include "../Components/Common/sfdp.h"
 
 /* Configuration Structure ---------------------------------------------------*/

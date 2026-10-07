@@ -292,6 +292,11 @@ HAL_StatusTypeDef HAL_XSPI_Receive(XSPI_HandleTypeDef *hxspi, uint8_t *pData, ui
   {
     pData[0] = s_StatusReg1;
   }
+  else if (cmd == 0x70 || cmd == 0x708F) /* Read Flag Status Register (Micron) */
+  {
+    pData[0] = 0x80; /* Ready */
+    if (s_LastCmd.DataLength > 1) pData[1] = 0x80;
+  }
   else if (cmd == 0x35) /* Read Config 1 / Function Register */
   {
     pData[0] = s_ConfigReg1;

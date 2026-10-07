@@ -365,7 +365,96 @@ bool test_issi_is62wvs_serial_sram(void)
   return true;
 }
 
-/* 14. High-Level ExtMem Manager Unified Auto-Detection & Operations */
+/* 14. Micron Xccela Octal NOR Flash (MT35XU512ABA) */
+bool test_micron_mt35xu512a_octal_flash(void)
+{
+  MockHAL_Reset();
+  MockHAL_SetEmulatedChip(0x2C, 0x5B, 0x1A); /* MT35XU512ABA */
+
+  XSPI_HandleTypeDef hxspi = {0};
+  ASSERT_EQ(MT35XU_Init(&hxspi, 2, HAL_XSPI_SIZE_64MB), MT35XU_OK);
+
+  uint8_t id[3] = {0};
+  ASSERT_EQ(MT35XU_ReadID(&hxspi, id), MT35XU_OK);
+  ASSERT_EQ(id[0], MT35XU_MANUFACTURER_ID);
+  ASSERT_EQ(id[1], MT35XU_MEMORY_TYPE_1V8);
+  ASSERT_EQ(id[2], 0x1A);
+
+  uint8_t status = 0, flagStatus = 0;
+  ASSERT_EQ(MT35XU_ReadStatus(&hxspi, &status), MT35XU_OK);
+  ASSERT_EQ(MT35XU_ReadFlagStatus(&hxspi, &flagStatus), MT35XU_OK);
+  ASSERT_TRUE((flagStatus & MT35XU_FSR_READY) != 0);
+
+  /* Enter Octal DTR */
+  ASSERT_EQ(MT35XU_EnterOctalDTRMode(&hxspi, 16), MT35XU_OK);
+
+  /* Page Program in Octal DTR mode */
+  uint8_t tx[128];
+  uint8_t rx[128];
+  for (int i = 0; i < 128; i++) tx[i] = (uint8_t)(0x3C ^ i);
+
+  ASSERT_EQ(MT35XU_PageProgram(&hxspi, EXTMEM_MODE_OCTAL_DTR, 0x00004000, tx, sizeof(tx)), MT35XU_OK);
+  ASSERT_EQ(MT35XU_Read(&hxspi, EXTMEM_MODE_OCTAL_DTR, 0x00004000, rx, sizeof(rx), 16), MT35XU_OK);
+  ASSERT_EQ(memcmp(tx, rx, sizeof(tx)), 0);
+
+  /* Erase 4KB Sector */
+  ASSERT_EQ(MT35XU_EraseSector4K(&hxspi, EXTMEM_MODE_OCTAL_DTR, 0x00004000), MT35XU_OK);
+  ASSERT_EQ(MT35XU_Read(&hxspi, EXTMEM_MODE_OCTAL_DTR, 0x00004000, rx, 16, 16), MT35XU_OK);
+  for (int i = 0; i < 16; i++) ASSERT_EQ(rx[i], 0xFF);
+
+  /* Erase 128KB Block */
+  ASSERT_EQ(MT35XU_EraseBlock128K(&hxspi, EXTMEM_MODE_OCTAL_DTR, 0x00020000), MT35XU_OK);
+
+  /* Memory Mapped Mode */
+  ASSERT_EQ(MT35XU_EnableMemoryMappedModeDTR(&hxspi, 16), MT35XU_OK);
+
+  return true;
+}
+
+/* 15. Micron Quad SPI NOR Flash (MT25QU512ABB) */
+bool test_micron_mt25qu512a_quad_flash(void)
+{
+  MockHAL_Reset();
+  MockHAL_SetEmulatedChip(0x2C, 0xBB, 0x20); /* MT25QU512ABB */
+
+  XSPI_HandleTypeDef hxspi = {0};
+  ASSERT_EQ(MT25QU_Init(&hxspi, 2, HAL_XSPI_SIZE_64MB), MT25Q_OK);
+
+  uint8_t id[3] = {0};
+  ASSERT_EQ(MT25QU_ReadID(&hxspi, id), MT25Q_OK);
+  ASSERT_EQ(id[0], MT25Q_MANUFACTURER_ID);
+  ASSERT_EQ(id[1], MT25Q_MEMORY_TYPE_1V8);
+  ASSERT_EQ(id[2], 0x20);
+
+  uint8_t status = 0, flagStatus = 0;
+  ASSERT_EQ(MT25QU_ReadStatus(&hxspi, &status), MT25Q_OK);
+  ASSERT_EQ(MT25QU_ReadFlagStatus(&hxspi, &flagStatus), MT25Q_OK);
+  ASSERT_TRUE((flagStatus & MT25Q_FSR_READY) != 0);
+
+  /* Quad Page Program & Read */
+  uint8_t tx[128];
+  uint8_t rx[128];
+  for (int i = 0; i < 128; i++) tx[i] = (uint8_t)(0x7E ^ i);
+
+  ASSERT_EQ(MT25QU_PageProgramQuad(&hxspi, 0x00002000, tx, sizeof(tx)), MT25Q_OK);
+  ASSERT_EQ(MT25QU_ReadQuad(&hxspi, 0x00002000, rx, sizeof(rx), 10), MT25Q_OK);
+  ASSERT_EQ(memcmp(tx, rx, sizeof(tx)), 0);
+
+  /* Erase 4KB Subsector */
+  ASSERT_EQ(MT25QU_EraseSector4K(&hxspi, 0x00002000), MT25Q_OK);
+  ASSERT_EQ(MT25QU_ReadQuad(&hxspi, 0x00002000, rx, 16, 10), MT25Q_OK);
+  for (int i = 0; i < 16; i++) ASSERT_EQ(rx[i], 0xFF);
+
+  /* Erase 64KB Sector */
+  ASSERT_EQ(MT25QU_EraseBlock64K(&hxspi, 0x00010000), MT25Q_OK);
+
+  /* Memory Mapped Mode */
+  ASSERT_EQ(MT25QU_EnableMemoryMappedMode(&hxspi, 10), MT25Q_OK);
+
+  return true;
+}
+
+/* 16. High-Level ExtMem Manager Unified Auto-Detection & Operations */
 bool test_extmem_manager_unified_autodetect(void)
 {
   MockHAL_Reset();

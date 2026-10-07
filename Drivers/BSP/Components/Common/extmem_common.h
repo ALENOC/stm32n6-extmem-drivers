@@ -42,7 +42,8 @@ extern "C" {
 #define EXTMEM_MFG_CYPRESS_LEGACY     0x01U  /*!< Legacy Cypress Manufacturer ID      */
 #define EXTMEM_MFG_ISSI               0x9DU  /*!< ISSI Manufacturer ID                */
 #define EXTMEM_MFG_APMEM              0x0DU  /*!< AP Memory ID                        */
-#define EXTMEM_MFG_MICRON             0x20U  /*!< Micron Manufacturer ID              */
+#define EXTMEM_MFG_MICRON             0x2CU  /*!< Micron Technology Manufacturer ID   */
+#define EXTMEM_MFG_NUMONYX_LEGACY     0x20U  /*!< Legacy Numonyx/ST Manufacturer ID   */
 #define EXTMEM_MFG_MACRONIX           0xC2U  /*!< Macronix Manufacturer ID            */
 #define EXTMEM_MFG_WINBOND            0xEFU  /*!< Winbond Manufacturer ID             */
 
@@ -51,8 +52,10 @@ typedef enum {
   EXTMEM_TYPE_UNKNOWN = 0,
   EXTMEM_TYPE_NOR_OCTAL_SEMPER,    /*!< Infineon SEMPER Octal NOR Flash (S28HS / S28HL) */
   EXTMEM_TYPE_NOR_OCTAL_ISSI,      /*!< ISSI Octal NOR Flash (IS25LX / IS25WX)          */
+  EXTMEM_TYPE_NOR_OCTAL_MICRON,    /*!< Micron Xccela Octal NOR Flash (MT35XU / MT35XL) */
   EXTMEM_TYPE_NOR_QUAD_INFINEON,   /*!< Infineon SEMPER / FL Quad SPI Flash             */
   EXTMEM_TYPE_NOR_QUAD_ISSI,       /*!< ISSI Quad SPI Flash (IS25LP / IS25WP / IS25LQ / IS25WQ / IS25LE / IS25WE) */
+  EXTMEM_TYPE_NOR_QUAD_MICRON,     /*!< Micron Quad SPI Flash (MT25QU / MT25QL / N25Q)  */
   EXTMEM_TYPE_HYPERFLASH_INFINEON, /*!< Infineon HyperFlash (S26KS / S26KL)             */
   EXTMEM_TYPE_HYPERFLASH_ISSI,     /*!< ISSI HyperFlash (IS26KS / IS26KL)               */
   EXTMEM_TYPE_HYPERRAM_INFINEON,   /*!< Infineon HyperRAM (S27KS / S27KL / S27HS / HL)  */

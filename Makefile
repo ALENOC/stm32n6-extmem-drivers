@@ -20,7 +20,9 @@ INCLUDES = \
 	-I Drivers/BSP/Components/is66wvs16m8 \
 	-I Drivers/BSP/Components/is62wvs \
 	-I Drivers/BSP/Components/is66wv_fmc \
-	-I Drivers/BSP/Components/is29gl_fmc
+	-I Drivers/BSP/Components/is29gl_fmc \
+	-I Drivers/BSP/Components/mt35xu512a \
+	-I Drivers/BSP/Components/mt25qu512a
 
 SRCS = \
 	Tests/mock_hal.c \
@@ -39,6 +41,8 @@ SRCS = \
 	Drivers/BSP/Components/is62wvs/is62wvs.c \
 	Drivers/BSP/Components/is66wv_fmc/is66wv_fmc.c \
 	Drivers/BSP/Components/is29gl_fmc/is29gl_fmc.c \
+	Drivers/BSP/Components/mt35xu512a/mt35xu512a.c \
+	Drivers/BSP/Components/mt25qu512a/mt25qu512a.c \
 	Drivers/BSP/STM32N6_ExtMem/stm32n6_extmem.c
 
 OBJS = $(SRCS:.c=.o)

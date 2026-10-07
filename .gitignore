@@ -1,0 +1,25 @@
+# Build artifacts
+*.o
+*.a
+*.so
+*.elf
+*.bin
+*.hex
+*.map
+extmem_test_runner
+
+# STM32CubeIDE & Eclipse
+.project
+.cproject
+.settings/
+Debug/
+Release/
+
+# OS and Editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.bak
+*~
+.vscode/
+.idea/

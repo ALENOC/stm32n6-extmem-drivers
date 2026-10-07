@@ -93,6 +93,17 @@ typedef enum {
 #define HAL_XSPI_SIZE_16MB               0x17U
 #define HAL_XSPI_SIZE_32MB               0x18U
 #define HAL_XSPI_SIZE_64MB               0x19U
+#define HAL_XSPI_SIZE_128MB              0x1AU
+#define HAL_XSPI_SIZE_256MB              0x1BU
+
+/* XSPI Manager (XSPIM) Constants */
+#define HAL_XSPIM_IOPORT_1               0x01U
+#define HAL_XSPIM_IOPORT_2               0x02U
+
+#define HAL_XSPI_CSSEL_OVR_NCS1          0x00U
+#define HAL_XSPI_CSSEL_OVR_NCS2          0x01U
+#define HAL_XSPI_CSSEL_OVR_DISABLED      0x02U
+
 #define HAL_XSPI_CSSEL_NCS1              0x00U
 #define HAL_XSPI_CLOCK_MODE_0            0x00U
 #define HAL_XSPI_SAMPLE_SHIFT_NONE       0x00U
@@ -131,6 +142,7 @@ typedef enum {
 #define FMC_ACCESS_MODE_B                0x01U
 
 #define PWR_VDDIO2                       0x02U
+#define PWR_VDDIO3                       0x03U
 #define PWR_VDDIO_RANGE_1V8              0x00U
 #define PWR_VDDIO_RANGE_3V3              0x01U
 
@@ -138,6 +150,7 @@ typedef enum {
 #define GPIO_NOPULL                      0x00U
 #define GPIO_SPEED_FREQ_VERY_HIGH        0x03U
 #define GPIO_AF9_XSPIM_P1                0x09U
+#define GPIO_AF9_XSPIM_P2                0x09U
 
 #define XSPI1                            ((void *)0x52005000)
 #define XSPI2                            ((void *)0x52006000)
@@ -264,9 +277,15 @@ typedef struct {
   uint32_t Alternate;
 } GPIO_InitTypeDef;
 
+typedef struct {
+  uint32_t IOPort;
+  uint32_t nCSOverride;
+} XSPIM_CfgTypeDef;
+
 /* HAL Function Prototypes */
 HAL_StatusTypeDef HAL_XSPI_Init(XSPI_HandleTypeDef *hxspi);
 HAL_StatusTypeDef HAL_XSPI_DeInit(XSPI_HandleTypeDef *hxspi);
+HAL_StatusTypeDef HAL_XSPIM_Config(XSPI_HandleTypeDef *hxspi, const XSPIM_CfgTypeDef *pCfg, uint32_t Timeout);
 HAL_StatusTypeDef HAL_XSPI_Command(XSPI_HandleTypeDef *hxspi, const XSPI_RegularCmdTypeDef *pCmd, uint32_t Timeout);
 HAL_StatusTypeDef HAL_XSPI_Transmit(XSPI_HandleTypeDef *hxspi, const uint8_t *pData, uint32_t Timeout);
 HAL_StatusTypeDef HAL_XSPI_Receive(XSPI_HandleTypeDef *hxspi, uint8_t *pData, uint32_t Timeout);
@@ -285,6 +304,7 @@ uint32_t HAL_GetTick(void);
 void HAL_Delay(uint32_t Delay);
 
 void HAL_PWREx_EnableVddIO2(void);
+void HAL_PWREx_EnableVddIO3(void);
 void HAL_PWREx_ConfigVddIORange(uint32_t Domain, uint32_t Range);
 
 #define __HAL_RCC_PWR_CLK_ENABLE()       ((void)0)

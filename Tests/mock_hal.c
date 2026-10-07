@@ -395,7 +395,14 @@ void HAL_Delay(uint32_t Delay)
   (void)Delay;
 }
 
+HAL_StatusTypeDef HAL_XSPIM_Config(XSPI_HandleTypeDef *hxspi, const XSPIM_CfgTypeDef *pCfg, uint32_t Timeout)
+{
+  (void)hxspi; (void)pCfg; (void)Timeout;
+  return HAL_OK;
+}
+
 void HAL_PWREx_EnableVddIO2(void) {}
+void HAL_PWREx_EnableVddIO3(void) {}
 void HAL_PWREx_ConfigVddIORange(uint32_t Domain, uint32_t Range) {
   (void)Domain; (void)Range;
 }

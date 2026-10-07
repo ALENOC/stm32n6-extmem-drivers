@@ -51,6 +51,7 @@ typedef struct {
   bool                    Force1V8;            /*!< Force 1.8V VDDIO domain configuration     */
   ExtMem_Type_t           ForcedDeviceType;    /*!< Optional: EXTMEM_TYPE_UNKNOWN for auto   */
   ExtMem_Mode_t           DesiredMode;         /*!< Desired protocol mode (e.g. OCTAL_DTR)    */
+  uint32_t                IOPort;              /*!< Optional XSPIM Port: 0 (auto), 1, or 2    */
 } ExtMem_Config_t;
 
 /* Master External Memory Handle ---------------------------------------------*/

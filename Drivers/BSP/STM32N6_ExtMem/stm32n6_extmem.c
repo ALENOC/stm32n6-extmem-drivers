@@ -10,7 +10,7 @@
 #include <string.h>
 
 /* Private Hardware MSP Helper */
-static void ExtMem_MspInit_XSPI(XSPI_HandleTypeDef *hxspi, bool use1V8)
+static void ExtMem_MspInit_XSPI(XSPI_HandleTypeDef *hxspi, bool use1V8, uint32_t targetPort)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
@@ -19,16 +19,16 @@ static void ExtMem_MspInit_XSPI(XSPI_HandleTypeDef *hxspi, bool use1V8)
   __HAL_RCC_PWR_CLK_ENABLE();
 #endif
 
-  if (use1V8)
+  uint32_t pwrDomain = (targetPort == HAL_XSPIM_IOPORT_2) ? PWR_VDDIO3 : PWR_VDDIO2;
+  if (targetPort == HAL_XSPIM_IOPORT_2)
   {
-    HAL_PWREx_EnableVddIO2();
-    HAL_PWREx_ConfigVddIORange(PWR_VDDIO2, PWR_VDDIO_RANGE_1V8);
+    HAL_PWREx_EnableVddIO3();
   }
   else
   {
     HAL_PWREx_EnableVddIO2();
-    HAL_PWREx_ConfigVddIORange(PWR_VDDIO2, PWR_VDDIO_RANGE_3V3);
   }
+  HAL_PWREx_ConfigVddIORange(pwrDomain, use1V8 ? PWR_VDDIO_RANGE_1V8 : PWR_VDDIO_RANGE_3V3);
 
   /* 2. Enable XSPI interface clock & XSPIM */
   if (hxspi->Instance == XSPI1)
@@ -62,10 +62,28 @@ static void ExtMem_MspInit_XSPI(XSPI_HandleTypeDef *hxspi, bool use1V8)
   GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Pull      = GPIO_NOPULL;
   GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
-  GPIO_InitStruct.Alternate = GPIO_AF9_XSPIM_P1; /* Default XSPI1 Port 1 AF */
+  GPIO_InitStruct.Alternate = (targetPort == HAL_XSPIM_IOPORT_2) ? GPIO_AF9_XSPIM_P2 : GPIO_AF9_XSPIM_P1;
   (void)GPIO_InitStruct;
 
+  /* 4. Configure XSPI I/O Manager (XSPIM) */
+  XSPIM_CfgTypeDef sXspiManagerCfg = {0};
+  sXspiManagerCfg.IOPort      = targetPort;
+  sXspiManagerCfg.nCSOverride = HAL_XSPI_CSSEL_OVR_NCS1;
+  HAL_XSPIM_Config(hxspi, &sXspiManagerCfg, HAL_XSPI_TIMEOUT_DEFAULT_VALUE);
+
   /* Weak MSP hook allows project override in Core/Src/stm32n6xx_hal_msp.c */
+}
+
+/* Helper to calculate XSPI_DCR1 DEVSIZE from capacity in bytes per RM0486 */
+static uint32_t ExtMem_CalculateMemorySize(uint32_t totalSizeBytes)
+{
+  if (totalSizeBytes == 0) return HAL_XSPI_SIZE_64MB;
+  uint32_t size = 0;
+  uint32_t temp = totalSizeBytes - 1;
+  while (temp >>= 1) {
+    size++;
+  }
+  return (size >= 1) ? (size - 1) : 0;
 }
 
 /* Cache Maintenance Helper for Cortex-M55 */
@@ -155,8 +173,15 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
     return EXTMEM_OK;
   }
 
+  /* Determine physical XSPIM port (Port 1 vs Port 2) */
+  uint32_t targetPort = hextmem->Config.IOPort;
+  if (targetPort == 0)
+  {
+    targetPort = (hextmem->Config.Bus == EXTMEM_BUS_XSPI2) ? HAL_XSPIM_IOPORT_2 : HAL_XSPIM_IOPORT_1;
+  }
+
   /* Hardware MSP Initialization */
-  ExtMem_MspInit_XSPI(&hextmem->hxspi, hextmem->Config.Force1V8);
+  ExtMem_MspInit_XSPI(&hextmem->hxspi, hextmem->Config.Force1V8, targetPort);
 
   /* Set Clock Prescaler */
   uint32_t prescaler = (hextmem->Config.ClockPrescaler > 0) ? hextmem->Config.ClockPrescaler : EXTMEM_DEFAULT_CLOCK_PRESCALER;
@@ -185,6 +210,13 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
   if (ExtMem_AutoDetect(hextmem) != EXTMEM_OK)
   {
     return EXTMEM_ERROR;
+  }
+
+  /* Update XSPI DEVSIZE to match detected device capacity per RM0486 */
+  if (hextmem->Geometry.TotalSizeBytes > 0)
+  {
+    hextmem->hxspi.Init.MemorySize = ExtMem_CalculateMemorySize(hextmem->Geometry.TotalSizeBytes);
+    HAL_XSPI_Init(&hextmem->hxspi);
   }
 
   /* Switch memory to its high performance mode */

@@ -68,7 +68,8 @@ void ExtMem_RunDemo(ExtMem_Bus_t busTarget)
 
   if (ExtMem_IsFlash(&hextmem))
   {
-    printf("\r\n[2] Performing Flash Sector Erase (4KB) at 0x%08lX...\r\n", (unsigned long)testAddress);
+    printf("\r\n[2] Performing Flash Sector Erase (%lu KB) at 0x%08lX...\r\n",
+           (unsigned long)(hextmem.Geometry.SectorSizeBytes / 1024U), (unsigned long)testAddress);
     status = ExtMem_EraseSector(&hextmem, testAddress);
     if (status != EXTMEM_OK)
     {
@@ -144,7 +145,7 @@ void ExtMem_RunDemo(ExtMem_Bus_t busTarget)
   printf("[+] Memory-Mapped Mode Active at 0x%08lX!\r\n", (unsigned long)hextmem.MemoryMappedBase);
 
   /* Direct Pointer Access */
-  volatile uint8_t *pXip = (volatile uint8_t *)(hextmem.MemoryMappedBase + testAddress);
+  volatile uint8_t *pXip = (volatile uint8_t *)(uintptr_t)(hextmem.MemoryMappedBase + testAddress);
   bool xipMatch = true;
   for (uint32_t i = 0; i < TEST_BUFFER_SIZE; i++)
   {

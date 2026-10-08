@@ -27,7 +27,8 @@ extern "C" {
 #define S25HL512T_FLASH_SIZE             (64U * 1024U * 1024U) /* 512 Mbits = 64 MBytes */
 #define S25HL512T_PAGE_SIZE              256U                  /* 256 Bytes */
 #define S25HL512T_SECTOR_4K              (4U * 1024U)          /* 4 KBytes  */
-#define S25HL512T_BLOCK_64K              (64U * 1024U)         /* 64 KBytes */
+#define S25HL512T_SECTOR_256K            (256U * 1024U)        /* 256 KBytes uniform sector (S25HL-T / S25HS-T) */
+#define S25FL_L_BLOCK_64K                (64U * 1024U)         /* 64 KBytes block (S25FL-L) */
 
 #define S25HL512T_OK                     (0)
 #define S25HL512T_ERROR                  (-1)
@@ -42,7 +43,7 @@ extern "C" {
 #define S25HL_CMD_PAGE_PROG_4B           0x12U
 #define S25HL_CMD_QUAD_PAGE_PROG_4B      0x34U
 #define S25HL_CMD_SECTOR_ERASE_4K_4B     0x21U
-#define S25HL_CMD_BLOCK_ERASE_64K_4B     0xDCU
+#define S25HL_CMD_BLOCK_ERASE_4B         0xDCU /* 256 KB sector on S25Hx-T, 64 KB block on S25FL-L */
 #define S25HL_CMD_CHIP_ERASE             0x60U
 #define S25HL_CMD_WRITE_ENABLE           0x06U
 #define S25HL_CMD_WRITE_DISABLE          0x04U
@@ -65,7 +66,7 @@ int32_t S25HL512T_EnableQuadMode(XSPI_HandleTypeDef *Ctx);
 int32_t S25HL512T_ReadQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size, uint8_t DummyCycles);
 int32_t S25HL512T_PageProgramQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *pData, uint32_t Size);
 int32_t S25HL512T_EraseSector4K(XSPI_HandleTypeDef *Ctx, uint32_t Address);
-int32_t S25HL512T_EraseBlock64K(XSPI_HandleTypeDef *Ctx, uint32_t Address);
+int32_t S25HL512T_EraseBlock(XSPI_HandleTypeDef *Ctx, uint32_t Address);
 int32_t S25HL512T_ChipErase(XSPI_HandleTypeDef *Ctx);
 int32_t S25HL512T_EnableMemoryMappedMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles);
 int32_t S25HL512T_Reset(XSPI_HandleTypeDef *Ctx);

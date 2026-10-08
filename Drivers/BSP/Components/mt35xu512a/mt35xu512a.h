@@ -53,19 +53,32 @@ extern "C" {
 #define MT35XU_CMD_WRITE_VCR             0x81U
 #define MT35XU_CMD_READ_NVCR             0xB5U                   /* Non-Volatile Configuration Register */
 #define MT35XU_CMD_WRITE_NVCR            0xB1U
+#define MT35XU_CMD_ENTER_4BYTE_ADDR      0xB7U
+#define MT35XU_CMD_FAST_READ_4B          0x0CU                   /* 4-byte Fast Read (8 dummy) */
+#define MT35XU_CMD_DIE_ERASE             0xC4U                   /* Die erase (multi-die parts) */
 #define MT35XU_CMD_RESET_ENABLE          0x66U
 #define MT35XU_CMD_RESET                 0x99U
 
-/* Commands (Octal 8-line DTR / STR) */
-#define MT35XU_OCTAL_CMD_READ_ID         0x9F60U
-#define MT35XU_OCTAL_CMD_READ_STATUS_REG 0x05FAU
-#define MT35XU_OCTAL_CMD_READ_FLAG_STATUS 0x708FU
-#define MT35XU_OCTAL_CMD_WRITE_ENABLE    0x06F9U
-#define MT35XU_OCTAL_CMD_FAST_READ_DTR   0xFD02U                 /* Fast Read 8D-8D-8D */
-#define MT35XU_OCTAL_CMD_PAGE_PROGRAM    0x8E71U                 /* Page Program 8D-8D-8D */
-#define MT35XU_OCTAL_CMD_SECTOR_ERASE_4K 0x21DEU                 /* 4KB Sector Erase */
-#define MT35XU_OCTAL_CMD_BLOCK_ERASE     0xDC23U                 /* 128KB Block Erase */
-#define MT35XU_OCTAL_CMD_CHIP_ERASE      0xC738U                 /* Chip Erase */
+/* Commands (8D-8D-8D Octal DTR): the command extension is the repeated opcode byte */
+#define MT35XU_OCTAL_CMD_READ_ID         0x9F9FU
+#define MT35XU_OCTAL_CMD_READ_STATUS_REG 0x0505U
+#define MT35XU_OCTAL_CMD_READ_FLAG_STATUS 0x7070U
+#define MT35XU_OCTAL_CMD_WRITE_ENABLE    0x0606U
+#define MT35XU_OCTAL_CMD_WRITE_VCR       0x8181U
+#define MT35XU_OCTAL_CMD_FAST_READ_DTR   0xFDFDU                 /* DDR Octal I/O Fast Read */
+#define MT35XU_OCTAL_CMD_PAGE_PROGRAM    0x1212U                 /* 4-byte Page Program */
+#define MT35XU_OCTAL_CMD_SECTOR_ERASE_4K 0x2121U                 /* 4KB Subsector Erase */
+#define MT35XU_OCTAL_CMD_BLOCK_ERASE     0xDCDCU                 /* 128KB Sector Erase */
+#define MT35XU_OCTAL_CMD_CHIP_ERASE      0xC7C7U                 /* Bulk Erase (single die) */
+#define MT35XU_OCTAL_CMD_DIE_ERASE       0xC4C4U                 /* Die Erase (multi-die) */
+
+/* Volatile Configuration Register map */
+#define MT35XU_VCR_ADDR_IO_MODE          0x00000000U
+#define MT35XU_VCR_ADDR_DUMMY_CYCLES     0x00000001U
+#define MT35XU_VCR_IO_MODE_OCTAL_DTR     0xE7U                   /* Octal DDR with DQS */
+#define MT35XU_VCR_IO_MODE_EXT_SPI       0xFFU                   /* Extended SPI (default) */
+#define MT35XU_VCR_DUMMY_DEFAULT         0x1FU
+#define MT35XU_DIE_SIZE                  (64U * 1024U * 1024U)   /* 512 Mbit per die */
 
 /* Status & Flag Status Bits */
 #define MT35XU_SR_WIP                    (1U << 0)               /* Write In Progress */
@@ -87,6 +100,7 @@ int32_t MT35XU_PageProgram(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t
 int32_t MT35XU_EraseSector4K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t Address);
 int32_t MT35XU_EraseBlock128K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t Address);
 int32_t MT35XU_EraseChip(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode);
+int32_t MT35XU_EraseDie(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t DieAddress);
 int32_t MT35XU_EnableMemoryMappedModeDTR(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles);
 int32_t MT35XU_Reset(XSPI_HandleTypeDef *Ctx);
 

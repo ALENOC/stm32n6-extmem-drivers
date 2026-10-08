@@ -145,6 +145,13 @@ int32_t IS25LP_Exit4ByteAddressMode(XSPI_HandleTypeDef *Ctx)
   return (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS25LP_OK : IS25LP_ERROR;
 }
 
+/* Wait cycles left after the 2 mode-bit cycles of a Quad I/O read (default total: 6) */
+static uint32_t IS25LP_QuadIoDummyAfterMode(uint8_t DummyCycles)
+{
+  uint32_t total = (DummyCycles > 0U) ? DummyCycles : 6U;
+  return (total > 2U) ? (total - 2U) : 0U;
+}
+
 int32_t IS25LP_ReadQuadEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size, uint8_t DummyCycles, uint32_t AddressWidth)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
@@ -159,11 +166,16 @@ int32_t IS25LP_ReadQuadEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pD
   sCmd.AddressWidth       = AddressWidth;
   sCmd.AddressDTRMode     = HAL_XSPI_ADDRESS_DTR_DISABLE;
   sCmd.Address            = Address;
-  sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
+  /* The ISSI dummy count includes the 2 mode-bit cycles: drive them as 0x00 so the
+   * device never sees a floating AXh pattern and enters continuous read mode */
+  sCmd.AlternateBytesMode    = HAL_XSPI_ALT_BYTES_4_LINES;
+  sCmd.AlternateBytesWidth   = HAL_XSPI_ALT_BYTES_8_BITS;
+  sCmd.AlternateBytesDTRMode = HAL_XSPI_ALT_BYTES_DTR_DISABLE;
+  sCmd.AlternateBytes        = IS25LP_MODE_BITS_NO_XIP;
   sCmd.DataMode           = HAL_XSPI_DATA_4_LINES;
   sCmd.DataDTRMode        = HAL_XSPI_DATA_DTR_DISABLE;
   sCmd.DataLength         = Size;
-  sCmd.DummyCycles        = (DummyCycles > 0) ? DummyCycles : 6;
+  sCmd.DummyCycles        = IS25LP_QuadIoDummyAfterMode(DummyCycles);
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
   if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
@@ -304,10 +316,15 @@ int32_t IS25LP_EnableMemoryMappedModeEx(XSPI_HandleTypeDef *Ctx, uint8_t DummyCy
   sCmd.AddressMode        = HAL_XSPI_ADDRESS_4_LINES;
   sCmd.AddressWidth       = AddressWidth;
   sCmd.AddressDTRMode     = HAL_XSPI_ADDRESS_DTR_DISABLE;
-  sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
+  /* The ISSI dummy count includes the 2 mode-bit cycles: drive them as 0x00 so the
+   * device never sees a floating AXh pattern and enters continuous read mode */
+  sCmd.AlternateBytesMode    = HAL_XSPI_ALT_BYTES_4_LINES;
+  sCmd.AlternateBytesWidth   = HAL_XSPI_ALT_BYTES_8_BITS;
+  sCmd.AlternateBytesDTRMode = HAL_XSPI_ALT_BYTES_DTR_DISABLE;
+  sCmd.AlternateBytes        = IS25LP_MODE_BITS_NO_XIP;
   sCmd.DataMode           = HAL_XSPI_DATA_4_LINES;
   sCmd.DataDTRMode        = HAL_XSPI_DATA_DTR_DISABLE;
-  sCmd.DummyCycles        = (DummyCycles > 0) ? DummyCycles : 6;
+  sCmd.DummyCycles        = IS25LP_QuadIoDummyAfterMode(DummyCycles);
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
   if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;

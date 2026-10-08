@@ -78,6 +78,7 @@ int32_t IS25LX256_ReadVCR(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t 
     sCmd.Address            = RegAddr;
     sCmd.DataMode           = HAL_XSPI_DATA_8_LINES;
     sCmd.DataDTRMode        = HAL_XSPI_DATA_DTR_ENABLE;
+    sCmd.DataLength         = 2; /* 8D transfers carry an even number of bytes */
     sCmd.DummyCycles        = 8;
     sCmd.DQSMode            = HAL_XSPI_DQS_ENABLE;
   }
@@ -98,7 +99,11 @@ int32_t IS25LX256_ReadVCR(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t 
   }
 
   if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LX_ERROR;
-  return (HAL_XSPI_Receive(Ctx, pValue, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS25LX_OK : IS25LX_ERROR;
+
+  uint8_t buf[2] = {0};
+  if (HAL_XSPI_Receive(Ctx, buf, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LX_ERROR;
+  *pValue = buf[0];
+  return IS25LX_OK;
 }
 
 int32_t IS25LX256_WriteVCR(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t RegAddr, uint8_t Value)
@@ -122,7 +127,8 @@ int32_t IS25LX256_WriteVCR(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t
     sCmd.Address            = RegAddr;
     sCmd.DataMode           = HAL_XSPI_DATA_8_LINES;
     sCmd.DataDTRMode        = HAL_XSPI_DATA_DTR_ENABLE;
-    sCmd.DQSMode            = HAL_XSPI_DQS_ENABLE;
+    sCmd.DataLength         = 2; /* 8D transfers carry an even number of bytes */
+    sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
   }
   else
   {
@@ -140,7 +146,10 @@ int32_t IS25LX256_WriteVCR(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t
   }
 
   if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LX_ERROR;
-  return (HAL_XSPI_Transmit(Ctx, &Value, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS25LX_OK : IS25LX_ERROR;
+
+  /* In 8D-8D-8D the second byte lands in the next register: callers pass the value to keep there */
+  uint8_t buf[2] = { Value, Value };
+  return (HAL_XSPI_Transmit(Ctx, buf, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS25LX_OK : IS25LX_ERROR;
 }
 
 int32_t IS25LX256_AutoPollingMemReady(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t Timeout)
@@ -158,10 +167,8 @@ int32_t IS25LX256_AutoPollingMemReady(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mod
     sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_16_BITS;
     sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_ENABLE;
     sCmd.Instruction        = IS25LX_DTR_CMD_READ_STATUS;
-    sCmd.AddressMode        = HAL_XSPI_ADDRESS_8_LINES;
-    sCmd.AddressWidth       = HAL_XSPI_ADDRESS_32_BITS;
-    sCmd.AddressDTRMode     = HAL_XSPI_ADDRESS_DTR_ENABLE;
-    sCmd.Address            = 0x00000000;
+    sCmd.AddressMode        = HAL_XSPI_ADDRESS_NONE;
+    sCmd.DataLength         = 2;
     sCmd.DataMode           = HAL_XSPI_DATA_8_LINES;
     sCmd.DataDTRMode        = HAL_XSPI_DATA_DTR_ENABLE;
     sCmd.DummyCycles        = 8;
@@ -191,13 +198,36 @@ int32_t IS25LX256_AutoPollingMemReady(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mod
   return (HAL_XSPI_AutoPolling(Ctx, &sCfg, Timeout) == HAL_OK) ? IS25LX_OK : IS25LX_TIMEOUT;
 }
 
+static int32_t IS25LX256_Enter4ByteAddressMode(XSPI_HandleTypeDef *Ctx)
+{
+  XSPI_RegularCmdTypeDef sCmd = {0};
+
+  if (IS25LX256_WriteEnable(Ctx, EXTMEM_MODE_SPI) != IS25LX_OK) return IS25LX_ERROR;
+
+  sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
+  sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
+  sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_8_BITS;
+  sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
+  sCmd.Instruction        = IS25LX_CMD_ENTER_4BYTE_ADDR;
+  sCmd.AddressMode        = HAL_XSPI_ADDRESS_NONE;
+  sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
+  sCmd.DataMode           = HAL_XSPI_DATA_NONE;
+  sCmd.DummyCycles        = 0;
+  sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
+
+  return (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS25LX_OK : IS25LX_ERROR;
+}
+
 int32_t IS25LX256_EnterOctalDTRMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles)
 {
-  /* 1. Set Dummy Cycles in VCR Address 0x00 */
+  /* 1. Extended SPI defaults to 3-byte addressing: the 32-bit VCR accesses below need 4-byte mode */
+  if (IS25LX256_Enter4ByteAddressMode(Ctx) != IS25LX_OK) return IS25LX_ERROR;
+
+  /* 2. Dummy cycle count in VCR address 0x01 (value = number of cycles) */
   if (IS25LX256_WriteEnable(Ctx, EXTMEM_MODE_SPI) != IS25LX_OK) return IS25LX_ERROR;
   if (IS25LX256_WriteVCR(Ctx, EXTMEM_MODE_SPI, IS25LX_VCR_ADDR_DUMMY_CYCLES, DummyCycles) != IS25LX_OK) return IS25LX_ERROR;
 
-  /* 2. Set Octal DDR mode in VCR Address 0x01 */
+  /* 3. Octal DDR with DQS in VCR address 0x00 */
   if (IS25LX256_WriteEnable(Ctx, EXTMEM_MODE_SPI) != IS25LX_OK) return IS25LX_ERROR;
   if (IS25LX256_WriteVCR(Ctx, EXTMEM_MODE_SPI, IS25LX_VCR_ADDR_IO_MODE, IS25LX_IO_MODE_OCTAL_DTR) != IS25LX_OK) return IS25LX_ERROR;
 
@@ -206,6 +236,7 @@ int32_t IS25LX256_EnterOctalDTRMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles
 
 int32_t IS25LX256_ExitOctalDTRMode(XSPI_HandleTypeDef *Ctx)
 {
+  /* The 2-byte 8D write also hits VCR 0x01: restore its default (0xFF) at the same time */
   if (IS25LX256_WriteEnable(Ctx, EXTMEM_MODE_OCTAL_DTR) != IS25LX_OK) return IS25LX_ERROR;
   if (IS25LX256_WriteVCR(Ctx, EXTMEM_MODE_OCTAL_DTR, IS25LX_VCR_ADDR_IO_MODE, IS25LX_IO_MODE_SPI) != IS25LX_OK) return IS25LX_ERROR;
   return IS25LX_OK;
@@ -333,7 +364,7 @@ int32_t IS25LX256_EraseSector4K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uin
   return IS25LX256_AutoPollingMemReady(Ctx, Mode, 1000);
 }
 
-int32_t IS25LX256_EraseBlock64K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t Address)
+int32_t IS25LX256_EraseBlock128K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t Address)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
@@ -352,7 +383,7 @@ int32_t IS25LX256_EraseBlock64K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uin
     sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_8_LINES;
     sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_16_BITS;
     sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_ENABLE;
-    sCmd.Instruction        = IS25LX_DTR_CMD_BLOCK_ERASE_64K;
+    sCmd.Instruction        = IS25LX_DTR_CMD_BLOCK_ERASE_128K;
     sCmd.AddressMode        = HAL_XSPI_ADDRESS_8_LINES;
     sCmd.AddressDTRMode     = HAL_XSPI_ADDRESS_DTR_ENABLE;
   }
@@ -361,7 +392,7 @@ int32_t IS25LX256_EraseBlock64K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uin
     sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
     sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_8_BITS;
     sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
-    sCmd.Instruction        = IS25LX_CMD_BLOCK_ERASE_64K_4B;
+    sCmd.Instruction        = IS25LX_CMD_BLOCK_ERASE_128K_4B;
     sCmd.AddressMode        = HAL_XSPI_ADDRESS_1_LINE;
     sCmd.AddressDTRMode     = HAL_XSPI_ADDRESS_DTR_DISABLE;
   }

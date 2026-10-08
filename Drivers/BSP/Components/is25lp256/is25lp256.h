@@ -66,6 +66,9 @@ extern "C" {
 #define IS25LP_SR_WEL                    (1U << 1)
 #define IS25LP_SR_QE                     (1U << 6) /* Bit 6 of Status Register is QE */
 
+/* Quad I/O read mode bits: anything other than AXh keeps the device out of XIP mode */
+#define IS25LP_MODE_BITS_NO_XIP          0x00U
+
 /* Exported Functions --------------------------------------------------------*/
 int32_t IS25LP256_ReadID(XSPI_HandleTypeDef *Ctx, uint8_t *pID);
 int32_t IS25LP256_WriteEnable(XSPI_HandleTypeDef *Ctx);

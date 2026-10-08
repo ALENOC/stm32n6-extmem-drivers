@@ -23,3 +23,9 @@ Thumbs.db
 *~
 .vscode/
 .idea/
+
+# Coverage artifacts
+*.gcov
+*.gcda
+*.gcno
+__pycache__/

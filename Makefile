@@ -3,6 +3,8 @@
 
 CC ?= gcc
 CFLAGS ?= -Wall -Wextra -Werror -std=c11 -O2 -DEXTMEM_UNIT_TEST
+# Designated initializers in the test command specs override defaults on purpose
+TEST_CFLAGS = -Wno-override-init
 TARGET = extmem_test_runner
 
 INCLUDES = \
@@ -24,10 +26,19 @@ INCLUDES = \
 	-I Drivers/BSP/Components/mt35xu512a \
 	-I Drivers/BSP/Components/mt25qu512a
 
-SRCS = \
+TEST_SRCS = \
 	Tests/mock_hal.c \
-	Tests/extmem_unit_tests.c \
-	Tests/main_test.c \
+	Tests/test_common.c \
+	Tests/test_sfdp_db.c \
+	Tests/test_octal_nor.c \
+	Tests/test_quad_nor.c \
+	Tests/test_hyperbus.c \
+	Tests/test_ram.c \
+	Tests/test_fmc.c \
+	Tests/test_manager.c \
+	Tests/main_test.c
+
+DRIVER_SRCS = \
 	Drivers/BSP/Components/Common/sfdp.c \
 	Drivers/BSP/Components/s28hs512t/s28hs512t.c \
 	Drivers/BSP/Components/s26ks512s/s26ks512s.c \
@@ -43,16 +54,24 @@ SRCS = \
 	Drivers/BSP/Components/is29gl_fmc/is29gl_fmc.c \
 	Drivers/BSP/Components/mt35xu512a/mt35xu512a.c \
 	Drivers/BSP/Components/mt25qu512a/mt25qu512a.c \
+	Drivers/BSP/STM32N6_ExtMem/stm32n6_extmem_devices.c \
 	Drivers/BSP/STM32N6_ExtMem/stm32n6_extmem.c
 
+SRCS = $(TEST_SRCS) $(DRIVER_SRCS)
+
+# Sources with executable code (the device table is data only)
+COVERAGE_SRCS = $(filter-out %_devices.c,$(DRIVER_SRCS))
 OBJS = $(SRCS:.c=.o)
 
-.PHONY: all test clean
+.PHONY: all test coverage examples clean
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $(TARGET)
+	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) -o $(TARGET)
+
+Tests/%.o: Tests/%.c
+	$(CC) $(CFLAGS) $(TEST_CFLAGS) $(INCLUDES) -c $< -o $@
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
@@ -61,5 +80,16 @@ test: $(TARGET)
 	@echo "Running STM32N6 External Memory Driver Suite Tests..."
 	./$(TARGET)
 
+# Line and branch coverage of the driver sources (requires gcov)
+coverage: clean
+	$(MAKE) CFLAGS="-Wall -Wextra -Werror -std=c11 -O0 -DEXTMEM_UNIT_TEST --coverage" LDFLAGS="--coverage" $(TARGET)
+	./$(TARGET)
+	@for f in $(COVERAGE_SRCS); do gcov -b -o $$(dirname $$f) $$f > /dev/null; done
+	python3 Tests/coverage_report.py $(COVERAGE_SRCS)
+
+# The examples must keep compiling against the driver API
+examples:
+	$(CC) $(CFLAGS) $(INCLUDES) -fsyntax-only Examples/extmem_demo.c Examples/extmem_benchmark.c
+
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJS) $(TARGET) *.gcov $(SRCS:.c=.gcda) $(SRCS:.c=.gcno)

@@ -25,7 +25,7 @@ extern "C" {
 
 #define IS29GL_FMC_OK                  (0)
 #define IS29GL_FMC_ERROR              (-1)
-#define IS29GL_FMC_TIMEOUT            (-2)
+#define IS29GL_FMC_TIMEOUT            (-3)
 
 /* Standard CFI / AMD Command Definitions for 16-bit word operations */
 #define IS29GL_UNLOCK_ADDR1           0x00000555U

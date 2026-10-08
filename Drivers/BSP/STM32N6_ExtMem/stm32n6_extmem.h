@@ -54,6 +54,7 @@ typedef struct {
   uint32_t                IOPort;              /*!< Optional XSPIM Port: 0 (auto), 1, or 2    */
   uint32_t                ForcedCapacityBytes; /*!< Optional: explicit capacity (0 for auto)  */
   const char             *ForcedPartNumber;    /*!< Optional: explicit part number string     */
+  uint32_t                FmcClockHz;          /*!< FMC kernel clock in Hz (0: HAL_RCC_GetHCLKFreq) */
 } ExtMem_Config_t;
 
 /* Master External Memory Handle ---------------------------------------------*/

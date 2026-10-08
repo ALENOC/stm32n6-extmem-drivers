@@ -190,7 +190,7 @@ int32_t S25HL512T_EraseSector4K(XSPI_HandleTypeDef *Ctx, uint32_t Address)
   return S25HL512T_AutoPollingMemReady(Ctx, 1000);
 }
 
-int32_t S25HL512T_EraseBlock64K(XSPI_HandleTypeDef *Ctx, uint32_t Address)
+int32_t S25HL512T_EraseBlock(XSPI_HandleTypeDef *Ctx, uint32_t Address)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
@@ -200,7 +200,7 @@ int32_t S25HL512T_EraseBlock64K(XSPI_HandleTypeDef *Ctx, uint32_t Address)
   sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
   sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_8_BITS;
   sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
-  sCmd.Instruction        = S25HL_CMD_BLOCK_ERASE_64K_4B;
+  sCmd.Instruction        = S25HL_CMD_BLOCK_ERASE_4B;
   sCmd.AddressMode        = HAL_XSPI_ADDRESS_1_LINE;
   sCmd.AddressWidth       = HAL_XSPI_ADDRESS_32_BITS;
   sCmd.AddressDTRMode     = HAL_XSPI_ADDRESS_DTR_DISABLE;

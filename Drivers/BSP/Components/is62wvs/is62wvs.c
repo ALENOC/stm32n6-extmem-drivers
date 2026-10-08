@@ -163,7 +163,7 @@ int32_t IS62WVS_ReadQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pDa
   XSPI_RegularCmdTypeDef sCmd = {0};
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
-  sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
+  sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_4_LINES; /* SQI: instruction on 4 lines */
   sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_8_BITS;
   sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
   sCmd.Instruction        = IS62WVS_CMD_READ;
@@ -187,7 +187,7 @@ int32_t IS62WVS_WriteQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8
   XSPI_RegularCmdTypeDef sCmd = {0};
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
-  sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
+  sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_4_LINES; /* SQI: instruction on 4 lines */
   sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_8_BITS;
   sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
   sCmd.Instruction        = IS62WVS_CMD_WRITE;
@@ -213,7 +213,7 @@ int32_t IS62WVS_EnableMemoryMappedMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyCyc
 
   /* Configure Write Command */
   sCmd.OperationType      = HAL_XSPI_OPTYPE_WRITE_CFG;
-  sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
+  sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_4_LINES; /* SQI: instruction on 4 lines */
   sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_8_BITS;
   sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
   sCmd.Instruction        = IS62WVS_CMD_WRITE;
@@ -241,8 +241,8 @@ int32_t IS62WVS_EnableMemoryMappedMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyCyc
 
 int32_t IS62WVS_Reset(XSPI_HandleTypeDef *Ctx)
 {
-  /* Attempt exiting SQI mode back to SPI mode */
-  IS62WVS_ExitQuadMode(Ctx);
+  /* RSTIO (0xFF in SQI) returns the device to SPI; in SPI mode the byte is ignored */
+  int32_t ret = IS62WVS_ExitQuadMode(Ctx);
   HAL_Delay(1);
-  return IS62WVS_OK;
+  return ret;
 }

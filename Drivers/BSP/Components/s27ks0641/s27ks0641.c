@@ -30,7 +30,8 @@ int32_t S27KS0641_ReadRegister(XSPI_HandleTypeDef *Ctx, uint32_t RegAddr, uint16
     return S27KS_ERROR;
   }
 
-  *pValue = (uint16_t)(buf[0] | ((uint16_t)buf[1] << 8));
+  /* HyperBus transfers register words most significant byte first */
+  *pValue = (uint16_t)(((uint16_t)buf[0] << 8) | buf[1]);
   return S27KS_OK;
 }
 
@@ -50,7 +51,8 @@ int32_t S27KS0641_WriteRegister(XSPI_HandleTypeDef *Ctx, uint32_t RegAddr, uint1
     return S27KS_ERROR;
   }
 
-  uint8_t buf[2] = { (uint8_t)(Value & 0xFF), (uint8_t)((Value >> 8) & 0xFF) };
+  /* HyperBus transfers register words most significant byte first */
+  uint8_t buf[2] = { (uint8_t)((Value >> 8) & 0xFF), (uint8_t)(Value & 0xFF) };
   return (HAL_XSPI_Transmit(Ctx, buf, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? S27KS_OK : S27KS_ERROR;
 }
 
@@ -89,7 +91,7 @@ int32_t S27KS0641_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_
   }
 
   /* Configure Configuration Register 0: 6 cycles, variable latency */
-  uint16_t cr0Val = S27KS_CR0_LATENCY_6_CYCLES | S27KS_CR0_VARIABLE_LATENCY | S27KS_CR0_DRIVE_STRENGTH_FULL;
+  uint16_t cr0Val = S27KS_CR0_INIT_VALUE;
   if (S27KS0641_WriteRegister(Ctx, S27KS_REG_CR0, cr0Val) != S27KS_OK)
   {
     return S27KS_ERROR;
@@ -197,13 +199,20 @@ int32_t S27KS0641_EnableMemoryMappedMode(XSPI_HandleTypeDef *Ctx)
 
 int32_t S27KS0641_EnterDeepPowerDown(XSPI_HandleTypeDef *Ctx)
 {
-  return S27KS0641_WriteRegister(Ctx, S27KS_REG_CR1, S27KS_CR1_DEEP_POWER_DOWN);
+  uint16_t cr0 = 0;
+
+  /* Deep power down is entered by writing 0 to CR0[15] */
+  if (S27KS0641_ReadRegister(Ctx, S27KS_REG_CR0, &cr0) != S27KS_OK) return S27KS_ERROR;
+  cr0 = (uint16_t)(cr0 & ~S27KS_CR0_DPD_NORMAL);
+  return S27KS0641_WriteRegister(Ctx, S27KS_REG_CR0, cr0);
 }
 
 int32_t S27KS0641_LeaveDeepPowerDown(XSPI_HandleTypeDef *Ctx)
 {
-  (void)Ctx;
-  /* Hardware wake-up sequence requires CS# pulse for tDPDCS (minimum 200ns) */
-  HAL_Delay(1);
-  return S27KS_OK;
+  uint16_t dummy = 0;
+
+  /* Any transaction holding CS# low for tDPDCSL wakes the device; the data returned is ignored */
+  int32_t ret = S27KS0641_ReadRegister(Ctx, S27KS_REG_ID0, &dummy);
+  HAL_Delay(S27KS_DPD_EXIT_TIME_MS);
+  return ret;
 }

@@ -67,6 +67,11 @@ typedef struct {
 } SFDP_FlashParams_t;
 
 /* Function Prototypes -------------------------------------------------------*/
+/**
+  * @brief  Reads and decodes the JEDEC Basic Flash Parameter Table.
+  * @retval EXTMEM_OK on success, EXTMEM_NOT_SUPPORTED when the device has no valid SFDP table,
+  *         EXTMEM_ERROR when the XSPI transfer failed, EXTMEM_INVALID_PARAM for NULL arguments.
+  */
 int32_t SFDP_ReadAndParse(XSPI_HandleTypeDef *hxspi, SFDP_FlashParams_t *pParams);
 
 #ifdef __cplusplus

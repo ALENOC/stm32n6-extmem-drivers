@@ -40,25 +40,31 @@ extern "C" {
 #define S28HS_MANUFACTURER_ID            0x34U
 #define S28HS_DEVICE_ID_512MB            0x5BU
 
-/* Registers Addresses (Volatile) */
+/* Registers Addresses (Volatile, single die: base 0x00800000) */
+#define S28HS_REG_STATUS1_V              0x00800000U /* Status Register 1 Volatile        */
 #define S28HS_REG_CFR1_V                 0x00800002U /* Configuration Register 1 Volatile */
 #define S28HS_REG_CFR2_V                 0x00800003U /* Configuration Register 2 Volatile */
 #define S28HS_REG_CFR3_V                 0x00800004U /* Configuration Register 3 Volatile */
 #define S28HS_REG_CFR4_V                 0x00800005U /* Configuration Register 4 Volatile */
 #define S28HS_REG_CFR5_V                 0x00800006U /* Configuration Register 5 Volatile */
-#define S28HS_REG_STATUS1                0x00000000U /* Status Register 1 */
+#define S28HS_REG_STATUS1                S28HS_REG_STATUS1_V
 
 /* CFR2V Bit Fields */
-#define S28HS_CFR2V_MEMLAT_VARIABLE      (1U << 0)
-#define S28HS_CFR2V_ADRBYT_4BYTE         (1U << 7)
-#define S28HS_CFR2V_OCTAL_DTR_ENABLE     (1U << 3) /* Octal Data Rate Mode */
+#define S28HS_CFR2V_MEMLAT_MASK          0x0FU     /* Memory array read latency code */
+#define S28HS_CFR2V_MEMLAT_24_CYCLES     0x0BU     /* 24 dummy cycles, valid up to 200 MHz in 8D-8D-8D */
+#define S28HS_CFR2V_ADRBYT_4BYTE         (1U << 7) /* 4-byte address mode */
 
-/* CFR3V Read Latency / Dummy cycles codes */
-#define S28HS_CFR3V_LATENCY_200MHZ       0x00U /* 20 Dummy Cycles */
-#define S28HS_CFR3V_LATENCY_166MHZ       0x01U /* 18 Dummy Cycles */
-#define S28HS_CFR3V_LATENCY_133MHZ       0x02U /* 16 Dummy Cycles */
-#define S28HS_CFR3V_LATENCY_100MHZ       0x03U /* 14 Dummy Cycles */
-#define S28HS_CFR3V_LATENCY_80MHZ        0x04U /* 12 Dummy Cycles */
+/* CFR5V Bit Fields */
+#define S28HS_CFR5V_OPI_ENABLE           (1U << 0) /* Octal interface enable  */
+#define S28HS_CFR5V_DDR_ENABLE           (1U << 1) /* Double data rate enable */
+#define S28HS_CFR5V_RESERVED_BIT6        (1U << 6) /* Must be written as 1    */
+#define S28HS_CFR5V_OCTAL_DTR            (S28HS_CFR5V_RESERVED_BIT6 | S28HS_CFR5V_DDR_ENABLE | S28HS_CFR5V_OPI_ENABLE)
+#define S28HS_CFR5V_SPI                  (S28HS_CFR5V_RESERVED_BIT6)
+
+/* Dummy cycles used for 8D-8D-8D memory array reads (matches MEMLAT = 0xB) */
+#define S28HS_OCTAL_DTR_READ_DUMMY       24U
+/* Dummy cycles used for 8D-8D-8D Read Any Register */
+#define S28HS_OCTAL_DTR_REG_DUMMY        8U
 
 /* Status Register 1 Masks */
 #define S28HS_SR1_WIP                    (1U << 0) /* Write in Progress */
@@ -76,6 +82,8 @@ extern "C" {
 #define S28HS_CMD_CHIP_ERASE             0x60U
 #define S28HS_CMD_WRITE_ENABLE           0x06U
 #define S28HS_CMD_WRITE_DISABLE          0x04U
+#define S28HS_CMD_READ_STATUS1           0x05U
+#define S28HS_CMD_ENTER_4BYTE_ADDR       0xB7U
 #define S28HS_CMD_READ_REG               0x65U /* Read Any Register */
 #define S28HS_CMD_WRITE_REG              0x71U /* Write Any Register */
 #define S28HS_CMD_RESET_ENABLE           0x66U

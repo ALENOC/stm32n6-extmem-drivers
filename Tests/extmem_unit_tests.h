@@ -22,6 +22,7 @@ typedef struct {
 
 /* Unit Test Declarations */
 bool test_sfdp_parser(void);
+bool test_device_database_consistency(void);
 bool test_infineon_s28hs512t_octal_flash(void);
 bool test_infineon_s26ks512s_hyperflash(void);
 bool test_infineon_s27ks0641_hyperram(void);
@@ -36,6 +37,7 @@ bool test_issi_is29gl_fmc_parallel_nor_flash(void);
 bool test_issi_is62wvs_serial_sram(void);
 bool test_micron_mt35xu512a_octal_flash(void);
 bool test_micron_mt25qu512a_quad_flash(void);
+bool test_extmem_manager_all_devices(void);
 bool test_extmem_manager_unified_autodetect(void);
 bool test_multi_density_shared_drivers(void);
 bool test_boundary_protection_and_bounds_checking(void);

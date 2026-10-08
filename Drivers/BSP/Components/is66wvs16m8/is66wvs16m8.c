@@ -41,7 +41,8 @@ int32_t IS66WVS16M8_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint3
   Ctx->Init.ClockPrescaler          = ClockPrescaler;
   Ctx->Init.SampleShifting          = HAL_XSPI_SAMPLE_SHIFT_NONE;
   Ctx->Init.DelayHoldQuarterCycle   = HAL_XSPI_DHQC_ENABLE;
-  Ctx->Init.ChipSelectBoundary      = HAL_XSPI_BONDARYOF_NONE;
+  /* Linear bursts must not cross the 1 KB PSRAM page */
+  Ctx->Init.ChipSelectBoundary      = HAL_XSPI_BONDARYOF_8KB; /* 8 Kbits = 1 KByte */
   Ctx->Init.FreeRunningClock        = HAL_XSPI_FREERUNCLK_DISABLE;
   Ctx->Init.WrapSize                = HAL_XSPI_WRAP_NOT_SUPPORTED;
 

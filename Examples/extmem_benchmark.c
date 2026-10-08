@@ -40,7 +40,7 @@ void ExtMem_RunBenchmark(ExtMem_HandleTypeDef *hextmem, uint32_t TargetAddress, 
   /* 2. Memory Mapped (XIP) Read Benchmark */
   if (ExtMem_EnableMemoryMapped(hextmem) == EXTMEM_OK)
   {
-    volatile uint32_t *pSrc = (volatile uint32_t *)(hextmem->MemoryMappedBase + TargetAddress);
+    volatile uint32_t *pSrc = (volatile uint32_t *)(uintptr_t)(hextmem->MemoryMappedBase + TargetAddress);
     volatile uint32_t dummy = 0;
     uint32_t words = TotalTransferBytes / 4;
 

@@ -47,6 +47,10 @@ extern "C" {
 #define EXTMEM_MFG_MACRONIX           0xC2U  /*!< Macronix Manufacturer ID            */
 #define EXTMEM_MFG_WINBOND            0xEFU  /*!< Winbond Manufacturer ID             */
 
+/* HyperRAM ID0[3:0] manufacturer codes */
+#define EXTMEM_HYPERRAM_MFG_CYPRESS   0x01U  /*!< Cypress / Infineon HyperRAM         */
+#define EXTMEM_HYPERRAM_MFG_ISSI      0x03U  /*!< ISSI HyperRAM                       */
+
 /* Memory Classification -----------------------------------------------------*/
 typedef enum {
   EXTMEM_TYPE_UNKNOWN = 0,

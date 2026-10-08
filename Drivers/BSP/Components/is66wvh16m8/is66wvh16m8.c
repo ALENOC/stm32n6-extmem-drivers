@@ -24,7 +24,8 @@ int32_t IS66WVH16M8_ReadRegister(XSPI_HandleTypeDef *Ctx, uint32_t RegAddr, uint
   uint8_t buf[2];
   if (HAL_XSPI_Receive(Ctx, buf, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVH_ERROR;
 
-  *pValue = (uint16_t)(buf[0] | ((uint16_t)buf[1] << 8));
+  /* HyperBus transfers register words most significant byte first */
+  *pValue = (uint16_t)(((uint16_t)buf[0] << 8) | buf[1]);
   return IS66WVH_OK;
 }
 
@@ -41,7 +42,8 @@ int32_t IS66WVH16M8_WriteRegister(XSPI_HandleTypeDef *Ctx, uint32_t RegAddr, uin
 
   if (HAL_XSPI_HyperbusCmd(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVH_ERROR;
 
-  uint8_t buf[2] = { (uint8_t)(Value & 0xFF), (uint8_t)((Value >> 8) & 0xFF) };
+  /* HyperBus transfers register words most significant byte first */
+  uint8_t buf[2] = { (uint8_t)((Value >> 8) & 0xFF), (uint8_t)(Value & 0xFF) };
   return (HAL_XSPI_Transmit(Ctx, buf, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS66WVH_OK : IS66WVH_ERROR;
 }
 
@@ -72,7 +74,7 @@ int32_t IS66WVH16M8_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint3
 
   if (HAL_XSPI_HyperbusCfg(Ctx, &sHyperbusCfg, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVH_ERROR;
 
-  uint16_t cr0Val = IS66WVH_CR0_LATENCY_6_CYCLES | IS66WVH_CR0_VARIABLE_LATENCY | IS66WVH_CR0_DRIVE_STRENGTH_FULL;
+  uint16_t cr0Val = IS66WVH_CR0_INIT_VALUE;
   return IS66WVH16M8_WriteRegister(Ctx, IS66WVH_REG_CR0, cr0Val);
 }
 
@@ -121,4 +123,24 @@ int32_t IS66WVH16M8_EnableMemoryMappedMode(XSPI_HandleTypeDef *Ctx)
 
   sMem.TimeOutActivation = HAL_XSPI_TIMEOUT_COUNTER_DISABLE;
   return (HAL_XSPI_MemoryMapped(Ctx, &sMem) == HAL_OK) ? IS66WVH_OK : IS66WVH_ERROR;
+}
+
+int32_t IS66WVH16M8_EnterDeepPowerDown(XSPI_HandleTypeDef *Ctx)
+{
+  uint16_t cr0 = 0;
+
+  /* Deep power down is entered by writing 0 to CR0[15] */
+  if (IS66WVH16M8_ReadRegister(Ctx, IS66WVH_REG_CR0, &cr0) != IS66WVH_OK) return IS66WVH_ERROR;
+  cr0 = (uint16_t)(cr0 & ~IS66WVH_CR0_DPD_NORMAL);
+  return IS66WVH16M8_WriteRegister(Ctx, IS66WVH_REG_CR0, cr0);
+}
+
+int32_t IS66WVH16M8_LeaveDeepPowerDown(XSPI_HandleTypeDef *Ctx)
+{
+  uint16_t dummy = 0;
+
+  /* Any transaction holding CS# low for tDPDCSL wakes the device; the data returned is ignored */
+  int32_t ret = IS66WVH16M8_ReadRegister(Ctx, IS66WVH_REG_ID0, &dummy);
+  HAL_Delay(IS66WVH_DPD_EXIT_TIME_MS);
+  return ret;
 }

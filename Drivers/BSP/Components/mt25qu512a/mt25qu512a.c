@@ -122,6 +122,7 @@ int32_t MT25QU_Enter4ByteAddressMode(XSPI_HandleTypeDef *Ctx)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
+
   if (MT25QU_WriteEnable(Ctx) != MT25Q_OK) return MT25Q_ERROR;
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
@@ -141,6 +142,7 @@ int32_t MT25QU_Enter4ByteAddressMode(XSPI_HandleTypeDef *Ctx)
 int32_t MT25QU_Exit4ByteAddressMode(XSPI_HandleTypeDef *Ctx)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
+
 
   if (MT25QU_WriteEnable(Ctx) != MT25Q_OK) return MT25Q_ERROR;
 
@@ -178,8 +180,8 @@ int32_t MT25QU_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_t M
 
   if (MT25QU_Reset(Ctx) != MT25Q_OK) return MT25Q_ERROR;
 
-  /* If memory is > 128Mb (16MB), enter 4-byte address mode */
-  if (MemorySize > HAL_XSPI_SIZE_16MB)
+  /* Above 128 Mbits (16 MBytes, DEVSIZE code HAL_XSPI_SIZE_128MB) the array needs 4-byte addresses */
+  if (MemorySize > HAL_XSPI_SIZE_128MB)
   {
     return MT25QU_Enter4ByteAddressMode(Ctx);
   }
@@ -324,7 +326,32 @@ int32_t MT25QU_EraseChip(XSPI_HandleTypeDef *Ctx)
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
   if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT25Q_ERROR;
-  return MT25QU_AutoPollingMemReady(Ctx, 60000);
+  return MT25QU_AutoPollingMemReady(Ctx, 600000);
+}
+
+int32_t MT25QU_EraseDie(XSPI_HandleTypeDef *Ctx, uint32_t DieAddress)
+{
+  XSPI_RegularCmdTypeDef sCmd = {0};
+
+  if (MT25QU_WriteEnable(Ctx) != MT25Q_OK) return MT25Q_ERROR;
+
+  /* Multi-die parts (1 Gb and above) reject BULK ERASE: DIE ERASE needs 4-byte address mode */
+  sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
+  sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
+  sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_8_BITS;
+  sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
+  sCmd.Instruction        = MT25Q_CMD_DIE_ERASE;
+  sCmd.AddressMode        = HAL_XSPI_ADDRESS_1_LINE;
+  sCmd.AddressWidth       = HAL_XSPI_ADDRESS_32_BITS;
+  sCmd.AddressDTRMode     = HAL_XSPI_ADDRESS_DTR_DISABLE;
+  sCmd.Address            = DieAddress;
+  sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
+  sCmd.DataMode           = HAL_XSPI_DATA_NONE;
+  sCmd.DummyCycles        = 0;
+  sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
+
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT25Q_ERROR;
+  return MT25QU_AutoPollingMemReady(Ctx, 600000);
 }
 
 int32_t MT25QU_EnableMemoryMappedModeEx(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles, uint32_t AddressWidth)

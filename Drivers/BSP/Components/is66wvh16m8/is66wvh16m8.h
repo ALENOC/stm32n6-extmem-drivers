@@ -35,12 +35,32 @@ extern "C" {
 #define IS66WVH_REG_CR0                  0x00001000U
 #define IS66WVH_REG_CR1                  0x00001002U
 
-/* Configuration Register 0 Bits */
-#define IS66WVH_CR0_VARIABLE_LATENCY     (0x00U << 3)
-#define IS66WVH_CR0_FIXED_LATENCY        (0x01U << 3)
-#define IS66WVH_CR0_LATENCY_5_CYCLES     (0x00U << 4)
-#define IS66WVH_CR0_LATENCY_6_CYCLES     (0x01U << 4)
-#define IS66WVH_CR0_DRIVE_STRENGTH_FULL  (0x00U << 2)
+/* CR0 Bit Definitions (HyperRAM CR0, default 0x8F1F) */
+#define IS66WVH_CR0_DPD_NORMAL           (1U << 15)       /* 1 = normal operation, 0 = enter deep power down */
+#define IS66WVH_CR0_DRIVE_STRENGTH_MASK  (0x7U << 12)
+#define IS66WVH_CR0_DRIVE_STRENGTH_DEF   (0x0U << 12)     /* Default output impedance */
+#define IS66WVH_CR0_RESERVED_ONES        (0xFU << 8)      /* Bits [11:8] must be written as 1 */
+#define IS66WVH_CR0_LATENCY_MASK         (0xFU << 4)
+#define IS66WVH_CR0_LATENCY_5_CYCLES     (0x0U << 4)      /* Up to 133 MHz */
+#define IS66WVH_CR0_LATENCY_6_CYCLES     (0x1U << 4)      /* Up to 166 MHz (default) */
+#define IS66WVH_CR0_LATENCY_7_CYCLES     (0x2U << 4)      /* Up to 200 MHz */
+#define IS66WVH_CR0_LATENCY_3_CYCLES     (0xEU << 4)      /* Up to 85 MHz  */
+#define IS66WVH_CR0_LATENCY_4_CYCLES     (0xFU << 4)      /* Up to 104 MHz */
+#define IS66WVH_CR0_FIXED_LATENCY        (1U << 3)        /* 1 = fixed 2x latency, 0 = variable */
+#define IS66WVH_CR0_VARIABLE_LATENCY     (0U << 3)
+#define IS66WVH_CR0_LEGACY_WRAP          (1U << 2)        /* 1 = legacy wrapped burst, 0 = hybrid burst */
+#define IS66WVH_CR0_BURST_128B           (0x0U << 0)
+#define IS66WVH_CR0_BURST_64B            (0x1U << 0)
+#define IS66WVH_CR0_BURST_16B            (0x2U << 0)
+#define IS66WVH_CR0_BURST_32B            (0x3U << 0)
+
+/* Initial configuration: normal operation, 6 clock variable latency, legacy 32 byte wrap */
+#define IS66WVH_CR0_INIT_VALUE           (IS66WVH_CR0_DPD_NORMAL | IS66WVH_CR0_DRIVE_STRENGTH_DEF | IS66WVH_CR0_RESERVED_ONES | \
+                                          IS66WVH_CR0_LATENCY_6_CYCLES | IS66WVH_CR0_VARIABLE_LATENCY | \
+                                          IS66WVH_CR0_LEGACY_WRAP | IS66WVH_CR0_BURST_32B)
+
+/* Wake-up time after deep power down exit (tEXTDPD, 150 us max) */
+#define IS66WVH_DPD_EXIT_TIME_MS         1U
 
 /* Exported Functions --------------------------------------------------------*/
 int32_t IS66WVH16M8_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_t MemorySize);
@@ -49,6 +69,8 @@ int32_t IS66WVH16M8_WriteRegister(XSPI_HandleTypeDef *Ctx, uint32_t RegAddr, uin
 int32_t IS66WVH16M8_Read(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size);
 int32_t IS66WVH16M8_Write(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *pData, uint32_t Size);
 int32_t IS66WVH16M8_EnableMemoryMappedMode(XSPI_HandleTypeDef *Ctx);
+int32_t IS66WVH16M8_EnterDeepPowerDown(XSPI_HandleTypeDef *Ctx);
+int32_t IS66WVH16M8_LeaveDeepPowerDown(XSPI_HandleTypeDef *Ctx);
 
 #ifdef __cplusplus
 }

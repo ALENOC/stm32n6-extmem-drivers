@@ -59,54 +59,68 @@ int32_t IS66WV_FMC_Init(SRAM_HandleTypeDef *hsram, uint32_t Bank, const IS66WV_F
   return IS66WV_FMC_OK;
 }
 
-int32_t IS66WV_FMC_Read(uint32_t BaseAddr, uint32_t Offset, uint8_t *pData, uint32_t Size)
+/* CPU accesses to the FMC window. Host unit tests route them to the emulated array. */
+static void IS66WV_FMC_CopyIn(uint32_t BaseAddr, uint32_t Offset, uint8_t *pData, uint32_t Size)
 {
 #ifdef EXTMEM_UNIT_TEST
   (void)BaseAddr;
-  uint8_t *pSrc = MockHAL_GetMemoryBuffer() + (Offset % MockHAL_GetMemoryBufferSize());
-  memcpy(pData, (const void *)pSrc, Size);
-  return IS66WV_FMC_OK;
+  MockHAL_RamRead(Offset, pData, Size);
 #else
-  volatile uint8_t *pSrc = (volatile uint8_t *)(uintptr_t)(BaseAddr + Offset);
-  memcpy(pData, (const void *)pSrc, Size);
-  return IS66WV_FMC_OK;
+  const volatile uint8_t *pSrc = (const volatile uint8_t *)(uintptr_t)(BaseAddr + Offset);
+  for (uint32_t i = 0; i < Size; i++)
+  {
+    pData[i] = pSrc[i];
+  }
 #endif
+}
+
+static void IS66WV_FMC_CopyOut(uint32_t BaseAddr, uint32_t Offset, const uint8_t *pData, uint32_t Size)
+{
+#ifdef EXTMEM_UNIT_TEST
+  (void)BaseAddr;
+  MockHAL_RamWrite(Offset, pData, Size);
+#else
+  volatile uint8_t *pDst = (volatile uint8_t *)(uintptr_t)(BaseAddr + Offset);
+  for (uint32_t i = 0; i < Size; i++)
+  {
+    pDst[i] = pData[i];
+  }
+#endif
+}
+
+int32_t IS66WV_FMC_Read(uint32_t BaseAddr, uint32_t Offset, uint8_t *pData, uint32_t Size)
+{
+  if (pData == NULL) return IS66WV_FMC_ERROR;
+  IS66WV_FMC_CopyIn(BaseAddr, Offset, pData, Size);
+  return IS66WV_FMC_OK;
 }
 
 int32_t IS66WV_FMC_Write(uint32_t BaseAddr, uint32_t Offset, const uint8_t *pData, uint32_t Size)
 {
-#ifdef EXTMEM_UNIT_TEST
-  (void)BaseAddr;
-  uint8_t *pDst = MockHAL_GetMemoryBuffer() + (Offset % MockHAL_GetMemoryBufferSize());
-  memcpy((void *)pDst, pData, Size);
+  if (pData == NULL) return IS66WV_FMC_ERROR;
+  IS66WV_FMC_CopyOut(BaseAddr, Offset, pData, Size);
   return IS66WV_FMC_OK;
-#else
-  volatile uint8_t *pDst = (volatile uint8_t *)(uintptr_t)(BaseAddr + Offset);
-  memcpy((void *)pDst, pData, Size);
-  return IS66WV_FMC_OK;
-#endif
 }
 
 int32_t IS66WV_FMC_TestPattern(uint32_t BaseAddr, uint32_t TestSizeBytes)
 {
-#ifdef EXTMEM_UNIT_TEST
-  (void)BaseAddr;
-  volatile uint32_t *pMem = (volatile uint32_t *)(void *)MockHAL_GetMemoryBuffer();
-#else
-  volatile uint32_t *pMem = (volatile uint32_t *)(uintptr_t)BaseAddr;
-#endif
-  uint32_t words = TestSizeBytes / 4;
+  uint32_t words = TestSizeBytes / 4U;
 
-  /* Write test pattern */
+  /* Write an address dependent pattern so stuck and shorted address lines are caught too */
   for (uint32_t i = 0; i < words; i++)
   {
-    pMem[i] = (uint32_t)(0xAA550000U ^ i);
+    uint32_t v = 0xAA550000U ^ i;
+    uint8_t b[4] = { (uint8_t)v, (uint8_t)(v >> 8), (uint8_t)(v >> 16), (uint8_t)(v >> 24) };
+    IS66WV_FMC_CopyOut(BaseAddr, i * 4U, b, 4U);
   }
 
   /* Verify test pattern */
   for (uint32_t i = 0; i < words; i++)
   {
-    if (pMem[i] != (uint32_t)(0xAA550000U ^ i))
+    uint8_t b[4];
+    IS66WV_FMC_CopyIn(BaseAddr, i * 4U, b, 4U);
+    uint32_t v = (uint32_t)b[0] | ((uint32_t)b[1] << 8) | ((uint32_t)b[2] << 16) | ((uint32_t)b[3] << 24);
+    if (v != (0xAA550000U ^ i))
     {
       return IS66WV_FMC_ERROR;
     }

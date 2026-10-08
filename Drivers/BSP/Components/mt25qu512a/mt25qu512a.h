@@ -41,7 +41,7 @@ extern "C" {
 #define MT25Q_TIMEOUT                    (-3)
 
 /* JEDEC Identification */
-#define MT25Q_MANUFACTURER_ID            0x2CU
+#define MT25Q_MANUFACTURER_ID            0x20U                   /* MT25Q reports the legacy Numonyx/ST ID */
 #define MT25Q_MEMORY_TYPE_3V0            0xBAU                   /* MT25QL (3.0V) */
 #define MT25Q_MEMORY_TYPE_1V8            0xBBU                   /* MT25QU (1.8V) */
 
@@ -66,6 +66,8 @@ extern "C" {
 #define MT25Q_CMD_SECTOR_ERASE_64K       0xD8U                   /* 64KB Sector Erase */
 #define MT25Q_CMD_SECTOR_ERASE_64K_4B    0xDCU
 #define MT25Q_CMD_CHIP_ERASE             0xC7U
+#define MT25Q_CMD_DIE_ERASE              0xC4U                   /* Die erase (1 Gb and above) */
+#define MT25Q_DIE_SIZE                   (64U * 1024U * 1024U)   /* 512 Mbit per die */
 #define MT25Q_CMD_ENTER_4BYTE_ADDR       0xB7U
 #define MT25Q_CMD_EXIT_4BYTE_ADDR        0xE9U
 #define MT25Q_CMD_RESET_ENABLE           0x66U
@@ -96,6 +98,7 @@ int32_t MT25QU_PageProgramQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, const 
 int32_t MT25QU_EraseSector4K(XSPI_HandleTypeDef *Ctx, uint32_t Address);
 int32_t MT25QU_EraseBlock64K(XSPI_HandleTypeDef *Ctx, uint32_t Address);
 int32_t MT25QU_EraseChip(XSPI_HandleTypeDef *Ctx);
+int32_t MT25QU_EraseDie(XSPI_HandleTypeDef *Ctx, uint32_t DieAddress);
 int32_t MT25QU_EnableMemoryMappedMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles);
 int32_t MT25QU_Reset(XSPI_HandleTypeDef *Ctx);
 

@@ -18,8 +18,17 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential gcc
+          sudo apt-get install -y build-essential gcc python3
 
       - name: Compile and run test suite
         run: |
           make test
+
+      - name: Driver coverage (100% of lines required)
+        run: |
+          make coverage
+
+      - name: Examples compile against the driver API
+        run: |
+          make clean
+          make examples

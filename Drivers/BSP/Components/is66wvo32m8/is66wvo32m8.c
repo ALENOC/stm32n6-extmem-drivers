@@ -24,12 +24,14 @@ int32_t IS66WVO32M8_ReadReg(XSPI_HandleTypeDef *Ctx, uint32_t RegAddr, uint8_t *
   sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
   sCmd.DataMode           = HAL_XSPI_DATA_8_LINES;
   sCmd.DataDTRMode        = HAL_XSPI_DATA_DTR_ENABLE;
-  sCmd.DataLength         = 1;
+  sCmd.DataLength         = 2; /* DDR register access transfers a byte pair */
   sCmd.DummyCycles        = DummyCycles;
   sCmd.DQSMode            = HAL_XSPI_DQS_ENABLE;
-
   if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVO_ERROR;
-  return (HAL_XSPI_Receive(Ctx, pValue, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS66WVO_OK : IS66WVO_ERROR;
+  uint8_t buf[2] = {0};
+  if (HAL_XSPI_Receive(Ctx, buf, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVO_ERROR;
+  *pValue = buf[0];
+  return IS66WVO_OK;
 }
 
 int32_t IS66WVO32M8_WriteReg(XSPI_HandleTypeDef *Ctx, uint32_t RegAddr, uint8_t Value)
@@ -48,12 +50,14 @@ int32_t IS66WVO32M8_WriteReg(XSPI_HandleTypeDef *Ctx, uint32_t RegAddr, uint8_t 
   sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
   sCmd.DataMode           = HAL_XSPI_DATA_8_LINES;
   sCmd.DataDTRMode        = HAL_XSPI_DATA_DTR_ENABLE;
-  sCmd.DataLength         = 1;
+  sCmd.DataLength         = 2; /* DDR register access transfers a byte pair */
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_ENABLE;
 
   if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVO_ERROR;
-  return (HAL_XSPI_Transmit(Ctx, &Value, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS66WVO_OK : IS66WVO_ERROR;
+  /* The second byte of the pair is ignored by the device */
+  uint8_t buf[2] = { Value, Value };
+  return (HAL_XSPI_Transmit(Ctx, buf, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS66WVO_OK : IS66WVO_ERROR;
 }
 
 int32_t IS66WVO32M8_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_t MemorySize)
@@ -68,7 +72,7 @@ int32_t IS66WVO32M8_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint3
   Ctx->Init.ClockPrescaler          = ClockPrescaler;
   Ctx->Init.SampleShifting          = HAL_XSPI_SAMPLE_SHIFT_NONE;
   Ctx->Init.DelayHoldQuarterCycle   = HAL_XSPI_DHQC_ENABLE;
-  Ctx->Init.ChipSelectBoundary      = HAL_XSPI_BONDARYOF_16KB;
+  Ctx->Init.ChipSelectBoundary      = HAL_XSPI_BONDARYOF_16KB; /* 16 Kbits = 2 KBytes page */
   Ctx->Init.FreeRunningClock        = HAL_XSPI_FREERUNCLK_DISABLE;
   Ctx->Init.WrapSize                = HAL_XSPI_WRAP_NOT_SUPPORTED;
 
@@ -78,7 +82,7 @@ int32_t IS66WVO32M8_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint3
   }
 
   /* Reset chip */
-  IS66WVO32M8_Reset(Ctx);
+  if (IS66WVO32M8_Reset(Ctx) != IS66WVO_OK) return IS66WVO_ERROR;
 
   /* Configure MR0: Read latency 5 cycles, variable latency */
   uint8_t mr0 = IS66WVO_MR0_READ_LATENCY_5 | IS66WVO_MR0_VARIABLE_LATENCY | IS66WVO_MR0_DRIVE_STRENGTH_FULL;

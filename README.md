@@ -50,8 +50,10 @@ Supports **XSPI1**, **XSPI2**, **XSPI3** (Single, Quad, Octal DTR up to 200 MHz,
   - **MT25Q / N25Q Quad SPI NOR Flash** (`MT25QU` 1.8V & `MT25QL` 3.0V from 32Mb to 1Gb: `032/064/128/256/512/01G`): high-speed 1-4-4 Quad I/O up to 133 MHz with 4-byte address enter/exit support.
   - **Parallel NOR Flash via FMC Bank 1** (`MT28EW128`, `MT28EW256`, `MT28EW512`, `MT28EW01G`): 16-bit Asynchronous Parallel CFI NOR Flash.
 - **Auto-Discovery and Automatic Recognition**:
-  - Built-in JEDEC JESD216 SFDP (Serial Flash Discoverable Parameters) parser for dynamic detection of command sets, dummy cycles, and sector topologies.
-  - JEDEC ID (0x9F) and HyperBus registers (ID0, ID1) interrogation coupled with a chip database lookup.
+  - JEDEC ID (0x9F) lookup in the chip database, then a JEDEC JESD216 SFDP fallback for unlisted densities of the supported quad NOR vendors (ISSI, Micron MT25Q, Infineon).
+  - HyperRAM detection through the HyperBus ID0 register (manufacturer and row/column geometry give the capacity).
+  - HyperFlash has no register space: select it with `Config.ForcedDeviceType` or `Config.ForcedPartNumber`.
+  - When nothing answers, `ExtMem_Init()` returns `EXTMEM_NOT_SUPPORTED` instead of guessing a device.
 - **Execute-In-Place (XIP) Memory-Mapped Mode**:
   - Single-call transition into memory-mapped address space: `0x90000000` (XSPI1), `0x70000000` (XSPI2), `0x60000000` (FMC).
 - **Multi-Density Shared Driver Architecture**:
@@ -79,7 +81,7 @@ Supports **XSPI1**, **XSPI2**, **XSPI3** (Single, Quad, Octal DTR up to 200 MHz,
 | **ISSI** | Octal PSRAM (`IS66WVO/IS67WVO`) | XSPI1 / XSPI2 | 200 MHz | xSPI Profile 2.0 (8D-8D-8D) | `is66wvo32m8` |
 | **ISSI** | HyperRAM™ PSRAM (`IS66WVH/IS67WVH`) | XSPI1 / XSPI2 | 200 MHz | HyperBus™ DDR | `is66wvh16m8` |
 | **ISSI** | Quad SPI PSRAM (`IS66WVS/IS67WVS`) | XSPI1 / XSPI2 / XSPI3 | 133 MHz | 1-4-4 Quad SPI | `is66wvs16m8` |
-| **ISSI** | Serial Static RAM (`IS62WVS/IS65WVS`) | XSPI1 / XSPI2 / XSPI3 | 45 MHz | SPI / SQI (1-1-1 / 1-4-4) | `is62wvs` |
+| **ISSI** | Serial Static RAM (`IS62WVS/IS65WVS`) | XSPI1 / XSPI2 / XSPI3 | 45 MHz | SPI / SQI (1-1-1 / 4-4-4) | `is62wvs` |
 | **ISSI/IFX** | Parallel Asynch PSRAM (`IS66WV/CY62`) | FMC (16-bit) | Asynchronous (~10-55ns) | 16-bit Parallel SRAM/PSRAM | `is66wv_fmc` |
 | **Micron** | Xccela™ Octal NOR (`MT35XU/MT35XL`) | XSPI1 / XSPI2 | 200 MHz | 8D-8D-8D (Octal DTR) | `mt35xu512a` |
 | **Micron** | MT25Q Quad NOR (`MT25QU/MT25QL`) | XSPI1 / XSPI2 / XSPI3 | 133 MHz | 1-4-4 Quad SPI | `mt25qu512a` |
@@ -116,15 +118,23 @@ stm32n6-extmem-drivers/
 │           ├── stm32n6_extmem.c
 │           ├── stm32n6_extmem_conf.h
 │           ├── stm32n6_extmem_conf_template.h
-│           └── stm32n6_extmem_devices.h
+│           ├── stm32n6_extmem_devices.h
+│           └── stm32n6_extmem_devices.c     # Device database (defined once)
 ├── Examples/
 │   ├── extmem_demo.c                # Hardware diagnostics, self-test & XIP execution
 │   └── extmem_benchmark.c           # Read/Write throughput benchmark in MB/s
 ├── Tests/
-│   ├── mock_hal.h                   # STM32N6 HAL Mock (XSPI, FMC, Cache, RCC)
-│   ├── mock_hal.c                   # Register, bus transaction and memory array simulator
-│   ├── extmem_unit_tests.h          # Unit test definitions
-│   ├── extmem_unit_tests.c          # 16 exhaustive unit tests
+│   ├── mock_hal.h / mock_hal.c      # STM32N6 HAL mock with command log, fault injection and device emulation
+│   ├── test_common.h / .c           # Protocol assertions (command phases, sequences, fault sweeps)
+│   ├── test_sfdp_db.c               # SFDP parser and device database checks
+│   ├── test_octal_nor.c             # S28Hx-T, IS25LX/WX, MT35X
+│   ├── test_quad_nor.c              # S25Hx-T / S25FL-L, IS25LP/WP, MT25Q
+│   ├── test_hyperbus.c              # HyperFlash and HyperRAM
+│   ├── test_ram.c                   # Octal / quad PSRAM and serial SRAM
+│   ├── test_fmc.c                   # FMC PSRAM/SRAM and parallel NOR
+│   ├── test_manager.c               # Unified manager, every database device end to end
+│   ├── coverage_report.py           # gcov summary used by `make coverage`
+│   ├── extmem_unit_tests.h          # Unit test declarations
 │   └── main_test.c                  # Host test runner for Linux/macOS/Windows
 ├── Docs/
 │   ├── STM32CubeIDE_Integration_Guide.md # Step-by-step CubeIDE setup & Linker guide
@@ -151,6 +161,8 @@ stm32n6-extmem-drivers/
    - `../Drivers/BSP/Components/s28hs512t` (along with any other required component directories)
 3. **Configure Settings**:
    Copy `stm32n6_extmem_conf_template.h` to `stm32n6_extmem_conf.h` and tune clock prescalers and timeout thresholds.
+   For FMC memories, set `Config.FmcClockHz` to the FMC kernel clock when it differs from HCLK: the asynchronous timings (ADDSET, DATAST, BUSTURN) are computed from it and the device access times.
+   Pin muxing stays in `HAL_XSPI_MspInit()` / `HAL_SRAM_MspInit()` of your project (CubeMX generated); `ExtMem_Init()` enables the VDDIO domain, clocks and the XSPI I/O manager.
 4. **Linker Script and MPU Setup**:
    Refer to [Docs/STM32CubeIDE_Integration_Guide.md](Docs/STM32CubeIDE_Integration_Guide.md) for configuring Cortex-M55 MPU regions and linker sections (`.extmem_text` for XIP firmware and `.extmem_ram` for framebuffers/NPU tensors).
 
@@ -211,72 +223,25 @@ ExtMem_Read(&hextmem, 0x00000000, rxData, sizeof(rxData));
 
 ## 🧪 Unit Test Suite & Host Simulation
 
-The repository includes a comprehensive automated test harness featuring a **Mock Hardware Abstraction Layer** (`Tests/mock_hal.c`) that fully emulates STM32N6 XSPI/FMC peripherals and Infineon/ISSI/Micron device behavior on any desktop environment (Linux, macOS, Windows) without requiring target hardware.
+The host test harness replaces the STM32CubeN6 HAL with a mock (`Tests/mock_hal.c`) whose constants follow `stm32n6xx_hal_xspi.h` / `stm32n6xx_ll_fmc.h`. The mock:
+
+- logs every HAL call, so each test checks the exact instruction, address, alternate byte, dummy and data phases (lines, width, STR/DTR, DQS) sent for every command;
+- emulates the memories at command level: opcode decoding (including the 8D-8D-8D instruction extension), write enable latch, 4-byte address mode, status / configuration / volatile registers, NOR program (bits only cleared) and erase, HyperBus register space, and the HyperFlash and parallel NOR command state machines;
+- injects a failure into any HAL call: every driver function is run once per HAL call with that call failing, and must report the error.
+
+The manager test brings up **every device of the database** through `ExtMem_Init()` and runs program / erase / read, DMA, memory-mapped mode, reset, power down and deinit on it.
 
 ### Running Tests Locally
 ```bash
-# Compile and execute the 19 unit tests
-make test
+make test        # 21 test groups
+make coverage    # gcov line + branch coverage of every driver source (100% required)
+make examples    # the examples must keep compiling against the driver API
 ```
 
-### Expected Output
-```text
-====================================================================
-  STM32N6 External Memory Driver Suite - Host Unit Tests
-  Target Architecture: STM32N6 (ARM Cortex-M55 + NPU)
-  Supported Peripherals: XSPI1, XSPI2, XSPI3, FMC
-====================================================================
+The CI workflow runs all three targets on every push and pull request.
 
-[INFO] Running 19 unit tests...
-
-[ RUN      ] [ 1/19] SFDP Discovery Parser (JEDEC JESD216)
-[       OK ] [ 1/19] SFDP Discovery Parser (JEDEC JESD216)
-[ RUN      ] [ 2/19] Infineon SEMPER Octal NOR Flash (S28HS512T)
-[       OK ] [ 2/19] Infineon SEMPER Octal NOR Flash (S28HS512T)
-[ RUN      ] [ 3/19] Infineon HyperFlash NOR Flash (S26KS512S)
-[       OK ] [ 3/19] Infineon HyperFlash NOR Flash (S26KS512S)
-[ RUN      ] [ 4/19] Infineon HyperRAM PSRAM (S27KS0641)
-[       OK ] [ 4/19] Infineon HyperRAM PSRAM (S27KS0641)
-[ RUN      ] [ 5/19] Infineon SEMPER/FL Quad NOR Flash (S25HL512T)
-[       OK ] [ 5/19] Infineon SEMPER/FL Quad NOR Flash (S25HL512T)
-[ RUN      ] [ 6/19] ISSI Octal NOR Flash (IS25LX256)
-[       OK ] [ 6/19] ISSI Octal NOR Flash (IS25LX256)
-[ RUN      ] [ 7/19] ISSI Quad NOR Flash (IS25LP256)
-[       OK ] [ 7/19] ISSI Quad NOR Flash (IS25LP256)
-[ RUN      ] [ 8/19] ISSI Octal PSRAM xSPI Profile 2.0 (IS66WVO32M8)
-[       OK ] [ 8/19] ISSI Octal PSRAM xSPI Profile 2.0 (IS66WVO32M8)
-[ RUN      ] [ 9/19] ISSI HyperRAM PSRAM (IS66WVH16M8)
-[       OK ] [ 9/19] ISSI HyperRAM PSRAM (IS66WVH16M8)
-[ RUN      ] [10/19] ISSI Quad SPI PSRAM (IS66WVS16M8)
-[       OK ] [10/19] ISSI Quad SPI PSRAM (IS66WVS16M8)
-[ RUN      ] [11/19] ISSI FMC 16-bit Parallel PSRAM (IS66WV51216)
-[       OK ] [11/19] ISSI FMC 16-bit Parallel PSRAM (IS66WV51216)
-[ RUN      ] [12/19] ISSI FMC 16-bit Parallel NOR Flash (IS29GL512)
-[       OK ] [12/19] ISSI FMC 16-bit Parallel NOR Flash (IS29GL512)
-[ RUN      ] [13/19] ISSI Serial SRAM (IS62WVS / IS65WVS)
-[       OK ] [13/19] ISSI Serial SRAM (IS62WVS / IS65WVS)
-[ RUN      ] [14/19] Micron Xccela Octal NOR Flash (MT35XU512ABA)
-[       OK ] [14/19] Micron Xccela Octal NOR Flash (MT35XU512ABA)
-[ RUN      ] [15/19] Micron Quad SPI NOR Flash (MT25QU512ABB)
-[       OK ] [15/19] Micron Quad SPI NOR Flash (MT25QU512ABB)
-[ RUN      ] [16/19] STM32N6 ExtMem Unified Manager & Auto-Detect
-[       OK ] [16/19] STM32N6 ExtMem Unified Manager & Auto-Detect
-[ RUN      ] [17/19] STM32N6 ExtMem Multi-Density & Shared Drivers
-[       OK ] [17/19] STM32N6 ExtMem Multi-Density & Shared Drivers
-[ RUN      ] [18/19] STM32N6 ExtMem Boundary Protection & Bounds Check
-[       OK ] [18/19] STM32N6 ExtMem Boundary Protection & Bounds Check
-[ RUN      ] [19/19] STM32N6 XSPI DEVSIZE Calculation (per RM0486)
-[       OK ] [19/19] STM32N6 XSPI DEVSIZE Calculation (per RM0486)
-
-====================================================================
-Test Results Summary:
-  Total:   19
-  Passed:  19
-  Failed:  0
-====================================================================
->>> ALL TESTS PASSED SUCCESSFULLY! <<<
-```
-```
+> [!NOTE]
+> The host suite proves the drivers send the command sequences documented by the memory vendors and handle every error path. It does not replace validation on real hardware: signal integrity, timing margins and silicon errata can only be checked on a board.
 
 ---
 

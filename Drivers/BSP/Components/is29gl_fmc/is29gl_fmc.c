@@ -23,11 +23,7 @@
 static inline void FMC_WriteWord(uint32_t BaseAddr, uint32_t WordOffset, uint16_t Data)
 {
 #ifdef EXTMEM_UNIT_TEST
-  (void)BaseAddr;
-  uint8_t *pBuf = MockHAL_GetMemoryBuffer();
-  uint32_t byteOffset = (WordOffset * 2) % MockHAL_GetMemoryBufferSize();
-  pBuf[byteOffset]     = (uint8_t)(Data & 0xFF);
-  pBuf[byteOffset + 1] = (uint8_t)((Data >> 8) & 0xFF);
+  MockHAL_FmcWrite16(BaseAddr, WordOffset * 2, Data);
 #else
   volatile uint16_t *pDst = (volatile uint16_t *)(uintptr_t)(BaseAddr + (WordOffset * 2));
   *pDst = Data;
@@ -37,10 +33,7 @@ static inline void FMC_WriteWord(uint32_t BaseAddr, uint32_t WordOffset, uint16_
 static inline uint16_t FMC_ReadWord(uint32_t BaseAddr, uint32_t WordOffset)
 {
 #ifdef EXTMEM_UNIT_TEST
-  (void)BaseAddr;
-  uint8_t *pBuf = MockHAL_GetMemoryBuffer();
-  uint32_t byteOffset = (WordOffset * 2) % MockHAL_GetMemoryBufferSize();
-  return (uint16_t)(pBuf[byteOffset] | ((uint16_t)pBuf[byteOffset + 1] << 8));
+  return MockHAL_FmcRead16(BaseAddr, WordOffset * 2);
 #else
   volatile uint16_t *pSrc = (volatile uint16_t *)(uintptr_t)(BaseAddr + (WordOffset * 2));
   return *pSrc;
@@ -121,16 +114,51 @@ int32_t IS29GL_FMC_ReadID(uint32_t BaseAddr, uint16_t *pMfgId, uint16_t *pDevId)
 
 int32_t IS29GL_FMC_Read(uint32_t BaseAddr, uint32_t Offset, uint8_t *pData, uint32_t Size)
 {
+  if (pData == NULL) return IS29GL_FMC_ERROR;
 #ifdef EXTMEM_UNIT_TEST
   (void)BaseAddr;
-  uint8_t *pSrc = MockHAL_GetMemoryBuffer() + (Offset % MockHAL_GetMemoryBufferSize());
-  memcpy(pData, (const void *)pSrc, Size);
-  return IS29GL_FMC_OK;
+  MockHAL_RamRead(Offset, pData, Size);
 #else
-  volatile uint8_t *pSrc = (volatile uint8_t *)(uintptr_t)(BaseAddr + Offset);
-  memcpy(pData, (const void *)pSrc, Size);
-  return IS29GL_FMC_OK;
+  const volatile uint8_t *pSrc = (const volatile uint8_t *)(uintptr_t)(BaseAddr + Offset);
+  for (uint32_t i = 0; i < Size; i++)
+  {
+    pData[i] = pSrc[i];
+  }
 #endif
+  return IS29GL_FMC_OK;
+}
+
+/* Embedded algorithm completion: DQ7 equals the expected value, DQ5 set means the operation timed out */
+static int32_t IS29GL_FMC_PollDQ7(uint32_t BaseAddr, uint32_t WordOffset, uint16_t Expected, uint32_t TimeoutMs, bool Sleep)
+{
+  uint32_t tickstart = HAL_GetTick();
+
+  do
+  {
+    uint16_t status = FMC_ReadWord(BaseAddr, WordOffset);
+    if ((status & IS29GL_SR_DQ7_POLL) == (Expected & IS29GL_SR_DQ7_POLL))
+    {
+      return IS29GL_FMC_OK;
+    }
+    if (status & IS29GL_SR_DQ5_EXCEEDED)
+    {
+      /* DQ7 must be read again after DQ5 goes high */
+      status = FMC_ReadWord(BaseAddr, WordOffset);
+      if ((status & IS29GL_SR_DQ7_POLL) == (Expected & IS29GL_SR_DQ7_POLL))
+      {
+        return IS29GL_FMC_OK;
+      }
+      (void)IS29GL_FMC_Reset(BaseAddr);
+      return IS29GL_FMC_ERROR;
+    }
+    if (Sleep)
+    {
+      HAL_Delay(1);
+    }
+  } while ((HAL_GetTick() - tickstart) < TimeoutMs);
+
+  (void)IS29GL_FMC_Reset(BaseAddr);
+  return IS29GL_FMC_TIMEOUT;
 }
 
 int32_t IS29GL_FMC_ProgramWord(uint32_t BaseAddr, uint32_t Offset, uint16_t Data)
@@ -142,33 +170,39 @@ int32_t IS29GL_FMC_ProgramWord(uint32_t BaseAddr, uint32_t Offset, uint16_t Data
   FMC_WriteWord(BaseAddr, IS29GL_UNLOCK_ADDR1, IS29GL_CMD_PROGRAM);
   FMC_WriteWord(BaseAddr, wordOffset, Data);
 
-  /* Data polling algorithm on DQ7 */
-  uint32_t tickstart = HAL_GetTick();
-  while ((HAL_GetTick() - tickstart) < 20)
-  {
-    uint16_t status = FMC_ReadWord(BaseAddr, wordOffset);
-    if ((status & IS29GL_SR_DQ7_POLL) == (Data & IS29GL_SR_DQ7_POLL))
-    {
-      return IS29GL_FMC_OK;
-    }
-  }
-
-  return IS29GL_FMC_OK;
+  return IS29GL_FMC_PollDQ7(BaseAddr, wordOffset, Data, 20, false);
 }
 
 int32_t IS29GL_FMC_ProgramBuffer(uint32_t BaseAddr, uint32_t Offset, const uint8_t *pData, uint32_t Size)
 {
-  uint32_t words = Size / 2;
-  const uint16_t *pWords = (const uint16_t *)pData;
+  uint32_t idx = 0;
 
-  for (uint32_t i = 0; i < words; i++)
+  while (idx < Size)
   {
-    if (IS29GL_FMC_ProgramWord(BaseAddr, Offset + (i * 2), pWords[i]) != IS29GL_FMC_OK)
+    uint32_t addr = Offset + idx;
+    /* Programming 0xFF leaves a NOR byte unchanged: pad unaligned head and odd tail.
+     * The FMC maps the byte at the even address to D[7:0]. */
+    uint8_t lo = 0xFF, hi = 0xFF;
+
+    if ((addr & 1U) == 0U)
     {
-      return IS29GL_FMC_ERROR;
+      lo = pData[idx++];
+      if (idx < Size)
+      {
+        hi = pData[idx++];
+      }
+    }
+    else
+    {
+      hi = pData[idx++];
+    }
+
+    int32_t ret = IS29GL_FMC_ProgramWord(BaseAddr, addr & ~1U, (uint16_t)(lo | ((uint16_t)hi << 8)));
+    if (ret != IS29GL_FMC_OK)
+    {
+      return ret;
     }
   }
-
   return IS29GL_FMC_OK;
 }
 
@@ -183,26 +217,8 @@ int32_t IS29GL_FMC_EraseSector(uint32_t BaseAddr, uint32_t SectorOffset)
   FMC_WriteWord(BaseAddr, IS29GL_UNLOCK_ADDR2, IS29GL_CMD_UNLOCK_DATA2);
   FMC_WriteWord(BaseAddr, wordOffset, IS29GL_CMD_SECTOR_ERASE);
 
-#ifdef EXTMEM_UNIT_TEST
-  uint8_t *pBuf = MockHAL_GetMemoryBuffer();
-  uint32_t secStart = (SectorOffset / 4096) * 4096;
-  uint32_t len = 65536;
-  if (secStart + len > MockHAL_GetMemoryBufferSize()) len = MockHAL_GetMemoryBufferSize() - secStart;
-  memset(&pBuf[secStart], 0xFF, len);
-#else
-  uint32_t tickstart = HAL_GetTick();
-  while ((HAL_GetTick() - tickstart) < 2000)
-  {
-    uint16_t status = FMC_ReadWord(BaseAddr, wordOffset);
-    if (status & IS29GL_SR_DQ7_POLL)
-    {
-      return IS29GL_FMC_OK;
-    }
-    HAL_Delay(1);
-  }
-#endif
-
-  return IS29GL_FMC_OK;
+  /* Sector erase: up to several seconds on 128 KB sectors */
+  return IS29GL_FMC_PollDQ7(BaseAddr, wordOffset, 0xFFFFU, 6000, true);
 }
 
 int32_t IS29GL_FMC_EraseChip(uint32_t BaseAddr)
@@ -214,11 +230,6 @@ int32_t IS29GL_FMC_EraseChip(uint32_t BaseAddr)
   FMC_WriteWord(BaseAddr, IS29GL_UNLOCK_ADDR2, IS29GL_CMD_UNLOCK_DATA2);
   FMC_WriteWord(BaseAddr, IS29GL_UNLOCK_ADDR1, IS29GL_CMD_CHIP_ERASE);
 
-#ifdef EXTMEM_UNIT_TEST
-  memset(MockHAL_GetMemoryBuffer(), 0xFF, MockHAL_GetMemoryBufferSize());
-#else
-  HAL_Delay(500);
-#endif
-
-  return IS29GL_FMC_OK;
+  /* Chip erase runs for minutes on 512 Mbit parts: poll until the array reads erased */
+  return IS29GL_FMC_PollDQ7(BaseAddr, 0, 0xFFFFU, 600000, true);
 }

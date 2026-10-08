@@ -39,10 +39,10 @@ Supports **XSPI1**, **XSPI2**, **XSPI3** (Single, Quad, Octal DTR up to 200 MHz,
 - **ISSI (Integrated Silicon Solution Inc.)**:
   - **Octal NOR Flash** (`IS25LX/IS25WX` 064/128/256/512): 8D-8D-8D DDR, 200 MHz (WX, 1.8 V) / 133 MHz (LX, 3.0 V).
   - **HyperFlash™** (`IS26KS/IS26KL` 128S/256S/512S).
-  - **Quad SPI NOR Flash** (`IS25LP/IS25WP` 080/016/032/064/128/256/512, `IS25LE128`, `IS25WE128`, `IS25LQ032B`, `IS25WQ032`).
-  - **Parallel NOR Flash via FMC** (`IS29GL032/064/128/256/512`).
+  - **Quad SPI NOR Flash** (`IS25LP/IS25WP` 080/016/032/064/128/256/512, `IS25LE128`, `IS25WE128`, `IS25LQ032B`).
+  - **Parallel NOR Flash via FMC** (`IS29GL032/064/128/256`).
   - **OctalRAM** (`IS66WVO8M8/16M8/32M8/64M8`, automotive `IS67WVO8M8`).
-  - **HyperRAM™** (`IS66WVH8M8`, `IS66WVH16M8`).
+  - **HyperRAM™** (`IS66WVH8M8`, `IS66WVH16M8`, dual-die `IS66WVH64M8`).
   - **Quad SPI PSRAM** (`IS66WVS1M8/2M8/4M8/8M8/16M8`, automotive `IS67WVS4M8/16M8`).
   - **Serial SRAM** (`IS62WVS/IS65WVS` 0648/1288/2568/5128, SPI/SDI/SQI).
   - **Asynchronous PSRAM via FMC** (`IS66WV51216`, `IS66WVE1M16`, `IS66WVE2M16`, `IS66WVE4M16`).
@@ -79,9 +79,9 @@ Supports **XSPI1**, **XSPI2**, **XSPI3** (Single, Quad, Octal DTR up to 200 MHz,
 | **ISSI** | Octal NOR Flash (`IS25LX/IS25WX`) | XSPI1 / XSPI2 | 200 MHz (WX) / 133 MHz (LX) | 8D-8D-8D (Octal DTR) | `is25lx256` |
 | **ISSI** | HyperFlash™ (`IS26KS/IS26KL`) | XSPI1 / XSPI2 | 166 MHz | HyperBus™ | `s26ks512s` |
 | **ISSI** | Quad NOR Flash (`IS25LP/IS25WP/IS25LE/WE/LQ/WQ`) | XSPI1 / XSPI2 / XSPI3 | 104 to 133 MHz (per part) | 1-4-4 Quad SPI | `is25lp256` |
-| **ISSI** | Parallel NOR Flash (`IS29GL032/064/128/256/512`) | FMC (16-bit) | 110 ns | 16-bit Parallel CFI NOR | `is29gl_fmc` |
+| **ISSI** | Parallel NOR Flash (`IS29GL032/064/128/256`) | FMC (16-bit) | 110 ns | 16-bit Parallel CFI NOR | `is29gl_fmc` |
 | **ISSI** | OctalRAM (`IS66WVO/IS67WVO`) | XSPI1 / XSPI2 | 200 MHz | 8D-8D-8D OPI (XSPI Macronix RAM mode) | `is66wvo32m8` |
-| **ISSI** | HyperRAM™ PSRAM (`IS66WVH`) | XSPI1 / XSPI2 | 166 MHz | HyperBus™ DDR | `is66wvh16m8` |
+| **ISSI** | HyperRAM™ PSRAM (`IS66WVH`) | XSPI1 / XSPI2 | 166 MHz (200 MHz IS66WVH64M8) | HyperBus™ DDR | `is66wvh16m8` |
 | **ISSI** | Quad SPI PSRAM (`IS66WVS/IS67WVS`) | XSPI1 / XSPI2 / XSPI3 | 104 MHz | 1-4-4 Quad SPI | `is66wvs16m8` |
 | **ISSI** | Serial Static RAM (`IS62WVS/IS65WVS`) | XSPI1 / XSPI2 / XSPI3 | 20 MHz | SPI / SQI (1-1-1 / 4-4-4) | `is62wvs` |
 | **ISSI/IFX** | Asynchronous PSRAM / SRAM (`IS66WV`, `IS66WVE`, `CY62167EV30`) | FMC (16-bit) | 70 ns | 16-bit Parallel SRAM/PSRAM | `is66wv_fmc` |
@@ -259,7 +259,7 @@ The CI workflow runs all three targets on every push and pull request.
 - **ISSI quad NOR**: the volatile Read Register is set to 11 dummy cycles; the database limits every part to the QUAD I/O FAST READ frequency its datasheet gives for 11 cycles (104 MHz on IS25WP256D/032D/016D, 112 MHz on IS25WP512M, 117 MHz on IS25LP512M, 133 MHz otherwise). IS25LQ/WQ have no Read Register: their fixed mode byte plus 4 dummy cycles run up to 104 MHz.
 - **MT25Q** keeps the factory 10 dummy cycles, which limit QUAD I/O FAST READ to 125 MHz.
 - **Stacked Micron parts** (MT25QU01G, MT35XU01G, MT35XU02G): successive flag status reads return the status of each die, so a program or erase completes only when every die reports ready.
-- **Dual-die HyperRAM** (S70KS1281 / S70KL1281): CR0 is written on both dice (CA35 selects the die) and deep power down is entered on both.
+- **Dual-die HyperRAM**: S70KS1281 / S70KL1281 get CR0 on both dice (CA35 selects the die) and enter deep power down on both. IS66WVH64M8 gets CR0 on both dice (CA37 selects the die) with the fixed latency the datasheet requires, bursts restart at the 32 MByte die boundary, and deep power down is not available.
 - **ISSI IS66WVO OctalRAM** uses the XSPI "Macronix RAM" mode with fixed latency (STM32N6 erratum ES0620). On early STM32N6 silicon this mode only decodes 13 row address bits, so only the first 8 MBytes of larger OctalRAM parts are reachable (see ES0620).
 - **Self-refreshing RAMs** (HyperRAM, OctalRAM, quad PSRAM): CS# is released at least every `EXTMEM_PSRAM_MAX_CS_LOW_NS` (1 us, valid up to 105/125 degC).
 

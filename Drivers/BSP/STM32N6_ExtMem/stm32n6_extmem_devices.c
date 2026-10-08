@@ -836,22 +836,6 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .DefaultWriteDummyCycles = 0
   },
   {
-    .PartNumber              = "IS25WQ032",
-    .Type                    = EXTMEM_TYPE_NOR_QUAD_ISSI,
-    .ManufacturerID          = 0x9D,
-    .MemoryTypeID            = 0x40,
-    .DensityID               = 0x16,
-    .CapacityBytes           = 4 * 1024 * 1024,
-    .PageSizeBytes           = 256,
-    .SectorSizeBytes         = 4 * 1024,
-    .BlockSizeBytes          = 64 * 1024,
-    .VoltageNominal          = 1.8f,
-    .MaxClockFreqMHz         = 104,
-    .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
-    .DefaultWriteDummyCycles = 0
-  },
-  {
     .PartNumber              = "IS25LE128",
     .Type                    = EXTMEM_TYPE_NOR_QUAD_ISSI,
     .ManufacturerID          = 0x9D,
@@ -887,22 +871,6 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
   /* ========================================================================= */
   /* ISSI PARALLEL NOR FLASH VIA FMC (IS29GL - 16-BIT PARALLEL CFI)           */
   /* ========================================================================= */
-  {
-    .PartNumber              = "IS29GL512",
-    .Type                    = EXTMEM_TYPE_NOR_PARALLEL_FMC,
-    .ManufacturerID          = 0x9D,
-    .MemoryTypeID            = 0x22,
-    .DensityID               = 0x23,
-    .CapacityBytes           = 64 * 1024 * 1024,
-    .PageSizeBytes           = 0,
-    .SectorSizeBytes         = 128 * 1024,
-    .BlockSizeBytes          = 128 * 1024,
-    .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 100,
-    .PreferredMode           = EXTMEM_MODE_PARALLEL_16BIT,
-    .DefaultReadDummyCycles  = 0,
-    .DefaultWriteDummyCycles = 0
-  },
   {
     .PartNumber              = "IS29GL256",
     .Type                    = EXTMEM_TYPE_NOR_PARALLEL_FMC,
@@ -1055,6 +1023,24 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
   /* ========================================================================= */
   /* ISSI HYPERRAM PSRAM (IS66WVH / IS67WVH)                                   */
   /* ========================================================================= */
+  {
+    /* Dual-die package of two 256 Mb dice, fixed latency only, no deep power down (Rev. A1 datasheet) */
+    .PartNumber              = "IS66WVH64M8",
+    .Type                    = EXTMEM_TYPE_HYPERRAM_ISSI,
+    .ManufacturerID          = 0x0F,
+    .MemoryTypeID            = 0x00,
+    .DensityID               = 0x04,
+    .CapacityBytes           = 64 * 1024 * 1024,
+    .PageSizeBytes           = 0,
+    .SectorSizeBytes         = 0,
+    .BlockSizeBytes          = 0,
+    .VoltageNominal          = 1.8f,
+    .MaxClockFreqMHz         = 200,
+    .PreferredMode           = EXTMEM_MODE_HYPERBUS,
+    .DefaultReadDummyCycles  = 6,
+    .DefaultWriteDummyCycles = 0,
+    .DieCount                = 2
+  },
   {
     .PartNumber              = "IS66WVH16M8",
     .Type                    = EXTMEM_TYPE_HYPERRAM_ISSI,

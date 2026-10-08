@@ -3,7 +3,7 @@
   * @file    is29gl_fmc.h
   * @author  STM32N6 External Memory Driver Suite Team
   * @brief   Driver header for ISSI IS29GL Parallel NOR Flash via FMC (16-bit).
-  *          Supports IS29GL512, IS29GL256, IS29GL128, IS29GL064, IS29GL032.
+  *          Supports IS29GL256, IS29GL128, IS29GL064, IS29GL032 and Micron MT28EW.
   ******************************************************************************
   * @attention
   *

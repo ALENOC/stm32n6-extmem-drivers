@@ -56,10 +56,8 @@ One row per entry of the device database (`Drivers/BSP/STM32N6_ExtMem/stm32n6_ex
 | ISSI | `IS25LP080D` | 8 Mb | Quad SPI NOR Flash | Quad SPI 1-4-4 | 3.0 V | 133 MHz | `is25lp256` |
 | ISSI | `IS25WP080D` | 8 Mb | Quad SPI NOR Flash | Quad SPI 1-4-4 | 1.8 V | 133 MHz | `is25lp256` |
 | ISSI | `IS25LQ032B` | 32 Mb | Quad SPI NOR Flash | Quad SPI 1-4-4 | 3.0 V | 104 MHz | `is25lp256` |
-| ISSI | `IS25WQ032` | 32 Mb | Quad SPI NOR Flash | Quad SPI 1-4-4 | 1.8 V | 104 MHz | `is25lp256` |
 | ISSI | `IS25LE128` | 128 Mb | Quad SPI NOR Flash | Quad SPI 1-4-4 | 3.0 V | 133 MHz | `is25lp256` |
 | ISSI | `IS25WE128` | 128 Mb | Quad SPI NOR Flash | Quad SPI 1-4-4 | 1.8 V | 133 MHz | `is25lp256` |
-| ISSI | `IS29GL512` | 512 Mb | Parallel NOR Flash | FMC 16-bit asynchronous | 3.0 V | async, 110 ns access | `is29gl_fmc` |
 | ISSI | `IS29GL256` | 256 Mb | Parallel NOR Flash | FMC 16-bit asynchronous | 3.0 V | async, 110 ns access | `is29gl_fmc` |
 | ISSI | `IS29GL128` | 128 Mb | Parallel NOR Flash | FMC 16-bit asynchronous | 3.0 V | async, 110 ns access | `is29gl_fmc` |
 | ISSI | `IS29GL064` | 64 Mb | Parallel NOR Flash | FMC 16-bit asynchronous | 3.0 V | async, 110 ns access | `is29gl_fmc` |
@@ -69,6 +67,7 @@ One row per entry of the device database (`Drivers/BSP/STM32N6_ExtMem/stm32n6_ex
 | ISSI | `IS66WVO64M8` | 512 Mb | OctalRAM | Octal 8D-8D-8D (XSPI Macronix RAM mode) | 1.8 V | 200 MHz | `is66wvo32m8` |
 | ISSI | `IS66WVO8M8` | 64 Mb | OctalRAM | Octal 8D-8D-8D (XSPI Macronix RAM mode) | 1.8 V | 200 MHz | `is66wvo32m8` |
 | ISSI | `IS67WVO8M8` | 64 Mb | OctalRAM | Octal 8D-8D-8D (XSPI Macronix RAM mode) | 1.8 V | 200 MHz | `is66wvo32m8` |
+| ISSI | `IS66WVH64M8` | 512 Mb, 2 dice | HyperRAM™ | HyperBus™ DDR, RWDS | 1.8 V | 200 MHz | `is66wvh16m8` |
 | ISSI | `IS66WVH16M8` | 128 Mb | HyperRAM™ | HyperBus™ DDR, RWDS | 1.8 V | 166 MHz | `is66wvh16m8` |
 | ISSI | `IS66WVH8M8` | 64 Mb | HyperRAM™ | HyperBus™ DDR, RWDS | 1.8 V | 166 MHz | `is66wvh16m8` |
 | ISSI | `IS66WVS1M8` | 8 Mb | Quad SPI PSRAM | SPI / QPI | 1.8 V | 104 MHz | `is66wvs16m8` |
@@ -123,7 +122,8 @@ One row per entry of the device database (`Drivers/BSP/STM32N6_ExtMem/stm32n6_ex
 - **MT25Q**: the factory 10 dummy cycles limit QUAD I/O FAST READ to 125 MHz.
 - **ISSI quad NOR**: limits are those of QUAD I/O FAST READ with the 11 dummy cycles the driver programs
   (Table 6.11 of each datasheet); IS25LQ/WQ have no Read Register and keep the fixed 6-cycle latency.
-- **Stacked dice**: SEMPER and HyperRAM dice are configured one by one; Micron stacks are polled until
+- **Stacked dice**: SEMPER and HyperRAM dice are configured one by one (IS66WVH64M8: fixed latency, 32 MByte
+  burst boundary, no deep power down); Micron stacks are polled until
   every die reports ready; die erase replaces bulk erase where the datasheet requires it.
 - **FMC parts** are asynchronous: the manager derives the FMC timings from the access times above and the
   FMC kernel clock.

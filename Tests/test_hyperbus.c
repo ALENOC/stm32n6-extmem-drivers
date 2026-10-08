@@ -278,10 +278,27 @@ bool test_infineon_s27ks0641_hyperram(void)
   return true;
 }
 
+static int32_t IS66WVH_Init1(XSPI_HandleTypeDef *Ctx, uint32_t Prescaler, uint32_t Size) { return IS66WVH16M8_Init(Ctx, Prescaler, Size, 1U); }
+
 bool test_issi_is66wvh16m8_hyperram(void)
 {
+  /* IS66WVH64M8: CR0 on both dice (CA37 = A24 selects the die), fixed latency, 32 MByte burst boundary */
+  {
+    XSPI_HandleTypeDef hd = {0};
+    HR_SETUP();
+    ASSERT_EQ(IS66WVH16M8_Init(&hd, 2, HAL_XSPI_SIZE_512MB, 2U), IS66WVH_OK);
+    ASSERT_EQ(MockHAL_GetHyperReg(0x00001000U), IS66WVH_CR0_INIT_VALUE_DDP);
+    ASSERT_EQ(MockHAL_GetHyperReg(0x02001000U), IS66WVH_CR0_INIT_VALUE_DDP);
+    ASSERT_EQ(IS66WVH_CR0_INIT_VALUE_DDP & IS66WVH_CR0_FIXED_LATENCY, IS66WVH_CR0_FIXED_LATENCY);
+    ASSERT_EQ(hd.Init.ChipSelectBoundary, HAL_XSPI_BONDARYOF_256MB);
+    ASSERT_EQ(MockHAL_FindEvent(MOCK_EV_HYPER_CFG, 0)->HCfg.LatencyMode, HAL_XSPI_FIXED_LATENCY);
+    ASSERT_EQ(IS66WVH16M8_Init(&hd, 2, HAL_XSPI_SIZE_512MB, 0U), IS66WVH_ERROR);
+    ASSERT_EQ(IS66WVH16M8_Init(&hd, 2, HAL_XSPI_SIZE_512MB, 3U), IS66WVH_ERROR);
+    FAULT_SWEEP(HR_SETUP(), IS66WVH16M8_Init(&hd, 2, HAL_XSPI_SIZE_512MB, 2U));
+  }
+
   static const HyperRamOps_t ops = {
-    IS66WVH16M8_Init, IS66WVH16M8_ReadRegister, IS66WVH16M8_WriteRegister, IS66WVH16M8_Read, IS66WVH16M8_Write,
+    IS66WVH_Init1, IS66WVH16M8_ReadRegister, IS66WVH16M8_WriteRegister, IS66WVH16M8_Read, IS66WVH16M8_Write,
     IS66WVH16M8_EnableMemoryMappedMode, IS66WVH16M8_EnterDeepPowerDown, IS66WVH16M8_LeaveDeepPowerDown, IS66WVH_CR0_INIT_VALUE
   };
   return hyperram_common(&ops);

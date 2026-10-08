@@ -3,7 +3,8 @@
   * @file    is66wvh16m8.h
   * @author  STM32N6 External Memory Driver Suite Team
   * @brief   Driver header for ISSI HyperRAM(TM) PSRAM (IS66WVH / IS67WVH series).
-  *          Compatible with IS66WVH8M8 and IS66WVH16M8.
+  *          Compatible with IS66WVH8M8, IS66WVH16M8 and the dual-die
+  *          IS66WVH64M8 (2 x 256 Mb, datasheet IS66/67WVH64M8DALL/BLL Rev. A1).
   ******************************************************************************
   * @attention
   *
@@ -63,11 +64,18 @@ extern "C" {
                                           IS66WVH_CR0_LATENCY_7_CYCLES | IS66WVH_CR0_VARIABLE_LATENCY | \
                                           IS66WVH_CR0_LEGACY_WRAP | IS66WVH_CR0_BURST_32B)
 
+/* IS66WVH64M8 dual-die package: CA37 (word address A24) selects the die for the array and the
+ * registers, bursts never cross the 32 MByte die boundary, every die must run fixed latency
+ * (CR0[3] = 1) and the package has no deep power down. */
+#define IS66WVH_MAX_DICE                 2U
+#define IS66WVH_DIE_STRIDE               0x02000000U /* Byte offset of the second die */
+#define IS66WVH_CR0_INIT_VALUE_DDP       (IS66WVH_CR0_INIT_VALUE | IS66WVH_CR0_FIXED_LATENCY)
+
 /* Wake-up time after deep power down exit (tEXTDPD, 150 us max) */
 #define IS66WVH_DPD_EXIT_TIME_MS         1U
 
 /* Exported Functions --------------------------------------------------------*/
-int32_t IS66WVH16M8_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_t MemorySize);
+int32_t IS66WVH16M8_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_t MemorySize, uint8_t Dice);
 int32_t IS66WVH16M8_ReadRegister(XSPI_HandleTypeDef *Ctx, uint32_t RegAddr, uint16_t *pValue);
 int32_t IS66WVH16M8_WriteRegister(XSPI_HandleTypeDef *Ctx, uint32_t RegAddr, uint16_t Value);
 int32_t IS66WVH16M8_Read(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size);

@@ -270,7 +270,13 @@ static bool ExerciseDevice(const ExtMem_DeviceDescriptor_t *d)
   ASSERT_EQ(ExtMem_DisableMemoryMapped(&s_h), EXTMEM_OK);
 
   /* Power down is a HyperRAM / OctalRAM feature */
-  if (IsSelfRefreshRam(d->Type))
+  if (d->Type == EXTMEM_TYPE_HYPERRAM_ISSI && d->DieCount > 1U)
+  {
+    /* IS66WVH64M8: the dual-die package has no deep power down */
+    ASSERT_EQ(ExtMem_EnterDeepPowerDown(&s_h), EXTMEM_NOT_SUPPORTED);
+    ASSERT_EQ(ExtMem_LeaveDeepPowerDown(&s_h), EXTMEM_NOT_SUPPORTED);
+  }
+  else if (IsSelfRefreshRam(d->Type))
   {
     ASSERT_EQ(ExtMem_EnterDeepPowerDown(&s_h), EXTMEM_OK);
     if (IsHyperRam(d->Type)) ASSERT_EQ(MockHAL_GetHyperReg(0x1000) & 0x8000, 0);
@@ -348,7 +354,7 @@ static bool ExerciseDevice(const ExtMem_DeviceDescriptor_t *d)
   {
     FAULT_SWEEP(SETUP_INIT(d); (void)ExtMem_EnableMemoryMapped(&s_h), ExtMem_Reset(&s_h));
   }
-  else
+  else if (d->DieCount <= 1U || d->Type != EXTMEM_TYPE_HYPERRAM_ISSI)
   {
     FAULT_SWEEP(SETUP_INIT(d), ExtMem_EnterDeepPowerDown(&s_h));
     FAULT_SWEEP(SETUP_INIT(d), ExtMem_LeaveDeepPowerDown(&s_h));
@@ -489,7 +495,8 @@ bool test_extmem_manager_unified_autodetect(void)
     { 0x0E86, "S80KS2562",  32U * 1024U * 1024U, EXTMEM_TYPE_HYPERRAM_INFINEON },  /* Infineon ID 0110b */
     { 0x0C83, "IS66WVH8M8",  8U * 1024U * 1024U, EXTMEM_TYPE_HYPERRAM_ISSI },
     { 0x0D83, "IS66WVH16M8", 16U * 1024U * 1024U, EXTMEM_TYPE_HYPERRAM_ISSI },
-    { 0x0F83, "IS66WVH_HyperRAM", 64U * 1024U * 1024U, EXTMEM_TYPE_HYPERRAM_ISSI },
+    { 0x0F83, "IS66WVH64M8", 64U * 1024U * 1024U, EXTMEM_TYPE_HYPERRAM_ISSI },
+    { 0x1083, "IS66WVH_HyperRAM", 128U * 1024U * 1024U, EXTMEM_TYPE_HYPERRAM_ISSI },
     { 0x0F81, "S27KS_HyperRAM",   64U * 1024U * 1024U, EXTMEM_TYPE_HYPERRAM_INFINEON },
   };
   for (size_t i = 0; i < sizeof(hr) / sizeof(hr[0]); i++)

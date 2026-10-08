@@ -154,7 +154,7 @@ static uint32_t ExtMem_FmcHalBank(ExtMem_Bus_t bus)
 }
 
 /* Asynchronous timing limits (ns) covering the slowest parallel parts in the database:
- * IS29GL512 / MT28EW tACC 110 ns, tWP 35 ns; IS66WV / CY62167 tAA 70 ns, tWP 50 ns. */
+ * MT28EW tACC 110 ns (IS29GL 70 to 90 ns), tWP 35 ns; IS66WV / CY62167 tAA 70 ns, tWP 50 ns. */
 #define EXTMEM_FMC_NOR_TACC_NS     110U
 #define EXTMEM_FMC_NOR_TWP_NS       35U
 #define EXTMEM_FMC_RAM_TACC_NS      70U
@@ -499,7 +499,7 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
   }
   else if (hextmem->Geometry.Type == EXTMEM_TYPE_HYPERRAM_ISSI)
   {
-    if (IS66WVH16M8_Init(&hextmem->hxspi, prescaler, memSize) != IS66WVH_OK) return EXTMEM_ERROR;
+    if (IS66WVH16M8_Init(&hextmem->hxspi, prescaler, memSize, (uint8_t)dice) != IS66WVH_OK) return EXTMEM_ERROR;
     hextmem->ActiveMode = EXTMEM_MODE_HYPERBUS;
   }
   else if (hextmem->Geometry.Type == EXTMEM_TYPE_HYPERFLASH_INFINEON ||
@@ -1241,6 +1241,8 @@ int32_t ExtMem_EnterDeepPowerDown(ExtMem_HandleTypeDef *hextmem)
   }
   if (hextmem->Geometry.Type == EXTMEM_TYPE_HYPERRAM_ISSI)
   {
+    /* The IS66WVH64M8 dual-die package has no deep power down */
+    if (ExtMem_DieCount(hextmem) > 1U) return EXTMEM_NOT_SUPPORTED;
     return IS66WVH16M8_EnterDeepPowerDown(&hextmem->hxspi);
   }
   if (hextmem->Geometry.Type == EXTMEM_TYPE_PSRAM_OCTAL_ISSI)
@@ -1265,6 +1267,7 @@ int32_t ExtMem_LeaveDeepPowerDown(ExtMem_HandleTypeDef *hextmem)
   }
   if (hextmem->Geometry.Type == EXTMEM_TYPE_HYPERRAM_ISSI)
   {
+    if (ExtMem_DieCount(hextmem) > 1U) return EXTMEM_NOT_SUPPORTED;
     return IS66WVH16M8_LeaveDeepPowerDown(&hextmem->hxspi);
   }
   if (hextmem->Geometry.Type == EXTMEM_TYPE_PSRAM_OCTAL_ISSI)

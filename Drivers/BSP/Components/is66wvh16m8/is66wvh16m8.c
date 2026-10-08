@@ -47,9 +47,11 @@ int32_t IS66WVH16M8_WriteRegister(XSPI_HandleTypeDef *Ctx, uint32_t RegAddr, uin
   return (HAL_XSPI_Transmit(Ctx, buf, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS66WVH_OK : IS66WVH_ERROR;
 }
 
-int32_t IS66WVH16M8_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_t MemorySize)
+int32_t IS66WVH16M8_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_t MemorySize, uint8_t Dice)
 {
   XSPI_HyperbusCfgTypeDef sHyperbusCfg = {0};
+
+  if (Dice == 0U || Dice > IS66WVH_MAX_DICE) return IS66WVH_ERROR;
 
   Ctx->Init.FifoThresholdByte       = 8;
   Ctx->Init.MemoryType              = HAL_XSPI_MEMTYPE_HYPERBUS;
@@ -61,7 +63,8 @@ int32_t IS66WVH16M8_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint3
   Ctx->Init.ClockPrescaler          = ClockPrescaler;
   Ctx->Init.SampleShifting          = HAL_XSPI_SAMPLE_SHIFT_NONE;
   Ctx->Init.DelayHoldQuarterCycle   = HAL_XSPI_DHQC_ENABLE;
-  Ctx->Init.ChipSelectBoundary      = HAL_XSPI_BONDARYOF_NONE;
+  /* Dual die: a burst must restart at the 32 MByte die boundary */
+  Ctx->Init.ChipSelectBoundary      = (Dice > 1U) ? HAL_XSPI_BONDARYOF_256MB : HAL_XSPI_BONDARYOF_NONE;
   Ctx->Init.FreeRunningClock        = HAL_XSPI_FREERUNCLK_DISABLE;
   Ctx->Init.WrapSize                = HAL_XSPI_WRAP_NOT_SUPPORTED;
 
@@ -70,12 +73,17 @@ int32_t IS66WVH16M8_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint3
   sHyperbusCfg.RWRecoveryTimeCycle = 4;
   sHyperbusCfg.AccessTimeCycle     = IS66WVH_LATENCY_CLOCKS; /* Must match CR0[7:4] */
   sHyperbusCfg.WriteZeroLatency    = HAL_XSPI_LATENCY_ON_WRITE;
-  sHyperbusCfg.LatencyMode         = HAL_XSPI_VARIABLE_LATENCY;
+  sHyperbusCfg.LatencyMode         = (Dice > 1U) ? HAL_XSPI_FIXED_LATENCY : HAL_XSPI_VARIABLE_LATENCY;
 
   if (HAL_XSPI_HyperbusCfg(Ctx, &sHyperbusCfg, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVH_ERROR;
 
-  uint16_t cr0Val = IS66WVH_CR0_INIT_VALUE;
-  return IS66WVH16M8_WriteRegister(Ctx, IS66WVH_REG_CR0, cr0Val);
+  /* CR0 of every die; the dual-die package only supports fixed latency */
+  uint16_t cr0Val = (Dice > 1U) ? IS66WVH_CR0_INIT_VALUE_DDP : IS66WVH_CR0_INIT_VALUE;
+  for (uint32_t die = 0; die < Dice; die++)
+  {
+    if (IS66WVH16M8_WriteRegister(Ctx, (die * IS66WVH_DIE_STRIDE) + IS66WVH_REG_CR0, cr0Val) != IS66WVH_OK) return IS66WVH_ERROR;
+  }
+  return IS66WVH_OK;
 }
 
 int32_t IS66WVH16M8_Read(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size)

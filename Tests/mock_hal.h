@@ -174,6 +174,7 @@ typedef enum {
 #define HAL_XSPI_BONDARYOF_16KB          0x0BU  /* 16 Kbits =   2 KBytes */
 #define HAL_XSPI_BONDARYOF_32KB          0x0CU
 #define HAL_XSPI_BONDARYOF_2MB           0x12U  /*  2 Mbits = 256 KBytes */
+#define HAL_XSPI_BONDARYOF_256MB         0x19U  /* 256 Mbits = 32 MBytes */
 #define HAL_XSPI_BONDARYOF_1GB           0x1BU  /*  1 Gbit  = 128 MBytes */
 
 #define HAL_XSPI_FREERUNCLK_DISABLE      0x00U

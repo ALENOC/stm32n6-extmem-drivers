@@ -66,7 +66,7 @@ Done:
 - [x] HAL mock aligned with the STM32CubeN6 headers, including HAL parameter and state checks
 - [x] 100% line and branch coverage, cross-compilation against the real HAL in CI
 - [x] Stacked dice: MT25Q 1 Gb, MT35X 1/2 Gb (all dice polled), S28HS02GT / S28HL02GT (datasheet 002-23755),
-      S70KS1281 dual-die HyperRAM
+      S70KS1281 and IS66WVH64M8 dual-die HyperRAM
 - [x] Device table: part numbers checked against the datasheets and every clock limit matched to the
       latency the driver programs
 
@@ -75,9 +75,7 @@ Open (need hardware):
 - [ ] IS66WVO parts above 8 MBytes on early STM32N6 silicon (erratum ES0620, Macronix RAM mode)
 - [ ] XSPI delay block / sample shifting tuning for 200 MHz DTR on a specific board
 
-Open (documents not found):
-- [ ] IS29GL512 and IS25WQ032: no datasheet found, the entries follow IS29GL256 and IS25LQ032B
-- [ ] IS66WVH: the available PDF uses a scrambled font, the ID0 manufacturer code (0011b) comes from earlier sources
+Removed: IS29GL512 and IS25WQ032 (no datasheet available to verify them).
 
 ## 6. Reference documents used
 
@@ -87,7 +85,7 @@ Vendor datasheets (full documents) used for the audit of each driver:
   001-99198 (S26KS/KL), HyperRAM 001-97964 (S27KS0641/S70KS1281), 002-31337 (S80KS2562), S27KS0642/0643,
   CY62167EV30
 - ISSI: IS25LX/WX 032/064, 128/256, 512M; IS25LP/WP 080D/016D/032D/064D/128F/256D/512M; IS25LQ032B;
-  IS25LE/WE128E; IS26KS/KL; IS66/67WVO 8M8/16M8/32M8/64M8; IS66WVH8M8/16M8; IS66/67WVS4M8/16M8;
+  IS25LE/WE128E; IS26KS/KL; IS66/67WVO 8M8/16M8/32M8/64M8; IS66WVH8M8/16M8/64M8 (64M8 Rev. A1); IS66/67WVS4M8/16M8;
   IS62/65WVS 0648/1288/2568/5128; IS66WV51216; IS66WVE1M16/2M16/4M16; IS29GL032/064/128/256
 - Micron: MT35XU512ABA, MT35XU02G; MT25QU128/256/512/01G, MT25QL256; MT28EW
 - ST: RM0486 (STM32N6 reference manual), ES0620 (STM32N6 errata), STM32N6570-DK BSP, STM32CubeN6 HAL

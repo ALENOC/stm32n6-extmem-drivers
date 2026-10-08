@@ -82,6 +82,7 @@ static uint16_t s_HyperID1;
 static uint16_t s_HyperCR0;
 static uint16_t s_HyperCR1;
 static uint16_t s_HyperCR0Die2;
+static uint16_t s_HyperCR0IssiDie2; /* CR0 of the second die of IS66WVH64M8 (CA37 = 1) */
 static uint32_t s_StackedBusyReads; /* Direct FSR reads answered "busy" by another die of a stack */  /* CR0 of the second die of a dual-die HyperRAM (CA35 = 1) */
 static bool     s_HyperFlash;
 static uint32_t s_HostAccessTime;
@@ -280,6 +281,7 @@ void MockHAL_Reset(void)
   s_HyperCR0      = 0x8F1F; /* Datasheet power-on default */
   s_HyperCR1      = 0xFFC1;
   s_HyperCR0Die2  = 0x8F1F;
+  s_HyperCR0IssiDie2 = 0x8F1F;
   s_StackedBusyReads = 0;
   s_HyperFlash    = false;
   s_HostAccessTime = 6;
@@ -387,6 +389,7 @@ uint16_t MockHAL_GetHyperReg(uint32_t addr)
     case 0x00001000U: return s_HyperCR0;
     case 0x00001002U: return s_HyperCR1;
     case 0x00801000U: return s_HyperCR0Die2;
+    case 0x02001000U: return s_HyperCR0IssiDie2;
     default:          return 0U;
   }
 }
@@ -684,6 +687,7 @@ HAL_StatusTypeDef HAL_XSPI_Transmit(XSPI_HandleTypeDef *hxspi, const uint8_t *pD
       if (addr == 0x00001000U) s_HyperCR0 = val;
       else if (addr == 0x00001002U) s_HyperCR1 = val;
       else if (addr == 0x00801000U) s_HyperCR0Die2 = val;
+      else if (addr == 0x02001000U) s_HyperCR0IssiDie2 = val;
       return HAL_OK;
     }
 

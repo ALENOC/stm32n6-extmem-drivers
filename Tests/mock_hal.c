@@ -31,6 +31,20 @@ SCB_Type *SCB = &s_SCB;
 static MockEvent_t s_Log[MOCK_LOG_SIZE];
 static uint32_t    s_LogCount;
 
+/* HAL parameter check violations (not cleared by MockHAL_Reset) */
+static uint32_t    s_Violations;
+static const char *s_LastViolation = "";
+
+static void Mock_Violation(const char *what)
+{
+  s_Violations++;
+  s_LastViolation = what;
+}
+
+uint32_t    MockHAL_GetAssertViolations(void) { return s_Violations; }
+const char *MockHAL_GetLastViolation(void)    { return s_LastViolation; }
+void        MockHAL_ClearAssertViolations(void) { s_Violations = 0; s_LastViolation = ""; }
+
 /* Fault injection */
 static int32_t  s_FailIndex = -1;
 static uint32_t s_CallCount;
@@ -53,6 +67,9 @@ static bool     s_ResetEnabled;
 static bool     s_NorFlash;
 static uint32_t s_BlockEraseSize;
 static bool     s_PollTimeout;
+static bool     s_SemperFail;
+static bool     s_IssiRdReg;
+static uint8_t  s_IssiReadParams;
 static const uint8_t *s_SfdpTable;
 static uint32_t s_SfdpSize;
 
@@ -84,6 +101,8 @@ static uint32_t s_NorBusyReads;
 static XSPI_RegularCmdTypeDef  s_LastCmd;
 static XSPI_HyperbusCmdTypeDef s_LastHyperCmd;
 static bool                    s_IsHyperbus;
+
+static void Mock_LoadSemperDefaults(void);
 
 /* Default SFDP image: header, JEDEC parameter header and a 16 DWORD BFPT at 0x30 */
 static uint8_t s_DefaultSfdp[0x30 + 64];
@@ -212,10 +231,8 @@ void MockHAL_Reset(void)
   s_SR1           = 0x00;
   s_CR1           = 0x00;
   s_FSR           = 0x80;
-  memset(s_AnyRegV, 0, sizeof(s_AnyRegV));
+  Mock_LoadSemperDefaults();
   memset(s_AnyRegN, 0, sizeof(s_AnyRegN));
-  s_AnyRegV[3]    = 0x08; /* CFR2V default MEMLAT = 8 */
-  s_AnyRegV[6]    = 0x40; /* CFR5V default: SPI, bit 6 set */
   memset(s_VCR, 0xFF, sizeof(s_VCR));
   memset(s_MR, 0, sizeof(s_MR));
   s_SramMode      = 0x40;
@@ -224,6 +241,9 @@ void MockHAL_Reset(void)
   s_NorFlash      = false;
   s_BlockEraseSize = 64U * 1024U;
   s_PollTimeout   = false;
+  s_SemperFail    = false;
+  s_IssiRdReg     = true;
+  s_IssiReadParams = 0x00;
   Mock_BuildDefaultSfdp();
   s_SfdpTable     = s_DefaultSfdp;
   s_SfdpSize      = sizeof(s_DefaultSfdp);
@@ -267,6 +287,9 @@ void MockHAL_SetFlashSemantics(bool norFlash)    { s_NorFlash = norFlash; }
 void MockHAL_SetBlockEraseSize(uint32_t bytes)   { s_BlockEraseSize = bytes; }
 void MockHAL_SetHyperFlashMode(bool enable)      { s_HyperFlash = enable; }
 void MockHAL_SetStatusRegister(uint8_t sr1)      { s_SR1 = sr1; }
+void MockHAL_SetSemperFailure(bool fail)         { s_SemperFail = fail; }
+void MockHAL_SetIssiReadRegister(bool supported) { s_IssiRdReg = supported; }
+uint8_t MockHAL_GetIssiReadParams(void)          { return s_IssiReadParams; }
 void MockHAL_SetFlagStatusRegister(uint8_t fsr)  { s_FSR = fsr; }
 void MockHAL_SetPollTimeout(bool timeout)        { s_PollTimeout = timeout; }
 void MockHAL_SetHyperFlashStatus(uint16_t st)    { s_HfStatus = st; }
@@ -447,14 +470,34 @@ HAL_StatusTypeDef HAL_XSPIM_Config(XSPI_HandleTypeDef *hxspi, const XSPIM_CfgTyp
 static void Mock_EraseOrProgramDone(void)
 {
   s_SR1 = (uint8_t)((s_SR1 | 0x01U) & ~0x02U); /* WIP set, WEL cleared */
+  if (s_SemperFail)
+  {
+    s_SR1 |= 0x40U; /* PRGERR: SEMPER stays busy until CLPEF */
+  }
+}
+
+static void Mock_LoadSemperDefaults(void)
+{
+  memset(s_AnyRegV, 0, sizeof(s_AnyRegV));
+  s_AnyRegV[3] = 0x08; /* CFR2V: 3-byte addressing, MEMLAT = 8 */
+  s_AnyRegV[6] = 0x40; /* CFR5V: SPI, bit 6 set */
 }
 
 HAL_StatusTypeDef HAL_XSPI_Command(XSPI_HandleTypeDef *hxspi, const XSPI_RegularCmdTypeDef *pCmd, uint32_t Timeout)
 {
-  (void)hxspi; (void)Timeout;
+  (void)Timeout;
   MockEvent_t *ev = Mock_NewEvent(MOCK_EV_CMD);
   ev->Cmd = *pCmd;
   if (Mock_ShouldFail()) return HAL_ERROR;
+
+  /* Same checks as the HAL: regular commands are refused in HyperBus mode, data phases need a length,
+   * at most 31 dummy cycles */
+  if (hxspi->Init.MemoryType == HAL_XSPI_MEMTYPE_HYPERBUS) { Mock_Violation("HAL_XSPI_Command in HyperBus mode"); return HAL_ERROR; }
+  if (pCmd->DataMode != HAL_XSPI_DATA_NONE && pCmd->OperationType == HAL_XSPI_OPTYPE_COMMON_CFG && pCmd->DataLength == 0U)
+  {
+    Mock_Violation("IS_XSPI_DATA_LENGTH");
+  }
+  if (pCmd->DummyCycles > 31U) Mock_Violation("IS_XSPI_DUMMY_CYCLES");
 
   s_IsHyperbus = false;
   s_LastCmd = *pCmd;
@@ -495,9 +538,13 @@ HAL_StatusTypeDef HAL_XSPI_Command(XSPI_HandleTypeDef *hxspi, const XSPI_Regular
       if (s_ResetEnabled)
       {
         s_FourByte = false;
-        s_SR1 &= (uint8_t)~0x03U;
+        s_SR1 &= (uint8_t)~0x63U;
+        Mock_LoadSemperDefaults();
       }
       s_ResetEnabled = false;
+      break;
+    case 0x82: /* CLPEF: clear program / erase failure flags, ends the busy state */
+      s_SR1 &= (uint8_t)~0x61U;
       break;
     case 0x20: case 0x21: /* 4 KB erase */
       if (hasAddr && !hasData && (!s_NorFlash || wel))
@@ -629,8 +676,15 @@ HAL_StatusTypeDef HAL_XSPI_Transmit(XSPI_HandleTypeDef *hxspi, const uint8_t *pD
       }
       s_SR1 &= (uint8_t)~0x02U;
       break;
-    case 0xC0: /* Write Mode Register (APMEM) */
-      if (addr < sizeof(s_MR)) s_MR[addr] = pData[0];
+    case 0xC0: /* Write Mode Register (APMEM, with address) or ISSI SRPV (no address) */
+      if (s_LastCmd.AddressMode == HAL_XSPI_ADDRESS_NONE)
+      {
+        if (s_IssiRdReg) s_IssiReadParams = pData[0];
+      }
+      else if (addr < sizeof(s_MR))
+      {
+        s_MR[addr] = pData[0];
+      }
       break;
     case 0x01: /* Write Status/Config (flash) or Write Mode Register (serial SRAM) */
       if (s_NorFlash)
@@ -749,6 +803,9 @@ HAL_StatusTypeDef HAL_XSPI_Receive(XSPI_HandleTypeDef *hxspi, uint8_t *pData, ui
         pData[i] = ((addr + i) < sizeof(s_VCR)) ? s_VCR[addr + i] : 0U;
       }
       break;
+    case 0x61: /* ISSI RDRP: Read Register */
+      pData[0] = s_IssiRdReg ? s_IssiReadParams : 0xFFU;
+      break;
     case 0x40: /* Read Mode Register (APMEM) */
       pData[0] = (addr < sizeof(s_MR)) ? s_MR[addr] : 0U;
       if (len > 1U) pData[1] = pData[0];
@@ -793,7 +850,15 @@ HAL_StatusTypeDef HAL_XSPI_AutoPolling(XSPI_HandleTypeDef *hxspi, const XSPI_Aut
   ev->Poll = *pCfg;
   ev->Cmd  = s_LastCmd;
   if (Mock_ShouldFail()) return HAL_ERROR;
+  /* The HAL polls 1 to 4 status bytes of the command configured just before */
+  if (s_IsHyperbus || s_LastCmd.DataMode == HAL_XSPI_DATA_NONE || s_LastCmd.DataLength < 1U || s_LastCmd.DataLength > 4U)
+  {
+    Mock_Violation("IS_XSPI_STATUS_BYTES_SIZE / polling without a status read command");
+  }
+  if (pCfg->AutomaticStop != HAL_XSPI_AUTOMATIC_STOP_ENABLE) Mock_Violation("AutoPolling needs automatic stop");
   if (s_PollTimeout) return HAL_TIMEOUT;
+  /* A failed SEMPER operation keeps RDYBSY set */
+  if ((s_SR1 & 0x60U) != 0U && s_SemperFail) return HAL_TIMEOUT;
   /* The embedded operation completes while the controller polls */
   s_SR1 &= (uint8_t)~0x01U;
   return HAL_OK;
@@ -823,10 +888,13 @@ HAL_StatusTypeDef HAL_XSPI_HyperbusCfg(XSPI_HandleTypeDef *hxspi, const XSPI_Hyp
 
 HAL_StatusTypeDef HAL_XSPI_HyperbusCmd(XSPI_HandleTypeDef *hxspi, const XSPI_HyperbusCmdTypeDef *pCmd, uint32_t Timeout)
 {
-  (void)hxspi; (void)Timeout;
+  (void)Timeout;
   MockEvent_t *ev = Mock_NewEvent(MOCK_EV_HYPER_CMD);
   ev->HCmd = *pCmd;
   if (Mock_ShouldFail()) return HAL_ERROR;
+  if (hxspi->Init.MemoryType != HAL_XSPI_MEMTYPE_HYPERBUS) { Mock_Violation("HAL_XSPI_HyperbusCmd outside HyperBus mode"); return HAL_ERROR; }
+  if (pCmd->DataLength < 1U) Mock_Violation("IS_XSPI_DATA_LENGTH (HyperBus)");
+  if (pCmd->DataMode != HAL_XSPI_DATA_8_LINES && pCmd->DataMode != HAL_XSPI_DATA_16_LINES) Mock_Violation("IS_XSPI_DATA_MODE (HyperBus)");
   s_IsHyperbus = true;
   s_LastHyperCmd = *pCmd;
   return HAL_OK;

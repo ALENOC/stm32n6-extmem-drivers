@@ -24,26 +24,35 @@ static bool s28hs_octal_entry(void)
 
   ASSERT_EQ(S28HS512T_EnterOctalDTRMode(&h, 24), S28HS512T_OK);
 
-  /* WREN, EN4B, RDAR CFR2V, WREN, WRAR CFR2V, WREN, WRAR CFR5V */
-  ASSERT_SEQUENCE(0, 0x06, 0xB7, 0x65, 0x06, 0x71, 0x06, 0x71);
-  ASSERT_EQ(Test_CommandCount(), 7);
+  /* WREN, EN4B, RDAR CFR2V, WREN, WRAR CFR2V, RDAR CFR3V, WREN, WRAR CFR3V, WREN, WRAR CFR5V */
+  ASSERT_SEQUENCE(0, 0x06, 0xB7, 0x65, 0x06, 0x71, 0x65, 0x06, 0x71, 0x06, 0x71);
+  ASSERT_EQ(Test_CommandCount(), 10);
   ASSERT_CMD(Test_NthCommand(1), I1S(0xB7), NOADDR, NODATA, DUMMY(0));
+  /* SPI volatile register reads: no latency with the factory VRGLAT = 00 */
   ASSERT_CMD(Test_NthCommand(2), I1S(0x65), A1S(HAL_XSPI_ADDRESS_32_BITS, S28HS_REG_CFR2_V), D1S(1), DUMMY(0), NODQS);
   ASSERT_CMD(Test_NthCommand(4), I1S(0x71), A1S(HAL_XSPI_ADDRESS_32_BITS, S28HS_REG_CFR2_V), D1S(1), DUMMY(0));
-  ASSERT_CMD(Test_NthCommand(6), I1S(0x71), A1S(HAL_XSPI_ADDRESS_32_BITS, S28HS_REG_CFR5_V), D1S(1), DUMMY(0));
+  ASSERT_CMD(Test_NthCommand(5), I1S(0x65), A1S(HAL_XSPI_ADDRESS_32_BITS, S28HS_REG_CFR3_V), D1S(1), DUMMY(0));
+  ASSERT_CMD(Test_NthCommand(7), I1S(0x71), A1S(HAL_XSPI_ADDRESS_32_BITS, S28HS_REG_CFR3_V), D1S(1), DUMMY(0));
+  ASSERT_CMD(Test_NthCommand(9), I1S(0x71), A1S(HAL_XSPI_ADDRESS_32_BITS, S28HS_REG_CFR5_V), D1S(1), DUMMY(0));
 
-  /* Register contents per datasheet: CFR2V = ADRBYT | MEMLAT 0xB, CFR5V = 0x43 (OPI + DDR + bit 6) */
+  /* Register contents per datasheet 002-18216: CFR2V = ADRBYT | MEMLAT 1011b (24 cycles in 8D),
+   * CFR3V VRGLAT = 11b (6 cycles, 200 MHz DDR), CFR5V = 0x43 (OPI + DDR + bit 6) */
   ASSERT_TRUE(MockHAL_Is4ByteMode());
   ASSERT_EQ(MockHAL_GetAnyReg(0x00800003), 0x8B);
+  ASSERT_EQ(MockHAL_GetAnyReg(0x00800004), 0xC0);
   ASSERT_EQ(MockHAL_GetAnyReg(0x00800006), 0x43);
   ASSERT_EQ(S28HS_OCTAL_DTR_READ_DUMMY, 24);
+  ASSERT_EQ(S28HS_OCTAL_DTR_REG_DUMMY, 6);
 
-  /* Exit: WREN 8D, WRAR 8D CFR5V = 0x40 (2 byte DTR write) */
+  /* Exit: 8D software reset reloads the factory (SPI) configuration */
   MockHAL_ClearLog();
   ASSERT_EQ(S28HS512T_ExitOctalDTRMode(&h), S28HS512T_OK);
-  ASSERT_CMD(Test_NthCommand(0), I8D(0x06F9), NOADDR, NODATA);
-  ASSERT_CMD(Test_NthCommand(1), I8D(0x718E), A8D(S28HS_REG_CFR5_V), D8D(2), DUMMY(0));
+  ASSERT_EQ(Test_CommandCount(), 2);
+  ASSERT_CMD(Test_NthCommand(0), I8D(0x6699), NOADDR, NODATA);
+  ASSERT_CMD(Test_NthCommand(1), I8D(0x9966), NOADDR, NODATA);
   ASSERT_EQ(MockHAL_GetAnyReg(0x00800006), 0x40);
+  ASSERT_EQ(MockHAL_GetAnyReg(0x00800003), 0x08);
+  ASSERT_TRUE(!MockHAL_Is4ByteMode());
 
   FAULT_SWEEP(FLASH_SETUP(0x34, 0x5B, 0x1A), S28HS512T_EnterOctalDTRMode(&h, 24));
   FAULT_SWEEP(FLASH_SETUP(0x34, 0x5B, 0x1A), S28HS512T_ExitOctalDTRMode(&h));
@@ -60,8 +69,8 @@ static bool s28hs_dtr_operations(void)
   ASSERT_EQ(S28HS512T_PageProgram(&h, EXTMEM_MODE_OCTAL_DTR, 0x00002000, tx, sizeof(tx)), S28HS512T_OK);
   ASSERT_CMD(Test_NthCommand(0), I8D(0x06F9), NOADDR, NODATA);
   ASSERT_CMD(Test_NthCommand(1), I8D(0x12ED), A8D(0x00002000), D8D(256), DUMMY(0), WITHDQS);
-  /* Status poll: RDAR SR1V (volatile) with 4-byte address, 8 dummy, 2 bytes */
-  ASSERT_CMD(Test_NthCommand(2), I8D(0x659A), A8D(S28HS_REG_STATUS1_V), D8D(2), DUMMY(8), WITHDQS);
+  /* Status poll: RDAR SR1V (volatile) with 4-byte address, VRGLAT 11 latency (6), 2 bytes */
+  ASSERT_CMD(Test_NthCommand(2), I8D(0x659A), A8D(S28HS_REG_STATUS1_V), D8D(2), DUMMY(6), WITHDQS);
   const MockEvent_t *poll = MockHAL_FindEvent(MOCK_EV_AUTOPOLL, 0);
   ASSERT_NOT_NULL(poll);
   ASSERT_EQ(poll->Poll.MatchMask, 0x01);
@@ -94,7 +103,7 @@ static bool s28hs_dtr_operations(void)
   uint8_t reg = 0;
   MockHAL_ClearLog();
   ASSERT_EQ(S28HS512T_ReadAnyReg(&h, EXTMEM_MODE_OCTAL_DTR, S28HS_REG_CFR2_V, &reg), S28HS512T_OK);
-  ASSERT_CMD(Test_NthCommand(0), I8D(0x659A), A8D(S28HS_REG_CFR2_V), D8D(2), DUMMY(8));
+  ASSERT_CMD(Test_NthCommand(0), I8D(0x659A), A8D(S28HS_REG_CFR2_V), D8D(2), DUMMY(6));
   ASSERT_EQ(reg, 0x08);
   ASSERT_EQ(S28HS512T_WriteEnable(&h, EXTMEM_MODE_OCTAL_DTR), S28HS512T_OK);
   ASSERT_EQ(S28HS512T_WriteAnyReg(&h, EXTMEM_MODE_OCTAL_DTR, S28HS_REG_CFR2_V, 0x8B), S28HS512T_OK);
@@ -147,10 +156,24 @@ static bool s28hs_spi_operations(void)
   ASSERT_EQ(S28HS512T_Reset(&h), S28HS512T_OK);
   ASSERT_SEQUENCE(0, 0x66, 0x99);
 
-  /* Busy device: the poll times out */
+  /* Busy device: the poll times out, status shows no failure */
   MockHAL_SetPollTimeout(true);
   ASSERT_EQ(S28HS512T_AutoPollingMemReady(&h, EXTMEM_MODE_SPI, 10), S28HS512T_TIMEOUT);
+  ASSERT_EQ(S28HS512T_AutoPollingMemReady(&h, EXTMEM_MODE_OCTAL_DTR, 10), S28HS512T_TIMEOUT);
   MockHAL_SetPollTimeout(false);
+
+  /* Failed program: SEMPER stays busy with PRGERR until CLPEF, the driver reports and clears it */
+  for (int dtr = 0; dtr < 2; dtr++)
+  {
+    ExtMem_Mode_t m = dtr ? EXTMEM_MODE_OCTAL_DTR : EXTMEM_MODE_SPI;
+    FLASH_SETUP(0x34, 0x5B, 0x1A);
+    MockHAL_SetSemperFailure(true);
+    ASSERT_EQ(S28HS512T_PageProgram(&h, m, 0x100, tx, 8), S28HS512T_ERROR);
+    ASSERT_EQ(MockHAL_CountCommands(dtr ? 0x827D : 0x82), 1);
+    ASSERT_EQ(MockHAL_GetStatusRegister() & 0x61, 0);
+    MockHAL_SetSemperFailure(false);
+    FAULT_SWEEP_EXPECT(FLASH_SETUP(0x34, 0x5B, 0x1A); MockHAL_SetSemperFailure(true), S28HS512T_EraseSector4K(&h, m, 0), S28HS512T_ERROR);
+  }
 
   S28HS512T_Info_t info;
   ASSERT_EQ(S28HS512T_GetInfo(NULL), S28HS512T_ERROR);

@@ -4,7 +4,8 @@
   * @author  STM32N6 External Memory Driver Suite Team
   * @brief   Driver header for Infineon SEMPER(TM) Octal NOR Flash
   *          Compatible with S28HS512T, S28HL512T, S28HS256T, S28HL256T,
-  *          S28HS01GT, S28HL01GT, S28HS02GT.
+  *          S28HS01GT, S28HL01GT (single die). The dual-die S28Hx02GT needs
+  *          per-die register access and is not supported by this driver.
   ******************************************************************************
   * @attention
   *
@@ -63,14 +64,18 @@ extern "C" {
 
 /* Dummy cycles used for 8D-8D-8D memory array reads (matches MEMLAT = 0xB) */
 #define S28HS_OCTAL_DTR_READ_DUMMY       24U
-/* Dummy cycles used for 8D-8D-8D Read Any Register */
-#define S28HS_OCTAL_DTR_REG_DUMMY        8U
+/* CFR3V Bit Fields */
+#define S28HS_CFR3V_VRGLAT_MASK          (3U << 6) /* Volatile register read latency */
+#define S28HS_CFR3V_VRGLAT_CODE_11       (3U << 6) /* 6 cycles in 8D-8D-8D, valid up to 200 MHz */
+
+/* Dummy cycles for 8D-8D-8D volatile register reads (matches VRGLAT = 11) */
+#define S28HS_OCTAL_DTR_REG_DUMMY        6U
 
 /* Status Register 1 Masks */
-#define S28HS_SR1_WIP                    (1U << 0) /* Write in Progress */
+#define S28HS_SR1_WIP                    (1U << 0) /* Write in Progress (RDYBSY) */
 #define S28HS_SR1_WEL                    (1U << 1) /* Write Enable Latch */
-#define S28HS_SR1_PRG_ERR                (1U << 5) /* Program Error */
-#define S28HS_SR1_ERS_ERR                (1U << 6) /* Erase Error */
+#define S28HS_SR1_ERS_ERR                (1U << 5) /* Erase Error (ERSERR)      */
+#define S28HS_SR1_PRG_ERR                (1U << 6) /* Program Error (PRGERR)    */
 
 /* Commands (1-1-1 Single SPI) */
 #define S28HS_CMD_READ_ID                0x9FU
@@ -86,6 +91,7 @@ extern "C" {
 #define S28HS_CMD_ENTER_4BYTE_ADDR       0xB7U
 #define S28HS_CMD_READ_REG               0x65U /* Read Any Register */
 #define S28HS_CMD_WRITE_REG              0x71U /* Write Any Register */
+#define S28HS_CMD_CLEAR_ERRORS           0x82U /* Clear Program and Erase Failure Flags (CLPEF) */
 #define S28HS_CMD_RESET_ENABLE           0x66U
 #define S28HS_CMD_RESET                  0x99U
 #define S28HS_CMD_ENTER_DEEP_POWER_DOWN  0xB9U
@@ -101,6 +107,9 @@ extern "C" {
 #define S28HS_DTR_CMD_READ_REG           0x659AU
 #define S28HS_DTR_CMD_WRITE_REG          0x718EU
 #define S28HS_DTR_CMD_READ_STATUS        0x05FAU
+#define S28HS_DTR_CMD_CLEAR_ERRORS       0x827DU
+#define S28HS_DTR_CMD_RESET_ENABLE       0x6699U
+#define S28HS_DTR_CMD_RESET              0x9966U
 
 /**
   * @}

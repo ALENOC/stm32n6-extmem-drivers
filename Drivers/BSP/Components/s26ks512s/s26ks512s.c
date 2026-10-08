@@ -270,6 +270,7 @@ int32_t S26KS512S_EnableMemoryMappedMode(XSPI_HandleTypeDef *Ctx)
   sCmd.Address      = 0x00000000;
   sCmd.AddressWidth = HAL_XSPI_ADDRESS_32_BITS;
   sCmd.DataMode     = HAL_XSPI_DATA_8_LINES;
+  sCmd.DataLength   = 1; /* Ignored in memory-mapped mode, but the HAL requires at least 1 */
   sCmd.DQSMode      = HAL_XSPI_DQS_ENABLE;
 
   if (HAL_XSPI_HyperbusCmd(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)

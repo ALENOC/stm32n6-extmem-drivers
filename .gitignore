@@ -29,3 +29,4 @@ Thumbs.db
 *.gcda
 *.gcno
 __pycache__/
+build/

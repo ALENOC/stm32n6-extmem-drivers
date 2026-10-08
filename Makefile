@@ -63,7 +63,17 @@ SRCS = $(TEST_SRCS) $(DRIVER_SRCS)
 COVERAGE_SRCS = $(filter-out %_devices.c,$(DRIVER_SRCS))
 OBJS = $(SRCS:.c=.o)
 
-.PHONY: all test coverage examples clean
+# Cross-compilation against the real STM32CubeN6 HAL (see target-check)
+ARM_CC          ?= arm-none-eabi-gcc
+STM32N6_HAL_DIR ?= ../stm32n6xx-hal-driver
+STM32N6_DEV_DIR ?= ../cmsis-device-n6
+CMSIS_CORE_DIR  ?= ../CMSIS_6/CMSIS/Core/Include
+TARGET_BUILD    = build/target
+TARGET_CFLAGS   = -mcpu=cortex-m55 -mthumb -mfloat-abi=hard -std=c11 -O2 -Wall -Wextra -Werror \
+                  -DSTM32N657xx -DUSE_HAL_DRIVER
+DRIVER_INCLUDES = $(patsubst %,-I %,$(filter-out -I Tests,$(INCLUDES)))
+
+.PHONY: all test coverage examples target-check clean
 
 all: $(TARGET)
 
@@ -91,5 +101,18 @@ coverage: clean
 examples:
 	$(CC) $(CFLAGS) $(INCLUDES) -fsyntax-only Examples/extmem_demo.c Examples/extmem_benchmark.c
 
+# Every driver and example must compile for Cortex-M55 against the real HAL headers
+target-check:
+	@mkdir -p $(TARGET_BUILD)
+	sed -e 's|/\*#define HAL_XSPI_MODULE_ENABLED *\*/|#define HAL_XSPI_MODULE_ENABLED|' \
+	    -e 's|/\*#define HAL_SRAM_MODULE_ENABLED *\*/|#define HAL_SRAM_MODULE_ENABLED|' \
+	    $(STM32N6_HAL_DIR)/Inc/stm32n6xx_hal_conf_template.h > $(TARGET_BUILD)/stm32n6xx_hal_conf.h
+	@for f in $(DRIVER_SRCS) Examples/extmem_demo.c Examples/extmem_benchmark.c; do \
+	  echo "  ARM_CC $$f"; \
+	  $(ARM_CC) $(TARGET_CFLAGS) -I $(TARGET_BUILD) -I $(STM32N6_HAL_DIR)/Inc -I $(STM32N6_DEV_DIR)/Include \
+	    -I $(CMSIS_CORE_DIR) $(DRIVER_INCLUDES) -c $$f -o $(TARGET_BUILD)/$$(basename $$f .c).o || exit 1; \
+	done
+
 clean:
 	rm -f $(OBJS) $(TARGET) *.gcov $(SRCS:.c=.gcda) $(SRCS:.c=.gcno)
+	rm -rf build

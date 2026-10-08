@@ -207,6 +207,7 @@ typedef enum {
 #define FMC_WRITE_BURST_DISABLE          0x00U
 #define FMC_CONTINUOUS_CLOCK_SYNC_ONLY   0x00U
 #define FMC_PAGE_SIZE_NONE               0x00U
+#define FMC_NBL_SETUPTIME_0              0x00U
 #define FMC_ACCESS_MODE_A                0x00U
 #define FMC_ACCESS_MODE_B                0x01U
 
@@ -317,7 +318,7 @@ typedef struct {
   uint32_t MemoryDataWidth;
   uint32_t BurstAccessMode;
   uint32_t WaitSignalPolarity;
-  uint32_t WaitTiming;
+  uint32_t WaitSignalActive;
   uint32_t WriteOperation;
   uint32_t WaitSignal;
   uint32_t ExtendedMode;
@@ -325,6 +326,7 @@ typedef struct {
   uint32_t WriteBurst;
   uint32_t ContinuousClock;
   uint32_t PageSize;
+  uint32_t NBLSetupTime;
 } SRAM_InitTypeDef;
 
 typedef struct {
@@ -337,6 +339,7 @@ typedef struct {
   uint32_t AddressSetupTime;
   uint32_t AddressHoldTime;
   uint32_t DataSetupTime;
+  uint32_t DataHoldTime;
   uint32_t BusTurnAroundDuration;
   uint32_t CLKDivision;
   uint32_t DataLatency;
@@ -453,6 +456,9 @@ void MockHAL_SetBlockEraseSize(uint32_t bytes);              /*!< Size erased by
 void MockHAL_SetHyperFlashMode(bool enable);                 /*!< Decode HyperFlash command cycles       */
 void MockHAL_SetSfdpTable(const uint8_t *pTable, uint32_t size); /*!< NULL restores the default table   */
 void MockHAL_SetStatusRegister(uint8_t sr1);
+void MockHAL_SetSemperFailure(bool fail);
+void MockHAL_SetIssiReadRegister(bool supported);            /*!< ISSI SRPV/RDRP Read Register present    */
+uint8_t MockHAL_GetIssiReadParams(void);                    /*!< Next program/erase fails: PRGERR + busy until CLPEF */
 void MockHAL_SetFlagStatusRegister(uint8_t fsr);
 void MockHAL_SetPollTimeout(bool timeout);                   /*!< AutoPolling returns HAL_TIMEOUT        */
 void MockHAL_SetHyperFlashStatus(uint16_t status);           /*!< Value returned after a 0x70 command    */
@@ -469,6 +475,11 @@ uint8_t  MockHAL_GetMR(uint32_t addr);
 uint16_t MockHAL_GetHyperReg(uint32_t addr);
 bool     MockHAL_Is4ByteMode(void);
 uint8_t  MockHAL_GetSramModeRegister(void);
+
+/* HAL parameter checks (assert_param and state checks of stm32n6xx_hal_xspi.c) violated so far */
+uint32_t    MockHAL_GetAssertViolations(void);
+const char *MockHAL_GetLastViolation(void);
+void        MockHAL_ClearAssertViolations(void);
 
 /* Fault injection: the HAL call with index N (0-based, counted from the last arm) fails */
 void     MockHAL_FailCall(int32_t index);

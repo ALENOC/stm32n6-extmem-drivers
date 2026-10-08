@@ -58,6 +58,8 @@ extern "C" {
 #define IS25LP_CMD_WRITE_STATUS          0x01U
 #define IS25LP_CMD_ENTER_4BYTE_ADDR      0xB7U
 #define IS25LP_CMD_EXIT_4BYTE_ADDR       0xE9U
+#define IS25LP_CMD_SET_READ_PARAMS_V     0xC0U /* SRPV: volatile Read Register (P7..P0)     */
+#define IS25LP_CMD_READ_READ_PARAMS      0x61U /* RDRP: read the Read Register              */
 #define IS25LP_CMD_RESET_ENABLE          0x66U
 #define IS25LP_CMD_RESET                 0x99U
 
@@ -65,6 +67,12 @@ extern "C" {
 #define IS25LP_SR_WIP                    (1U << 0)
 #define IS25LP_SR_WEL                    (1U << 1)
 #define IS25LP_SR_QE                     (1U << 6) /* Bit 6 of Status Register is QE */
+
+/* Read Register P[6:3]: dummy cycles (mode bit cycles included), 0 = factory default (6 for EBh, 81 MHz) */
+#define IS25LP_READ_PARAMS_DUMMY_POS     3U
+#define IS25LP_READ_PARAMS_DUMMY_MASK    (0x0FU << IS25LP_READ_PARAMS_DUMMY_POS)
+#define IS25LP_DEFAULT_QUAD_IO_DUMMY     6U
+#define IS25LP_FAST_QUAD_IO_DUMMY        11U   /* EBh/ECh up to 139 MHz on IS25LP (3.0 V) */
 
 /* Quad I/O read mode bits: anything other than AXh keeps the device out of XIP mode */
 #define IS25LP_MODE_BITS_NO_XIP          0x00U
@@ -88,6 +96,7 @@ int32_t IS25LP256_EraseBlock64K(XSPI_HandleTypeDef *Ctx, uint32_t Address);
 int32_t IS25LP256_ChipErase(XSPI_HandleTypeDef *Ctx);
 int32_t IS25LP256_EnableMemoryMappedMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles);
 int32_t IS25LP256_Reset(XSPI_HandleTypeDef *Ctx);
+int32_t IS25LP256_SetReadDummyCycles(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles, uint8_t *pApplied);
 
 #ifdef __cplusplus
 }

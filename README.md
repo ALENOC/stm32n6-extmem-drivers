@@ -31,7 +31,7 @@ Supports **XSPI1**, **XSPI2**, **XSPI3** (Single, Quad, Octal DTR up to 200 MHz,
 ## 🚀 Key Features
 
 - **Comprehensive Infineon Technologies Coverage**:
-  - **SEMPER™ Octal NOR Flash** (`S28HS512T`, `S28HL512T`, `S28HS256T`, `S28HL256T`, `S28HS01GT`, `S28HS02GT`): xSPI Profile 1.0 protocol (8D-8D-8D DDR up to 200 MHz / 400 MB/s).
+  - **SEMPER™ Octal NOR Flash** (`S28HS512T`, `S28HL512T`, `S28HS256T`, `S28HL256T`, `S28HS01GT`): xSPI Profile 1.0 protocol (8D-8D-8D DDR up to 200 MHz / 400 MB/s).
   - **HyperFlash™** (`S26KS512S`, `S26KL512S`, `S26KS256S`, `S26KL256S`, `S26KS128S`, `S26KL128S`): native Cypress HyperBus™ interface at 1.8V / 3.0V.
   - **HyperRAM™** (`S27KS0641`, `S27KL0641`, `S27KS128`, `S27KL128`, `S27KS256`, `S27KL256`, `S27KS512`, `S27HS/HL` 2.0 and 3.0 series).
   - **SEMPER™ / FL Quad SPI Flash** (`S25HL512T`, `S25HS512T`, `S25FL256L`, `S25FL128L`, `S25FL512S`).
@@ -244,6 +244,15 @@ The CI workflow runs all three targets on every push and pull request.
 > The host suite proves the drivers send the command sequences documented by the memory vendors and handle every error path. It does not replace validation on real hardware: signal integrity, timing margins and silicon errata can only be checked on a board.
 
 ---
+
+## ⚙️ Known Limitations
+
+- **S28Hx02GT (2 Gb SEMPER Octal)** is a dual-die part that needs per-die register access; it is not in the device table.
+- **S25Hx-T Quad I/O reads** use the factory memory latency (8 cycles plus 2 mode cycles), valid up to 118 MHz.
+- **S25FL-L** shares the S25Hx-T driver; its failure flags live in SR2 and are reported as a timeout, not cleared.
+- **HyperRAM** is configured for 6 latency clocks (up to 166 MHz). 200 MHz parts need a higher latency code.
+- **ISSI quad NOR**: the volatile Read Register is set to 11 dummy cycles (1-4-4 up to 139 MHz). Parts without a Read Register keep the factory 6 cycles (81 MHz).
+- **ISSI IS66WVO octal PSRAM** is driven with the AP Memory style OPI command set (0x00 / 0x80 / 0x40 / 0xC0). Check it against the datasheet of the exact part you use.
 
 ## 📚 Detailed Documentation
 

@@ -95,22 +95,6 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .DefaultReadDummyCycles  = 24,
     .DefaultWriteDummyCycles = 0
   },
-  {
-    .PartNumber              = "S28HS02GT",
-    .Type                    = EXTMEM_TYPE_NOR_OCTAL_SEMPER,
-    .ManufacturerID          = 0x34,
-    .MemoryTypeID            = 0x5B,
-    .DensityID               = 0x1C,
-    .CapacityBytes           = 256 * 1024 * 1024,
-    .PageSizeBytes           = 256,
-    .SectorSizeBytes         = 256 * 1024,
-    .BlockSizeBytes          = 256 * 1024,
-    .VoltageNominal          = 1.8f,
-    .MaxClockFreqMHz         = 200,
-    .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
-    .DefaultReadDummyCycles  = 24,
-    .DefaultWriteDummyCycles = 0
-  },
 
   /* ========================================================================= */
   /* INFINEON HYPERFLASH(TM) (S26KS / S26KL)                                   */
@@ -280,7 +264,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 3.0f,
     .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
+    .DefaultReadDummyCycles  = 8,
     .DefaultWriteDummyCycles = 0
   },
   {
@@ -296,7 +280,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 1.8f,
     .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
+    .DefaultReadDummyCycles  = 8,
     .DefaultWriteDummyCycles = 0
   },
   {
@@ -312,7 +296,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 3.0f,
     .MaxClockFreqMHz         = 108,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
+    .DefaultReadDummyCycles  = 8,
     .DefaultWriteDummyCycles = 0
   },
 
@@ -566,7 +550,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 3.0f,
     .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
+    .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
   },
   {
@@ -582,7 +566,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 1.8f,
     .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
+    .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
   },
   {
@@ -598,7 +582,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 3.0f,
     .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
+    .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
   },
   {
@@ -614,7 +598,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 1.8f,
     .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
+    .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
   },
   {
@@ -630,7 +614,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 3.0f,
     .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
+    .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
   },
   {
@@ -646,7 +630,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 1.8f,
     .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
+    .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
   },
   {
@@ -662,7 +646,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 3.0f,
     .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
+    .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
   },
   {
@@ -678,7 +662,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 1.8f,
     .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
+    .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
   },
   {
@@ -694,7 +678,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 3.0f,
     .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
+    .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
   },
   {
@@ -710,7 +694,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 1.8f,
     .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
+    .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
   },
   {
@@ -726,7 +710,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 3.0f,
     .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
+    .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
   },
   {
@@ -742,7 +726,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 1.8f,
     .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
+    .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
   },
   {
@@ -758,7 +742,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 3.0f,
     .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
+    .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
   },
   {
@@ -774,7 +758,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 1.8f,
     .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
+    .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
   },
   {
@@ -790,7 +774,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 3.0f,
     .MaxClockFreqMHz         = 104,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
+    .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
   },
   {
@@ -806,7 +790,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 1.8f,
     .MaxClockFreqMHz         = 104,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
+    .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
   },
   {
@@ -822,7 +806,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 3.0f,
     .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
+    .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
   },
   {
@@ -838,7 +822,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 1.8f,
     .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
+    .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
   },
 
@@ -1395,7 +1379,8 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .MaxClockFreqMHz         = 200,
     .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
     .DefaultReadDummyCycles  = 20,
-    .DefaultWriteDummyCycles = 0
+    .DefaultWriteDummyCycles = 0,
+    .DieCount                = 2
   },
   {
     .PartNumber              = "MT35XU01GBBA",
@@ -1411,7 +1396,8 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .MaxClockFreqMHz         = 200,
     .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
     .DefaultReadDummyCycles  = 20,
-    .DefaultWriteDummyCycles = 0
+    .DefaultWriteDummyCycles = 0,
+    .DieCount                = 2
   },
   {
     .PartNumber              = "MT35XL01GBBA",
@@ -1427,7 +1413,8 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
     .DefaultReadDummyCycles  = 20,
-    .DefaultWriteDummyCycles = 0
+    .DefaultWriteDummyCycles = 0,
+    .DieCount                = 2
   },
   {
     .PartNumber              = "MT35XU512ABA",
@@ -1511,7 +1498,8 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
     .DefaultReadDummyCycles  = 10,
-    .DefaultWriteDummyCycles = 0
+    .DefaultWriteDummyCycles = 0,
+    .DieCount                = 2
   },
   {
     .PartNumber              = "MT25QL01GBBB",
@@ -1527,7 +1515,8 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
     .DefaultReadDummyCycles  = 10,
-    .DefaultWriteDummyCycles = 0
+    .DefaultWriteDummyCycles = 0,
+    .DieCount                = 2
   },
   {
     .PartNumber              = "MT25QU512ABB",

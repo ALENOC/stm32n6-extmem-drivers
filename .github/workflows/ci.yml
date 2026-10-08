@@ -32,3 +32,26 @@ jobs:
         run: |
           make clean
           make examples
+
+  target:
+    name: Cross-compile against the STM32CubeN6 HAL
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Arm GNU toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-none-eabi
+
+      - name: Fetch STM32CubeN6 HAL, device and CMSIS headers
+        run: |
+          git clone --depth 1 https://github.com/STMicroelectronics/stm32n6xx-hal-driver.git ../stm32n6xx-hal-driver
+          git clone --depth 1 https://github.com/STMicroelectronics/cmsis-device-n6.git ../cmsis-device-n6
+          git clone --depth 1 https://github.com/ARM-software/CMSIS_6.git ../CMSIS_6
+
+      - name: Compile drivers and examples for Cortex-M55
+        run: |
+          make target-check

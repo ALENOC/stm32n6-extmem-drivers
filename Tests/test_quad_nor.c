@@ -48,11 +48,15 @@ bool test_infineon_s25hl512t_quad_flash(void)
 
   MockHAL_ClearLog();
   ASSERT_EQ(S25HL512T_ReadQuad(&h, 0x1000, rx, sizeof(rx), 8), S25HL512T_OK);
-  ASSERT_CMD(Test_NthCommand(0), I1S(0xEC), A4S(HAL_XSPI_ADDRESS_32_BITS, 0x1000), D4S(256), DUMMY(8));
+  /* 2 mode cycles (0x00, no continuous read) are not part of the 8 latency cycles */
+  ASSERT_CMD(Test_NthCommand(0), I1S(0xEC), A4S(HAL_XSPI_ADDRESS_32_BITS, 0x1000), .AlternateBytesMode = HAL_XSPI_ALT_BYTES_4_LINES,
+             D4S(256), DUMMY(8));
+  ASSERT_EQ(Test_NthCommand(0)->Cmd.AlternateBytes, 0x00);
+  ASSERT_EQ(Test_NthCommand(0)->Cmd.AlternateBytesWidth, HAL_XSPI_ALT_BYTES_8_BITS);
   ASSERT_EQ(memcmp(tx, rx, sizeof(tx)), 0);
   MockHAL_ClearLog();
   ASSERT_EQ(S25HL512T_ReadQuad(&h, 0x1000, rx, 4, 0), S25HL512T_OK);
-  ASSERT_CMD(Test_NthCommand(0), I1S(0xEC), DUMMY(6));
+  ASSERT_CMD(Test_NthCommand(0), I1S(0xEC), DUMMY(S25HL_DEFAULT_READ_LATENCY));
 
   MockHAL_ClearLog();
   ASSERT_EQ(S25HL512T_EraseSector4K(&h, 0x1000), S25HL512T_OK);
@@ -71,7 +75,7 @@ bool test_infineon_s25hl512t_quad_flash(void)
              .DataMode = HAL_XSPI_DATA_4_LINES, DUMMY(8), OPREAD);
   MockHAL_ClearLog();
   ASSERT_EQ(S25HL512T_EnableMemoryMappedMode(&h, 0), S25HL512T_OK);
-  ASSERT_CMD(Test_NthCommand(0), I1S(0xEC), DUMMY(6), OPREAD);
+  ASSERT_CMD(Test_NthCommand(0), I1S(0xEC), .AlternateBytesMode = HAL_XSPI_ALT_BYTES_4_LINES, DUMMY(8), OPREAD);
 
   MockHAL_ClearLog();
   ASSERT_EQ(S25HL512T_Reset(&h), S25HL512T_OK);
@@ -80,6 +84,14 @@ bool test_infineon_s25hl512t_quad_flash(void)
   MockHAL_SetPollTimeout(true);
   ASSERT_EQ(S25HL512T_AutoPollingMemReady(&h, 1), S25HL512T_TIMEOUT);
   MockHAL_SetPollTimeout(false);
+
+  /* SEMPER failure: busy with PRGERR until CLPEF (0x82) */
+  FLASH_SETUP(0x34, 0x2A, 0x1A);
+  MockHAL_SetSemperFailure(true);
+  ASSERT_EQ(S25HL512T_PageProgramQuad(&h, 0, tx, 8), S25HL512T_ERROR);
+  ASSERT_EQ(MockHAL_CountCommands(0x82), 1);
+  ASSERT_EQ(MockHAL_GetStatusRegister() & 0x61, 0);
+  FAULT_SWEEP_EXPECT(FLASH_SETUP(0x34, 0x2A, 0x1A); MockHAL_SetSemperFailure(true), S25HL512T_EraseSector4K(&h, 0), S25HL512T_ERROR);
 
   FAULT_SWEEP(FLASH_SETUP(0x34, 0x2A, 0x1A), S25HL512T_ReadID(&h, id));
   FAULT_SWEEP(FLASH_SETUP(0x34, 0x2A, 0x1A), S25HL512T_EnableQuadMode(&h));
@@ -184,6 +196,22 @@ bool test_issi_is25lp256_quad_flash(void)
   MockHAL_SetPollTimeout(true);
   ASSERT_EQ(IS25LP256_AutoPollingMemReady(&h, 1), IS25LP_TIMEOUT);
   MockHAL_SetPollTimeout(false);
+
+  /* Read Register: SRPV with P[6:3] = 11, read back with RDRP */
+  uint8_t applied = 0;
+  MockHAL_ClearLog();
+  ASSERT_EQ(IS25LP256_SetReadDummyCycles(&h, 11, &applied), IS25LP_OK);
+  ASSERT_CMD(Test_NthCommand(0), I1S(0xC0), NOADDR, D1S(1), DUMMY(0));
+  ASSERT_EQ(MockHAL_FindTxAfterCommand(0xC0, 0)->Data[0], 11U << 3);
+  ASSERT_CMD(Test_NthCommand(1), I1S(0x61), NOADDR, D1S(1), DUMMY(0));
+  ASSERT_EQ(applied, 11);
+  ASSERT_EQ(MockHAL_GetIssiReadParams(), 0x58);
+  /* Parts without a Read Register keep the factory 6 cycles */
+  FLASH_SETUP(0x9D, 0x40, 0x16);
+  MockHAL_SetIssiReadRegister(false);
+  ASSERT_EQ(IS25LP256_SetReadDummyCycles(&h, 11, &applied), IS25LP_OK);
+  ASSERT_EQ(applied, IS25LP_DEFAULT_QUAD_IO_DUMMY);
+  FAULT_SWEEP(FLASH_SETUP(0x9D, 0x60, 0x19), IS25LP256_SetReadDummyCycles(&h, 11, &applied));
 
   FAULT_SWEEP(FLASH_SETUP(0x9D, 0x60, 0x19), IS25LP256_ReadID(&h, id));
   FAULT_SWEEP(FLASH_SETUP(0x9D, 0x60, 0x19), IS25LP256_EnableQuadMode(&h));

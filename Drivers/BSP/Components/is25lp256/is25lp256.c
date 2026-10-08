@@ -361,3 +361,35 @@ int32_t IS25LP256_Reset(XSPI_HandleTypeDef *Ctx)
   HAL_Delay(1);
   return IS25LP_OK;
 }
+
+int32_t IS25LP256_SetReadDummyCycles(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles, uint8_t *pApplied)
+{
+  XSPI_RegularCmdTypeDef sCmd = {0};
+  uint8_t params = (uint8_t)((DummyCycles << IS25LP_READ_PARAMS_DUMMY_POS) & IS25LP_READ_PARAMS_DUMMY_MASK);
+  uint8_t readBack = 0;
+
+  /* SRPV: P7 = 0 (HOLD#), P[6:3] = dummy cycles, P2..P0 = 0 (no wrap) */
+  sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
+  sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
+  sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_8_BITS;
+  sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
+  sCmd.Instruction        = IS25LP_CMD_SET_READ_PARAMS_V;
+  sCmd.AddressMode        = HAL_XSPI_ADDRESS_NONE;
+  sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
+  sCmd.DataMode           = HAL_XSPI_DATA_1_LINE;
+  sCmd.DataDTRMode        = HAL_XSPI_DATA_DTR_DISABLE;
+  sCmd.DataLength         = 1;
+  sCmd.DummyCycles        = 0;
+  sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
+
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
+  if (HAL_XSPI_Transmit(Ctx, &params, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
+
+  /* RDRP: older parts without a Read Register ignore SRPV and keep the factory latency */
+  sCmd.Instruction = IS25LP_CMD_READ_READ_PARAMS;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
+  if (HAL_XSPI_Receive(Ctx, &readBack, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
+
+  *pApplied = (readBack == params) ? DummyCycles : IS25LP_DEFAULT_QUAD_IO_DUMMY;
+  return IS25LP_OK;
+}

@@ -219,7 +219,52 @@ int32_t S28HS512T_AutoPollingMemReady(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mod
   sCfg.IntervalTime  = 0x10;
   sCfg.AutomaticStop = HAL_XSPI_AUTOMATIC_STOP_ENABLE;
 
-  return (HAL_XSPI_AutoPolling(Ctx, &sCfg, Timeout) == HAL_OK) ? S28HS512T_OK : S28HS512T_TIMEOUT;
+  if (HAL_XSPI_AutoPolling(Ctx, &sCfg, Timeout) == HAL_OK)
+  {
+    return S28HS512T_OK;
+  }
+
+  /* A failed program/erase keeps RDYBSY set until the error flags are cleared:
+   * read STR1V once to tell a failure from a plain timeout */
+  uint8_t sr1 = 0;
+  if (Mode == EXTMEM_MODE_OCTAL_DTR)
+  {
+    if (S28HS512T_ReadAnyReg(Ctx, Mode, S28HS_REG_STATUS1_V, &sr1) != S28HS512T_OK) return S28HS512T_ERROR;
+  }
+  else
+  {
+    sCmd.OperationType = HAL_XSPI_OPTYPE_COMMON_CFG;
+    if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S28HS512T_ERROR;
+    if (HAL_XSPI_Receive(Ctx, &sr1, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S28HS512T_ERROR;
+  }
+  if ((sr1 & (S28HS_SR1_PRG_ERR | S28HS_SR1_ERS_ERR)) == 0U)
+  {
+    return S28HS512T_TIMEOUT;
+  }
+
+  XSPI_RegularCmdTypeDef sClr = {0};
+  sClr.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
+  sClr.AddressMode        = HAL_XSPI_ADDRESS_NONE;
+  sClr.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
+  sClr.DataMode           = HAL_XSPI_DATA_NONE;
+  sClr.DummyCycles        = 0;
+  sClr.DQSMode            = HAL_XSPI_DQS_DISABLE;
+  if (Mode == EXTMEM_MODE_OCTAL_DTR)
+  {
+    sClr.InstructionMode    = HAL_XSPI_INSTRUCTION_8_LINES;
+    sClr.InstructionWidth   = HAL_XSPI_INSTRUCTION_16_BITS;
+    sClr.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_ENABLE;
+    sClr.Instruction        = S28HS_DTR_CMD_CLEAR_ERRORS;
+  }
+  else
+  {
+    sClr.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
+    sClr.InstructionWidth   = HAL_XSPI_INSTRUCTION_8_BITS;
+    sClr.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
+    sClr.Instruction        = S28HS_CMD_CLEAR_ERRORS;
+  }
+  (void)HAL_XSPI_Command(Ctx, &sClr, HAL_XSPI_TIMEOUT_DEFAULT_VALUE);
+  return S28HS512T_ERROR;
 }
 
 static int32_t S28HS512T_Enter4ByteAddressMode(XSPI_HandleTypeDef *Ctx)
@@ -258,7 +303,15 @@ int32_t S28HS512T_EnterOctalDTRMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles
   if (S28HS512T_WriteEnable(Ctx, EXTMEM_MODE_SPI) != S28HS512T_OK) return S28HS512T_ERROR;
   if (S28HS512T_WriteAnyReg(Ctx, EXTMEM_MODE_SPI, S28HS_REG_CFR2_V, cfr2) != S28HS512T_OK) return S28HS512T_ERROR;
 
-  /* 3. Switch the interface to 8D-8D-8D through CFR5V */
+  /* 3. Volatile register read latency for 8D-8D-8D at full speed: VRGLAT = 11 (6 cycles) in CFR3V[7:6].
+   *    The factory value (3 cycles) is only valid up to 25 MHz in DDR. */
+  uint8_t cfr3 = 0;
+  if (S28HS512T_ReadAnyReg(Ctx, EXTMEM_MODE_SPI, S28HS_REG_CFR3_V, &cfr3) != S28HS512T_OK) return S28HS512T_ERROR;
+  cfr3 = (uint8_t)((cfr3 & ~S28HS_CFR3V_VRGLAT_MASK) | S28HS_CFR3V_VRGLAT_CODE_11);
+  if (S28HS512T_WriteEnable(Ctx, EXTMEM_MODE_SPI) != S28HS512T_OK) return S28HS512T_ERROR;
+  if (S28HS512T_WriteAnyReg(Ctx, EXTMEM_MODE_SPI, S28HS_REG_CFR3_V, cfr3) != S28HS512T_OK) return S28HS512T_ERROR;
+
+  /* 4. Switch the interface to 8D-8D-8D through CFR5V */
   if (S28HS512T_WriteEnable(Ctx, EXTMEM_MODE_SPI) != S28HS512T_OK) return S28HS512T_ERROR;
   if (S28HS512T_WriteAnyReg(Ctx, EXTMEM_MODE_SPI, S28HS_REG_CFR5_V, S28HS_CFR5V_OCTAL_DTR) != S28HS512T_OK) return S28HS512T_ERROR;
 
@@ -267,8 +320,26 @@ int32_t S28HS512T_EnterOctalDTRMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles
 
 int32_t S28HS512T_ExitOctalDTRMode(XSPI_HandleTypeDef *Ctx)
 {
-  if (S28HS512T_WriteEnable(Ctx, EXTMEM_MODE_OCTAL_DTR) != S28HS512T_OK) return S28HS512T_ERROR;
-  if (S28HS512T_WriteAnyReg(Ctx, EXTMEM_MODE_OCTAL_DTR, S28HS_REG_CFR5_V, S28HS_CFR5V_SPI) != S28HS512T_OK) return S28HS512T_ERROR;
+  /* An 8D software reset reloads every volatile register (interface, MEMLAT, VRGLAT, address length)
+   * from the non-volatile defaults, so the device is back in 1S-1S-1S with factory latencies. */
+  XSPI_RegularCmdTypeDef sCmd = {0};
+
+  sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
+  sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_8_LINES;
+  sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_16_BITS;
+  sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_ENABLE;
+  sCmd.Instruction        = S28HS_DTR_CMD_RESET_ENABLE;
+  sCmd.AddressMode        = HAL_XSPI_ADDRESS_NONE;
+  sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
+  sCmd.DataMode           = HAL_XSPI_DATA_NONE;
+  sCmd.DummyCycles        = 0;
+  sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
+
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S28HS512T_ERROR;
+  sCmd.Instruction = S28HS_DTR_CMD_RESET;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S28HS512T_ERROR;
+
+  HAL_Delay(1); /* tSR = 83 us */
   return S28HS512T_OK;
 }
 

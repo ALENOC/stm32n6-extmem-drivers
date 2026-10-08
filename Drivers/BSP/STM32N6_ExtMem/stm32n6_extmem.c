@@ -42,7 +42,8 @@ static void ExtMem_MappedWrite(uint32_t base, uint32_t offset, const uint8_t *pD
  * HAL_XSPI_MspInit() in the application, which HAL_XSPI_Init() calls. */
 static void ExtMem_EnablePowerAndClocks(XSPI_HandleTypeDef *hxspi, bool use1V8, uint32_t targetPort)
 {
-  /* 1. Enable Power and configure VDDIO domain: XSPIM Port 1 pins are on VDDIO3, Port 2 pins on VDDIO2 */
+  /* 1. Enable Power and configure VDDIO domain: XSPIM Port 2 pins (PN) are on VDDIO3, Port 1 pins
+   *    (PO/PP) on VDDIO2, as in the STM32N6570-DK BSP (NOR on XSPI2 / VDDIO3, PSRAM on XSPI1 / VDDIO2) */
 #if defined(__HAL_RCC_PWR_CLK_ENABLE)
   __HAL_RCC_PWR_CLK_ENABLE();
 #endif
@@ -429,11 +430,14 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
   else if (hextmem->Geometry.Type == EXTMEM_TYPE_NOR_QUAD_INFINEON)
   {
     if (S25HL512T_EnableQuadMode(&hextmem->hxspi) != S25HL512T_OK) return EXTMEM_ERROR;
+    hextmem->DummyCycles = S25HL_DEFAULT_READ_LATENCY;
     hextmem->ActiveMode = EXTMEM_MODE_QUAD_1_4_4;
   }
   else if (hextmem->Geometry.Type == EXTMEM_TYPE_NOR_QUAD_ISSI)
   {
     if (IS25LP256_EnableQuadMode(&hextmem->hxspi) != IS25LP_OK) return EXTMEM_ERROR;
+    /* The factory latency only covers 81 MHz on 1-4-4 reads: program the volatile Read Register */
+    if (IS25LP256_SetReadDummyCycles(&hextmem->hxspi, IS25LP_FAST_QUAD_IO_DUMMY, &hextmem->DummyCycles) != IS25LP_OK) return EXTMEM_ERROR;
     if (is4Byte && (IS25LP_Enter4ByteAddressMode(&hextmem->hxspi) != IS25LP_OK))
     {
       return EXTMEM_ERROR;
@@ -680,13 +684,13 @@ int32_t ExtMem_EnableMemoryMapped(ExtMem_HandleTypeDef *hextmem)
       break;
 
     case EXTMEM_TYPE_NOR_QUAD_INFINEON:
-      ret = S25HL512T_EnableMemoryMappedMode(&hextmem->hxspi, 6);
+      ret = S25HL512T_EnableMemoryMappedMode(&hextmem->hxspi, hextmem->DummyCycles);
       break;
 
     case EXTMEM_TYPE_NOR_QUAD_ISSI:
     {
       bool is4B = (hextmem->Geometry.TotalSizeBytes > (16U * 1024U * 1024U));
-      ret = IS25LP_EnableMemoryMappedModeEx(&hextmem->hxspi, 6, is4B ? HAL_XSPI_ADDRESS_32_BITS : HAL_XSPI_ADDRESS_24_BITS);
+      ret = IS25LP_EnableMemoryMappedModeEx(&hextmem->hxspi, hextmem->DummyCycles, is4B ? HAL_XSPI_ADDRESS_32_BITS : HAL_XSPI_ADDRESS_24_BITS);
       break;
     }
 
@@ -784,12 +788,12 @@ int32_t ExtMem_Read(ExtMem_HandleTypeDef *hextmem, uint32_t Address, uint8_t *pD
       return IS66WVO32M8_Read(&hextmem->hxspi, pData, Address, Size, hextmem->DummyCycles);
 
     case EXTMEM_TYPE_NOR_QUAD_INFINEON:
-      return S25HL512T_ReadQuad(&hextmem->hxspi, Address, pData, Size, 6);
+      return S25HL512T_ReadQuad(&hextmem->hxspi, Address, pData, Size, hextmem->DummyCycles);
 
     case EXTMEM_TYPE_NOR_QUAD_ISSI:
     {
       bool is4B = (hextmem->Geometry.TotalSizeBytes > (16U * 1024U * 1024U));
-      return IS25LP_ReadQuadEx(&hextmem->hxspi, Address, pData, Size, 6, is4B ? HAL_XSPI_ADDRESS_32_BITS : HAL_XSPI_ADDRESS_24_BITS);
+      return IS25LP_ReadQuadEx(&hextmem->hxspi, Address, pData, Size, hextmem->DummyCycles, is4B ? HAL_XSPI_ADDRESS_32_BITS : HAL_XSPI_ADDRESS_24_BITS);
     }
 
     case EXTMEM_TYPE_NOR_QUAD_MICRON:
@@ -838,7 +842,7 @@ int32_t ExtMem_Write(ExtMem_HandleTypeDef *hextmem, uint32_t Address, const uint
     else
     {
       /* Flash cannot be programmed in read-only Memory Mapped mode without returning to indirect */
-      ExtMem_DisableMemoryMapped(hextmem);
+      if (ExtMem_DisableMemoryMapped(hextmem) != EXTMEM_OK) return EXTMEM_ERROR;
     }
   }
 
@@ -978,7 +982,7 @@ int32_t ExtMem_EraseSector(ExtMem_HandleTypeDef *hextmem, uint32_t SectorAddress
     return EXTMEM_INVALID_PARAM;
   }
 
-  if (hextmem->State == EXTMEM_STATE_MEMORY_MAPPED) ExtMem_DisableMemoryMapped(hextmem);
+  if (hextmem->State == EXTMEM_STATE_MEMORY_MAPPED && ExtMem_DisableMemoryMapped(hextmem) != EXTMEM_OK) return EXTMEM_ERROR;
 
   bool is4Byte = (hextmem->Geometry.TotalSizeBytes > (16U * 1024U * 1024U));
   uint32_t addrWidth = is4Byte ? HAL_XSPI_ADDRESS_32_BITS : HAL_XSPI_ADDRESS_24_BITS;
@@ -1025,7 +1029,7 @@ int32_t ExtMem_EraseBlock(ExtMem_HandleTypeDef *hextmem, uint32_t BlockAddress)
     return EXTMEM_INVALID_PARAM;
   }
 
-  if (hextmem->State == EXTMEM_STATE_MEMORY_MAPPED) ExtMem_DisableMemoryMapped(hextmem);
+  if (hextmem->State == EXTMEM_STATE_MEMORY_MAPPED && ExtMem_DisableMemoryMapped(hextmem) != EXTMEM_OK) return EXTMEM_ERROR;
 
   bool is4Byte = (hextmem->Geometry.TotalSizeBytes > (16U * 1024U * 1024U));
   uint32_t addrWidth = is4Byte ? HAL_XSPI_ADDRESS_32_BITS : HAL_XSPI_ADDRESS_24_BITS;
@@ -1058,7 +1062,18 @@ int32_t ExtMem_EraseChip(ExtMem_HandleTypeDef *hextmem)
 {
   if (hextmem == NULL) return EXTMEM_INVALID_PARAM;
   if (!hextmem->Geometry.IsNonVolatile) return EXTMEM_OK;
-  if (hextmem->State == EXTMEM_STATE_MEMORY_MAPPED) ExtMem_DisableMemoryMapped(hextmem);
+  if (hextmem->State == EXTMEM_STATE_MEMORY_MAPPED && ExtMem_DisableMemoryMapped(hextmem) != EXTMEM_OK) return EXTMEM_ERROR;
+
+  /* Die count from the database; MT25Q parts found through SFDP use 512 Mbit dice */
+  uint32_t dice = 1U;
+  if (hextmem->pDevice != NULL)
+  {
+    dice = (hextmem->pDevice->DieCount > 1U) ? hextmem->pDevice->DieCount : 1U;
+  }
+  else if (hextmem->Geometry.TotalSizeBytes > MT25Q_DIE_SIZE)
+  {
+    dice = hextmem->Geometry.TotalSizeBytes / MT25Q_DIE_SIZE;
+  }
 
   switch (hextmem->Geometry.Type)
   {
@@ -1067,12 +1082,12 @@ int32_t ExtMem_EraseChip(ExtMem_HandleTypeDef *hextmem)
     case EXTMEM_TYPE_NOR_OCTAL_ISSI:
       return IS25LX256_ChipErase(&hextmem->hxspi, hextmem->ActiveMode);
     case EXTMEM_TYPE_NOR_OCTAL_MICRON:
-      if (hextmem->Geometry.TotalSizeBytes > MT35XU_DIE_SIZE)
+      if (dice > 1U)
       {
-        /* Multi-die parts reject bulk erase: erase each 512 Mbit die */
-        for (uint32_t die = 0; die < hextmem->Geometry.TotalSizeBytes; die += MT35XU_DIE_SIZE)
+        /* Stacked dice reject bulk erase: erase each die at its base address */
+        for (uint32_t die = 0; die < dice; die++)
         {
-          int32_t st = MT35XU_EraseDie(&hextmem->hxspi, hextmem->ActiveMode, die);
+          int32_t st = MT35XU_EraseDie(&hextmem->hxspi, hextmem->ActiveMode, die * (hextmem->Geometry.TotalSizeBytes / dice));
           if (st != MT35XU_OK) return st;
         }
         return EXTMEM_OK;
@@ -1086,12 +1101,12 @@ int32_t ExtMem_EraseChip(ExtMem_HandleTypeDef *hextmem)
     case EXTMEM_TYPE_NOR_QUAD_ISSI:
       return IS25LP256_ChipErase(&hextmem->hxspi);
     case EXTMEM_TYPE_NOR_QUAD_MICRON:
-      if (hextmem->Geometry.TotalSizeBytes > MT25Q_DIE_SIZE)
+      if (dice > 1U)
       {
-        /* Multi-die parts reject bulk erase: erase each 512 Mbit die */
-        for (uint32_t die = 0; die < hextmem->Geometry.TotalSizeBytes; die += MT25Q_DIE_SIZE)
+        /* Stacked dice reject bulk erase: erase each die at its base address (4-byte mode) */
+        for (uint32_t die = 0; die < dice; die++)
         {
-          int32_t st = MT25QU_EraseDie(&hextmem->hxspi, die);
+          int32_t st = MT25QU_EraseDie(&hextmem->hxspi, die * (hextmem->Geometry.TotalSizeBytes / dice));
           if (st != MT25Q_OK) return st;
         }
         return EXTMEM_OK;

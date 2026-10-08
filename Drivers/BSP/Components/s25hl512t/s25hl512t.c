@@ -73,7 +73,24 @@ int32_t S25HL512T_AutoPollingMemReady(XSPI_HandleTypeDef *Ctx, uint32_t Timeout)
   sCfg.IntervalTime  = 0x10;
   sCfg.AutomaticStop = HAL_XSPI_AUTOMATIC_STOP_ENABLE;
 
-  return (HAL_XSPI_AutoPolling(Ctx, &sCfg, Timeout) == HAL_OK) ? S25HL512T_OK : S25HL512T_TIMEOUT;
+  if (HAL_XSPI_AutoPolling(Ctx, &sCfg, Timeout) == HAL_OK)
+  {
+    return S25HL512T_OK;
+  }
+
+  /* SEMPER keeps RDYBSY set after a failed program/erase until CLPEF: tell a failure from a timeout */
+  uint8_t sr1 = 0;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
+  if (HAL_XSPI_Receive(Ctx, &sr1, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
+  if ((sr1 & (S25HL_SR1_PRG_ERR | S25HL_SR1_ERS_ERR)) == 0U)
+  {
+    return S25HL512T_TIMEOUT;
+  }
+
+  sCmd.Instruction = S25HL_CMD_CLEAR_ERRORS;
+  sCmd.DataMode    = HAL_XSPI_DATA_NONE;
+  (void)HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE);
+  return S25HL512T_ERROR;
 }
 
 int32_t S25HL512T_EnableQuadMode(XSPI_HandleTypeDef *Ctx)
@@ -127,11 +144,14 @@ int32_t S25HL512T_ReadQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *p
   sCmd.AddressWidth       = HAL_XSPI_ADDRESS_32_BITS;
   sCmd.AddressDTRMode     = HAL_XSPI_ADDRESS_DTR_DISABLE;
   sCmd.Address            = Address;
-  sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
+  sCmd.AlternateBytesMode    = HAL_XSPI_ALT_BYTES_4_LINES;
+  sCmd.AlternateBytesWidth   = HAL_XSPI_ALT_BYTES_8_BITS;
+  sCmd.AlternateBytesDTRMode = HAL_XSPI_ALT_BYTES_DTR_DISABLE;
+  sCmd.AlternateBytes        = S25HL_MODE_BITS_NO_CONTINUOUS;
   sCmd.DataMode           = HAL_XSPI_DATA_4_LINES;
   sCmd.DataDTRMode        = HAL_XSPI_DATA_DTR_DISABLE;
   sCmd.DataLength         = Size;
-  sCmd.DummyCycles        = (DummyCycles > 0) ? DummyCycles : 6;
+  sCmd.DummyCycles        = (DummyCycles > 0) ? DummyCycles : S25HL_DEFAULT_READ_LATENCY;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
   if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
@@ -248,10 +268,13 @@ int32_t S25HL512T_EnableMemoryMappedMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyC
   sCmd.AddressMode        = HAL_XSPI_ADDRESS_4_LINES;
   sCmd.AddressWidth       = HAL_XSPI_ADDRESS_32_BITS;
   sCmd.AddressDTRMode     = HAL_XSPI_ADDRESS_DTR_DISABLE;
-  sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
+  sCmd.AlternateBytesMode    = HAL_XSPI_ALT_BYTES_4_LINES;
+  sCmd.AlternateBytesWidth   = HAL_XSPI_ALT_BYTES_8_BITS;
+  sCmd.AlternateBytesDTRMode = HAL_XSPI_ALT_BYTES_DTR_DISABLE;
+  sCmd.AlternateBytes        = S25HL_MODE_BITS_NO_CONTINUOUS;
   sCmd.DataMode           = HAL_XSPI_DATA_4_LINES;
   sCmd.DataDTRMode        = HAL_XSPI_DATA_DTR_DISABLE;
-  sCmd.DummyCycles        = (DummyCycles > 0) ? DummyCycles : 6;
+  sCmd.DummyCycles        = (DummyCycles > 0) ? DummyCycles : S25HL_DEFAULT_READ_LATENCY;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
   if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;

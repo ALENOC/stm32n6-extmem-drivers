@@ -21,6 +21,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include "extmem_unit_tests.h"
+#include "mock_hal.h"
 
 #define COLOR_RESET   "\033[0m"
 #define COLOR_GREEN   "\033[1;32m"
@@ -75,7 +76,14 @@ int main(int argc, char *argv[])
     printf("[ RUN      ] [%2zu/%2zu] %s\n", i + 1, total_tests, s_test_cases[i].TestName);
     fflush(stdout);
 
+    MockHAL_ClearAssertViolations();
     bool result = s_test_cases[i].TestFunc();
+    if (result && MockHAL_GetAssertViolations() != 0U)
+    {
+      printf("       [FAIL] %lu HAL parameter check violation(s), last: %s\r\n",
+             (unsigned long)MockHAL_GetAssertViolations(), MockHAL_GetLastViolation());
+      result = false;
+    }
 
     if (result)
     {

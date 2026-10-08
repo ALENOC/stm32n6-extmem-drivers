@@ -78,7 +78,6 @@ extern "C" {
 #define MT35XU_VCR_IO_MODE_OCTAL_DTR     0xE7U                   /* Octal DDR with DQS */
 #define MT35XU_VCR_IO_MODE_EXT_SPI       0xFFU                   /* Extended SPI (default) */
 #define MT35XU_VCR_DUMMY_DEFAULT         0x1FU
-#define MT35XU_DIE_SIZE                  (64U * 1024U * 1024U)   /* 512 Mbit per die */
 
 /* Status & Flag Status Bits */
 #define MT35XU_SR_WIP                    (1U << 0)               /* Write In Progress */

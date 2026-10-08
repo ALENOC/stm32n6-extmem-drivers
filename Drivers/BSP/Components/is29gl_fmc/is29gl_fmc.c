@@ -53,7 +53,7 @@ int32_t IS29GL_FMC_Init(SRAM_HandleTypeDef *hsram, uint32_t Bank, const IS29GL_F
   hsram->Init.MemoryDataWidth    = FMC_NORSRAM_MEM_BUS_WIDTH_16;
   hsram->Init.BurstAccessMode    = FMC_BURST_ACCESS_MODE_DISABLE;
   hsram->Init.WaitSignalPolarity = FMC_WAIT_SIGNAL_POLARITY_LOW;
-  hsram->Init.WaitTiming         = FMC_WAIT_TIMING_BEFORE_WS;
+  hsram->Init.WaitSignalActive   = FMC_WAIT_TIMING_BEFORE_WS;
   hsram->Init.WriteOperation     = FMC_WRITE_OPERATION_ENABLE;
   hsram->Init.WaitSignal         = FMC_WAIT_SIGNAL_DISABLE;
   hsram->Init.ExtendedMode       = FMC_EXTENDED_MODE_DISABLE;
@@ -61,6 +61,7 @@ int32_t IS29GL_FMC_Init(SRAM_HandleTypeDef *hsram, uint32_t Bank, const IS29GL_F
   hsram->Init.WriteBurst         = FMC_WRITE_BURST_DISABLE;
   hsram->Init.ContinuousClock    = FMC_CONTINUOUS_CLOCK_SYNC_ONLY;
   hsram->Init.PageSize           = FMC_PAGE_SIZE_NONE;
+  hsram->Init.NBLSetupTime       = FMC_NBL_SETUPTIME_0;
 
   if (pTiming != NULL)
   {
@@ -77,6 +78,7 @@ int32_t IS29GL_FMC_Init(SRAM_HandleTypeDef *hsram, uint32_t Bank, const IS29GL_F
     Timing.BusTurnAroundDuration = 2;
   }
 
+  Timing.DataHoldTime            = 1; /* One FMC clock of data hold after the write pulse */
   Timing.CLKDivision             = 2;
   Timing.DataLatency             = 2;
   Timing.AccessMode              = FMC_ACCESS_MODE_B; /* Mode B for NOR Flash */

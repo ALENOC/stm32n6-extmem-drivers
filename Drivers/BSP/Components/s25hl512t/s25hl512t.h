@@ -50,13 +50,21 @@ extern "C" {
 #define S25HL_CMD_READ_STATUS1           0x05U
 #define S25HL_CMD_READ_CONFIG1           0x35U
 #define S25HL_CMD_WRITE_STATUS1          0x01U
+#define S25HL_CMD_CLEAR_ERRORS           0x82U /* CLPEF: clear program / erase failure flags (SEMPER) */
 #define S25HL_CMD_RESET_ENABLE           0x66U
 #define S25HL_CMD_RESET                  0x99U
 
 /* Status / Config Bits */
 #define S25HL_SR1_WIP                    (1U << 0)
 #define S25HL_SR1_WEL                    (1U << 1)
+#define S25HL_SR1_ERS_ERR                (1U << 5) /* SEMPER STR1V[5] ERSERR */
+#define S25HL_SR1_PRG_ERR                (1U << 6) /* SEMPER STR1V[6] PRGERR */
 #define S25HL_CR1_QUAD_ENABLE            (1U << 1) /* Bit 1 of Configuration Register 1 is QUAD bit */
+
+/* Quad I/O read: 2 continuous-read mode cycles follow the address and are NOT part of the latency
+ * (datasheet 002-12345 note to the latency table). Mode bits other than Axh keep normal read mode. */
+#define S25HL_MODE_BITS_NO_CONTINUOUS    0x00U
+#define S25HL_DEFAULT_READ_LATENCY       8U    /* MEMLAT factory value: 1-4-4 up to 118 MHz */
 
 /* Exported Functions --------------------------------------------------------*/
 int32_t S25HL512T_ReadID(XSPI_HandleTypeDef *Ctx, uint8_t *pID);

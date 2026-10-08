@@ -38,6 +38,7 @@ typedef struct {
   ExtMem_Mode_t     PreferredMode;
   uint8_t           DefaultReadDummyCycles;
   uint8_t           DefaultWriteDummyCycles;
+  uint8_t           DieCount;        /* Stacked dice sharing one chip select (0 or 1: single die) */
 } ExtMem_DeviceDescriptor_t;
 
 /* Database of Supported Infineon, ISSI & Micron Devices (stm32n6_extmem_devices.c) */

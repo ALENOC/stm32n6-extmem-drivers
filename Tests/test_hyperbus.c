@@ -245,6 +245,7 @@ bool test_infineon_s27ks0641_hyperram(void)
   uint8_t tx[32], rx[32];
   HR_SETUP();
   Test_Pattern(tx, sizeof(tx), 0x4C);
+  ASSERT_EQ(S27KS0641_Init(&h, 2, HAL_XSPI_SIZE_64MB), S27KS_OK);
   ASSERT_EQ(S27KS0641_Write_DMA(&h, 0x40, tx, sizeof(tx)), S27KS_OK);
   ASSERT_NOT_NULL(MockHAL_FindEvent(MOCK_EV_TX_DMA, 0));
   ASSERT_EQ(S27KS0641_Read_DMA(&h, 0x40, rx, sizeof(rx)), S27KS_OK);

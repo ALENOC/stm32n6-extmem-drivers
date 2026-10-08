@@ -117,6 +117,15 @@ static bool ExerciseDevice(const ExtMem_DeviceDescriptor_t *d)
   {
     ASSERT_EQ(MockHAL_Is4ByteMode(), d->CapacityBytes > 16U * 1024U * 1024U);
   }
+  if (d->Type == EXTMEM_TYPE_NOR_QUAD_ISSI)
+  {
+    ASSERT_EQ(MockHAL_GetIssiReadParams(), IS25LP_FAST_QUAD_IO_DUMMY << 3);
+    ASSERT_EQ(s_h.DummyCycles, IS25LP_FAST_QUAD_IO_DUMMY);
+  }
+  if (d->Type == EXTMEM_TYPE_NOR_QUAD_INFINEON)
+  {
+    ASSERT_EQ(s_h.DummyCycles, S25HL_DEFAULT_READ_LATENCY);
+  }
   if (d->Type == EXTMEM_TYPE_SRAM_SERIAL_ISSI)
   {
     ASSERT_EQ(MockHAL_GetSramModeRegister(), IS62WVS_MODE_SEQUENTIAL);
@@ -161,7 +170,7 @@ static bool ExerciseDevice(const ExtMem_DeviceDescriptor_t *d)
     ASSERT_EQ(mem[0], 0xFF);
     if (d->Type == EXTMEM_TYPE_NOR_QUAD_MICRON || d->Type == EXTMEM_TYPE_NOR_OCTAL_MICRON)
     {
-      uint32_t dice = (d->CapacityBytes > 64U * 1024U * 1024U) ? d->CapacityBytes / (64U * 1024U * 1024U) : 0U;
+      uint32_t dice = (d->DieCount > 1U) ? d->DieCount : 0U;
       uint32_t dieOps = MockHAL_CountCommands(0xC4) + MockHAL_CountCommands(0xC4C4);
       ASSERT_EQ(dieOps, dice);
     }
@@ -280,6 +289,14 @@ static bool ExerciseDevice(const ExtMem_DeviceDescriptor_t *d)
     FAULT_SWEEP(SETUP_INIT(d), ExtMem_EraseChip(&s_h));
   }
   FAULT_SWEEP(SETUP_INIT(d), ExtMem_EnableMemoryMapped(&s_h));
+  if (flash && !IsFmcType(d->Type))
+  {
+    /* Leaving memory-mapped mode before programming must report a failed abort */
+    FAULT_SWEEP(SETUP_INIT(d); (void)ExtMem_EnableMemoryMapped(&s_h), ExtMem_Write(&s_h, addr, tx, 8));
+    FAULT_SWEEP(SETUP_INIT(d); (void)ExtMem_EnableMemoryMapped(&s_h), ExtMem_EraseSector(&s_h, 0));
+    FAULT_SWEEP(SETUP_INIT(d); (void)ExtMem_EnableMemoryMapped(&s_h), ExtMem_EraseBlock(&s_h, 0));
+    FAULT_SWEEP(SETUP_INIT(d); (void)ExtMem_EnableMemoryMapped(&s_h), ExtMem_EraseChip(&s_h));
+  }
   FAULT_SWEEP(SETUP_INIT(d); (void)ExtMem_EnableMemoryMapped(&s_h), ExtMem_DisableMemoryMapped(&s_h));
   FAULT_SWEEP(SETUP_INIT(d); (void)ExtMem_EnableMemoryMapped(&s_h), ExtMem_DeInit(&s_h));
   if (!IsHyperRam(d->Type))
@@ -358,7 +375,16 @@ bool test_extmem_manager_unified_autodetect(void)
     ASSERT_EQ(s_h.Geometry.BlockSizeBytes, 65536);
     ASSERT_TRUE(s_h.pDevice == NULL);
     ASSERT_TRUE(ExtMem_IsFlash(&s_h));
+    ASSERT_EQ(ExtMem_EraseChip(&s_h), EXTMEM_OK);
   }
+  /* MT25Q found through SFDP above 512 Mbit: 512 Mbit dice */
+  SetupAuto(0x20, 0xBB, 0x30);
+  s_h.Config.ForcedCapacityBytes = 128U * 1024U * 1024U;
+  ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_OK);
+  MockHAL_ClearLog();
+  ASSERT_EQ(ExtMem_EraseChip(&s_h), EXTMEM_OK);
+  ASSERT_EQ(MockHAL_CountCommands(0xC4), 2);
+  ASSERT_EQ(MockHAL_FindCommand(0xC4, 1)->Cmd.Address, 64U * 1024U * 1024U);
   /* SFDP without 4 KB erase: sector = largest erase type */
   {
     uint32_t bfpt[16] = {0};

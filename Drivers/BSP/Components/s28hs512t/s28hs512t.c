@@ -458,7 +458,7 @@ int32_t S28HS512T_Read(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t Add
     sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
     sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_8_BITS;
     sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
-    sCmd.Instruction        = S28HS_CMD_READ_FAST_4B;
+    sCmd.Instruction        = S28HS_CMD_READ_FAST;
     sCmd.AddressMode        = HAL_XSPI_ADDRESS_1_LINE;
     sCmd.AddressDTRMode     = HAL_XSPI_ADDRESS_DTR_DISABLE;
     sCmd.DataMode           = HAL_XSPI_DATA_1_LINE;
@@ -713,7 +713,10 @@ int32_t S28HS512T_Reset(XSPI_HandleTypeDef *Ctx)
   if (S28HS_SimpleCmd(Ctx, EXTMEM_MODE_SPI, S28HS_CMD_RESET, 0U) != S28HS512T_OK) return S28HS512T_ERROR;
 
   HAL_Delay(1); /* tSR = 83 us */
-  return S28HS512T_OK;
+
+  /* The reset reloads the factory address length (3 bytes on most models): the SPI fast read
+   * (0Bh) and Read Any Register use the current length, so return to 4-byte addressing */
+  return S28HS512T_Enter4ByteAddressMode(Ctx);
 }
 
 int32_t S28HS512T_EnterDeepPowerDown(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode)

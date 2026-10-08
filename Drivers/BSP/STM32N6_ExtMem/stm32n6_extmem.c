@@ -129,6 +129,12 @@ static void ExtMem_CacheCleanInvalidate(uint32_t addr, uint32_t size)
 }
 
 /* True when the handle drives one of the FMC NOR/SRAM sub-banks instead of an XSPI port */
+/* Number of dice of the detected database part (1 for monolithic or unlisted parts) */
+static uint8_t ExtMem_DieCount(const ExtMem_HandleTypeDef *hextmem)
+{
+  return (hextmem->pDevice != NULL && hextmem->pDevice->DieCount > 1U) ? hextmem->pDevice->DieCount : 1U;
+}
+
 static bool ExtMem_IsFmcBus(ExtMem_Bus_t bus)
 {
   return (bus == EXTMEM_BUS_FMC_SRAM_BANK1_1) || (bus == EXTMEM_BUS_FMC_SRAM_BANK1_2) ||
@@ -409,7 +415,7 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
   hextmem->hxspi.Init.MemorySize = memSize;
 
   /* Stacked-die octal NOR: bursts restart at each die (CSBOUND code n = 2^n bytes) */
-  uint32_t dice = (hextmem->pDevice != NULL && hextmem->pDevice->DieCount > 1U) ? hextmem->pDevice->DieCount : 1U;
+  uint32_t dice = ExtMem_DieCount(hextmem);
   if (dice > 1U && hextmem->Geometry.Type == EXTMEM_TYPE_NOR_OCTAL_SEMPER)
   {
     hextmem->hxspi.Init.ChipSelectBoundary = ExtMem_CalculateMemorySize(hextmem->Geometry.TotalSizeBytes / dice) + 1U;
@@ -488,7 +494,7 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
   }
   else if (hextmem->Geometry.Type == EXTMEM_TYPE_HYPERRAM_INFINEON)
   {
-    if (S27KS0641_Init(&hextmem->hxspi, prescaler, memSize) != S27KS_OK) return EXTMEM_ERROR;
+    if (S27KS0641_Init(&hextmem->hxspi, prescaler, memSize, (uint8_t)dice) != S27KS_OK) return EXTMEM_ERROR;
     hextmem->ActiveMode = EXTMEM_MODE_HYPERBUS;
   }
   else if (hextmem->Geometry.Type == EXTMEM_TYPE_HYPERRAM_ISSI)
@@ -511,8 +517,16 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
   else if (hextmem->Geometry.Type == EXTMEM_TYPE_NOR_QUAD_ISSI)
   {
     if (IS25LP256_EnableQuadMode(&hextmem->hxspi) != IS25LP_OK) return EXTMEM_ERROR;
-    /* The factory latency only covers 81 MHz on 1-4-4 reads: program the volatile Read Register */
-    if (IS25LP256_SetReadDummyCycles(&hextmem->hxspi, IS25LP_FAST_QUAD_IO_DUMMY, &hextmem->DummyCycles) != IS25LP_OK) return EXTMEM_ERROR;
+    /* The factory latency only covers 81 MHz on 1-4-4 reads: program the volatile Read Register.
+     * IS25LQ/WQ have no Read Register (fixed mode byte + 4 dummy cycles): their table entry keeps 6. */
+    if (hextmem->pDevice != NULL && hextmem->pDevice->DefaultReadDummyCycles <= IS25LP_DEFAULT_QUAD_IO_DUMMY)
+    {
+      hextmem->DummyCycles = IS25LP_DEFAULT_QUAD_IO_DUMMY;
+    }
+    else if (IS25LP256_SetReadDummyCycles(&hextmem->hxspi, IS25LP_FAST_QUAD_IO_DUMMY, &hextmem->DummyCycles) != IS25LP_OK)
+    {
+      return EXTMEM_ERROR;
+    }
     if (is4Byte && (IS25LP_Enter4ByteAddressMode(&hextmem->hxspi) != IS25LP_OK))
     {
       return EXTMEM_ERROR;
@@ -670,9 +684,9 @@ int32_t ExtMem_AutoDetect(ExtMem_HandleTypeDef *hextmem)
     if (HAL_XSPI_HyperbusCfg(&hextmem->hxspi, &sHyperCfg, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return EXTMEM_ERROR;
     if (S27KS0641_ReadRegister(&hextmem->hxspi, S27KS_REG_ID0, &hyperId0) != S27KS_OK) return EXTMEM_ERROR;
 
-    /* A valid ID0 names Cypress/Infineon (0001b) or ISSI (0011b) and a decodable geometry */
+    /* A valid ID0 names Cypress (0001b), Infineon (0110b, S80KS2562) or ISSI (0011b) and a decodable geometry */
     uint8_t idMfg = (uint8_t)(hyperId0 & 0x0FU);
-    if (idMfg == EXTMEM_HYPERRAM_MFG_CYPRESS || idMfg == EXTMEM_HYPERRAM_MFG_ISSI)
+    if (idMfg == EXTMEM_HYPERRAM_MFG_CYPRESS || idMfg == EXTMEM_HYPERRAM_MFG_INFINEON || idMfg == EXTMEM_HYPERRAM_MFG_ISSI)
     {
       /* ID0[12:8] = row address bits - 1, ID0[7:4] = column address bits - 1, 16-bit words */
       uint32_t rowBits = ((uint32_t)(hyperId0 >> 8) & 0x1FU) + 1U;
@@ -688,7 +702,7 @@ int32_t ExtMem_AutoDetect(ExtMem_HandleTypeDef *hextmem)
   if (capacity > 0U)
   {
     uint8_t mfg = (uint8_t)(hyperId0 & 0x0F);
-    ExtMem_Type_t hyperType = (mfg == EXTMEM_HYPERRAM_MFG_CYPRESS) ? EXTMEM_TYPE_HYPERRAM_INFINEON : EXTMEM_TYPE_HYPERRAM_ISSI;
+    ExtMem_Type_t hyperType = (mfg == EXTMEM_HYPERRAM_MFG_ISSI) ? EXTMEM_TYPE_HYPERRAM_ISSI : EXTMEM_TYPE_HYPERRAM_INFINEON;
     const ExtMem_DeviceDescriptor_t *dev = ExtMem_FindDeviceByTypeAndCapacity(hyperType, capacity);
 
     if (dev != NULL)
@@ -1001,7 +1015,16 @@ int32_t ExtMem_Write(ExtMem_HandleTypeDef *hextmem, uint32_t Address, const uint
         status = S26KS512S_ProgramBuffer(&hextmem->hxspi, currAddr, pCurrData, chunk);
         break;
       case EXTMEM_TYPE_NOR_QUAD_INFINEON:
-        status = S25HL512T_PageProgramQuad(&hextmem->hxspi, currAddr, pCurrData, chunk);
+        /* SEMPER Quad has no quad page program: 4QPP only on a listed S25FL-L (manufacturer 01h).
+         * Parts found through SFDP use the 1S-1S-1S program every family implements. */
+        if (hextmem->pDevice != NULL && hextmem->pDevice->ManufacturerID != S25HL_MANUFACTURER_SEMPER)
+        {
+          status = S25HL512T_PageProgramQuad(&hextmem->hxspi, currAddr, pCurrData, chunk);
+        }
+        else
+        {
+          status = S25HL512T_PageProgram(&hextmem->hxspi, currAddr, pCurrData, chunk);
+        }
         break;
       case EXTMEM_TYPE_NOR_QUAD_ISSI:
         status = IS25LP_PageProgramQuadEx(&hextmem->hxspi, currAddr, pCurrData, chunk, addrWidth);
@@ -1214,7 +1237,7 @@ int32_t ExtMem_EnterDeepPowerDown(ExtMem_HandleTypeDef *hextmem)
   if (hextmem == NULL) return EXTMEM_INVALID_PARAM;
   if (hextmem->Geometry.Type == EXTMEM_TYPE_HYPERRAM_INFINEON)
   {
-    return S27KS0641_EnterDeepPowerDown(&hextmem->hxspi);
+    return S27KS0641_EnterDeepPowerDown(&hextmem->hxspi, ExtMem_DieCount(hextmem));
   }
   if (hextmem->Geometry.Type == EXTMEM_TYPE_HYPERRAM_ISSI)
   {

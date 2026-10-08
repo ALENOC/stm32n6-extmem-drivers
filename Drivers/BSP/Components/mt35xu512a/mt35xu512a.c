@@ -42,15 +42,32 @@ static int32_t MT35XU_AutoPollingMemReady(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t
     sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
   }
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, Timeout) != HAL_OK) return MT35XU_ERROR;
-
   sCfg.MatchValue    = MT35XU_FSR_READY;
   sCfg.MatchMask     = MT35XU_FSR_READY;
   sCfg.MatchMode     = HAL_XSPI_MATCH_MODE_AND;
   sCfg.IntervalTime  = 0x10;
   sCfg.AutomaticStop = HAL_XSPI_AUTOMATIC_STOP_ENABLE;
 
-  return (HAL_XSPI_AutoPolling(Ctx, &sCfg, Timeout) == HAL_OK) ? MT35XU_OK : MT35XU_ERROR;
+  /* A stacked part (1 Gb: 2 dice, 2 Gb: 4 dice) answers successive FSR reads die by die: the
+   * operation is over only when every die reports ready (MT35X 2 Gb datasheet, "outputs 1 for
+   * all the die of the stack"). A monolithic part simply repeats its own status. */
+  uint32_t start = HAL_GetTick();
+  for (;;)
+  {
+    if (HAL_XSPI_Command(Ctx, &sCmd, Timeout) != HAL_OK) return MT35XU_ERROR;
+    if (HAL_XSPI_AutoPolling(Ctx, &sCfg, Timeout) != HAL_OK) return MT35XU_ERROR;
+
+    bool allReady = true;
+    for (uint32_t die = 1U; die < MT35XU_MAX_DICE; die++)
+    {
+      uint8_t fsr[2] = {0};
+      if (HAL_XSPI_Command(Ctx, &sCmd, Timeout) != HAL_OK) return MT35XU_ERROR;
+      if (HAL_XSPI_Receive(Ctx, fsr, Timeout) != HAL_OK) return MT35XU_ERROR;
+      if ((fsr[0] & MT35XU_FSR_READY) == 0U) allReady = false;
+    }
+    if (allReady) return MT35XU_OK;
+    if ((HAL_GetTick() - start) > Timeout) return MT35XU_ERROR;
+  }
 }
 
 int32_t MT35XU_ReadID(XSPI_HandleTypeDef *Ctx, uint8_t *pID)

@@ -90,7 +90,7 @@ extern "C" {
 /* Commands (1-1-1 Single SPI) */
 #define S28HS_CMD_READ_ID                0x9FU
 #define S28HS_CMD_READ_SFDP              0x5AU
-#define S28HS_CMD_READ_FAST_4B           0x0CU
+#define S28HS_CMD_READ_FAST              0x0BU /* RDAY2_C_0: current address length (4 bytes after EN4BA); 0Ch is not supported */
 #define S28HS_CMD_PAGE_PROG_4B           0x12U
 #define S28HS_CMD_SECTOR_ERASE_4K_4B     0x21U
 #define S28HS_CMD_BLOCK_ERASE_256K_4B    0xDCU

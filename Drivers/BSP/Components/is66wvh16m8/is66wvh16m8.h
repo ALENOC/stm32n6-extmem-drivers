@@ -3,7 +3,7 @@
   * @file    is66wvh16m8.h
   * @author  STM32N6 External Memory Driver Suite Team
   * @brief   Driver header for ISSI HyperRAM(TM) PSRAM (IS66WVH / IS67WVH series).
-  *          Compatible with IS66WVH8M8, IS66WVH16M8, IS66WVH32M8.
+  *          Compatible with IS66WVH8M8 and IS66WVH16M8.
   ******************************************************************************
   * @attention
   *

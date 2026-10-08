@@ -2,9 +2,10 @@
   ******************************************************************************
   * @file    s27ks0641.h
   * @author  STM32N6 External Memory Driver Suite Team
-  * @brief   Driver header for Infineon HyperRAM(TM) (S27KS / S27KL / S27HS / HL series).
-  *          Compatible with S27KS0641, S27KL0641, S27KS128, S27KL128,
-  *          S27KS256, S27KL256, S27KS512, S27HS064/128/256.
+  * @brief   Driver header for Infineon HyperRAM(TM) with HyperBus interface.
+  *          Compatible with S27KS0641 / S27KL0641 (64 Mb), the dual-die
+  *          S70KS1281 / S70KL1281 (2 x 64 Mb, datasheet 001-97964) and the
+  *          S80KS2562 (256 Mb, datasheet 002-31337).
   ******************************************************************************
   * @attention
   *
@@ -25,9 +26,13 @@ extern "C" {
 #include "stm32n6xx_hal.h"
 
 #define S27KS0641_RAM_SIZE_64MBIT        (8U * 1024U * 1024U)   /* 64 Mbits = 8 MBytes   */
-#define S27KS128_RAM_SIZE_128MBIT        (16U * 1024U * 1024U)  /* 128 Mbits = 16 MBytes */
-#define S27KS256_RAM_SIZE_256MBIT        (32U * 1024U * 1024U)  /* 256 Mbits = 32 MBytes */
-#define S27KS512_RAM_SIZE_512MBIT        (64U * 1024U * 1024U)  /* 512 Mbits = 64 MBytes */
+#define S70KS1281_RAM_SIZE_128MBIT       (16U * 1024U * 1024U)  /* 128 Mbits = 16 MBytes */
+#define S80KS2562_RAM_SIZE_256MBIT       (32U * 1024U * 1024U)  /* 256 Mbits = 32 MBytes */
+
+/* S70KS1281: CA35 (word address A22) selects the die, for the array and for the registers.
+ * Every die must be configured identically (datasheet 001-97964, register space notes). */
+#define S27KS_MAX_DICE                   2U
+#define S27KS_DIE_STRIDE                 0x00800000U /* Byte offset of the second die (A22 word) */
 
 #define S27KS_OK                         (0)
 #define S27KS_ERROR                      (-1)
@@ -71,7 +76,7 @@ extern "C" {
 #define S27KS_DPD_EXIT_TIME_MS         1U
 
 /* Exported Functions --------------------------------------------------------*/
-int32_t S27KS0641_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_t MemorySize);
+int32_t S27KS0641_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_t MemorySize, uint8_t Dice);
 int32_t S27KS0641_ReadRegister(XSPI_HandleTypeDef *Ctx, uint32_t RegAddr, uint16_t *pValue);
 int32_t S27KS0641_WriteRegister(XSPI_HandleTypeDef *Ctx, uint32_t RegAddr, uint16_t Value);
 int32_t S27KS0641_Read(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size);
@@ -79,7 +84,7 @@ int32_t S27KS0641_Write(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t
 int32_t S27KS0641_Read_DMA(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size);
 int32_t S27KS0641_Write_DMA(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *pData, uint32_t Size);
 int32_t S27KS0641_EnableMemoryMappedMode(XSPI_HandleTypeDef *Ctx);
-int32_t S27KS0641_EnterDeepPowerDown(XSPI_HandleTypeDef *Ctx);
+int32_t S27KS0641_EnterDeepPowerDown(XSPI_HandleTypeDef *Ctx, uint8_t Dice);
 int32_t S27KS0641_LeaveDeepPowerDown(XSPI_HandleTypeDef *Ctx);
 
 #ifdef __cplusplus

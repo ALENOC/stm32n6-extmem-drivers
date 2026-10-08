@@ -26,15 +26,32 @@ static int32_t MT25QU_AutoPollingMemReady(XSPI_HandleTypeDef *Ctx, uint32_t Time
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, Timeout) != HAL_OK) return MT25Q_ERROR;
-
   sCfg.MatchValue    = MT25Q_FSR_READY;
   sCfg.MatchMask     = MT25Q_FSR_READY;
   sCfg.MatchMode     = HAL_XSPI_MATCH_MODE_AND;
   sCfg.IntervalTime  = 0x10;
   sCfg.AutomaticStop = HAL_XSPI_AUTOMATIC_STOP_ENABLE;
 
-  return (HAL_XSPI_AutoPolling(Ctx, &sCfg, Timeout) == HAL_OK) ? MT25Q_OK : MT25Q_ERROR;
+  /* A stacked part answers successive FSR reads die by die: the operation is over only when
+   * every die reports ready (MT25QU01G datasheet, "outputs 1 for all the die of the stack").
+   * A monolithic part simply repeats its own status. */
+  uint32_t start = HAL_GetTick();
+  for (;;)
+  {
+    if (HAL_XSPI_Command(Ctx, &sCmd, Timeout) != HAL_OK) return MT25Q_ERROR;
+    if (HAL_XSPI_AutoPolling(Ctx, &sCfg, Timeout) != HAL_OK) return MT25Q_ERROR;
+
+    bool allReady = true;
+    for (uint32_t die = 1U; die < MT25Q_MAX_DICE; die++)
+    {
+      uint8_t fsr = 0;
+      if (HAL_XSPI_Command(Ctx, &sCmd, Timeout) != HAL_OK) return MT25Q_ERROR;
+      if (HAL_XSPI_Receive(Ctx, &fsr, Timeout) != HAL_OK) return MT25Q_ERROR;
+      if ((fsr & MT25Q_FSR_READY) == 0U) allReady = false;
+    }
+    if (allReady) return MT25Q_OK;
+    if ((HAL_GetTick() - start) > Timeout) return MT25Q_ERROR;
+  }
 }
 
 int32_t MT25QU_ReadID(XSPI_HandleTypeDef *Ctx, uint8_t *pID)

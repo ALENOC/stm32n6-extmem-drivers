@@ -382,6 +382,10 @@ HAL_StatusTypeDef HAL_SRAM_Init(SRAM_HandleTypeDef *hsram, const FMC_NORSRAM_Tim
 HAL_StatusTypeDef HAL_SRAM_DeInit(SRAM_HandleTypeDef *hsram);
 
 uint32_t HAL_GetTick(void);
+
+/* Stacked Micron parts: the next direct FSR reads report "busy" (another die still working) */
+#define MOCK_STACKED_BUSY_FOREVER 0xFFFFFFFFU
+void MockHAL_SetStackedBusyReads(uint32_t reads);
 uint32_t HAL_RCC_GetHCLKFreq(void);
 uint32_t HAL_RCCEx_GetPeriphCLKFreq(uint64_t PeriphClk);
 

@@ -83,6 +83,7 @@ extern "C" {
 #define MT35XU_SR_WIP                    (1U << 0)               /* Write In Progress */
 #define MT35XU_SR_WEL                    (1U << 1)               /* Write Enable Latch */
 #define MT35XU_FSR_READY                 (1U << 7)               /* Program/Erase Controller Ready */
+#define MT35XU_MAX_DICE                  4U                      /* MT35XU02G: four 512 Mbit dice */
 #define MT35XU_FSR_ERASE_ERROR           (1U << 5)               /* Erase Error */
 #define MT35XU_FSR_PROGRAM_ERROR         (1U << 4)               /* Program Error */
 

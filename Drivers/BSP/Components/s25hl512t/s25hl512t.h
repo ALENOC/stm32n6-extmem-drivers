@@ -3,8 +3,8 @@
   * @file    s25hl512t.h
   * @author  STM32N6 External Memory Driver Suite Team
   * @brief   Driver header for Infineon SEMPER(TM) / FL Quad SPI NOR Flash
-  *          Compatible with S25HL512T, S25HS512T, S25FL256L, S25FL128L,
-  *          S25FL512S, S25FL256S, S25FL128S.
+  *          Compatible with S25HL512T, S25HS512T (SEMPER Quad, 002-23660) and
+  *          S25FL256L / S25FL128L (FL-L, 002-00124).
   ******************************************************************************
   * @attention
   *
@@ -40,8 +40,8 @@ extern "C" {
 #define S25HL_CMD_READ_FAST_4B           0x0CU
 #define S25HL_CMD_READ_QUAD_IO_4B        0xECU /* 4-byte address Quad I/O Fast Read */
 #define S25HL_CMD_READ_QUAD_OUT_4B       0x6CU /* 4-byte address Quad Output Read   */
-#define S25HL_CMD_PAGE_PROG_4B           0x12U
-#define S25HL_CMD_QUAD_PAGE_PROG_4B      0x34U
+#define S25HL_CMD_PAGE_PROG_4B           0x12U /* PRPGE_4_1, 1S-1S-1S */
+#define S25HL_CMD_QUAD_PAGE_PROG_4B      0x34U /* 4QPP: S25FL-L only, not implemented by S25Hx-T */
 #define S25HL_CMD_SECTOR_ERASE_4K_4B     0x21U
 #define S25HL_CMD_BLOCK_ERASE_4B         0xDCU /* 256 KB sector on S25Hx-T, 64 KB block on S25FL-L */
 #define S25HL_CMD_CHIP_ERASE             0x60U
@@ -63,6 +63,12 @@ extern "C" {
 #define S25HL_SR1_PRG_ERR                (1U << 6) /* SEMPER STR1V[6] PRGERR */
 #define S25FL_SR2_PRG_ERR                (1U << 5) /* S25FL-L SR2V[5] P_ERR  */
 #define S25FL_SR2_ERS_ERR                (1U << 6) /* S25FL-L SR2V[6] E_ERR  */
+/* Maximum erase times: S25Hx-T 002-23660 (256 KB sector 5869 ms with Endurance Flex, 512 Mb chip 696 s),
+ * S25FL-L 002-00124 (64 KB block 725 ms, 256 Mb chip 360 s) */
+#define S25HL_TIMEOUT_BLOCK_ERASE_MS     6000U
+#define S25HL_TIMEOUT_CHIP_ERASE_MS      700000U
+
+#define S25HL_MANUFACTURER_SEMPER        0x34U     /* S25Hx-T JEDEC manufacturer ID; S25FL-L reports 01h */
 #define S25HL_CR1_QUAD_ENABLE            (1U << 1) /* Bit 1 of Configuration Register 1 is QUAD bit */
 
 /* Quad I/O read: 2 continuous-read mode cycles follow the address and are NOT part of the latency
@@ -76,6 +82,7 @@ int32_t S25HL512T_WriteEnable(XSPI_HandleTypeDef *Ctx);
 int32_t S25HL512T_AutoPollingMemReady(XSPI_HandleTypeDef *Ctx, uint32_t Timeout);
 int32_t S25HL512T_EnableQuadMode(XSPI_HandleTypeDef *Ctx);
 int32_t S25HL512T_ReadQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size, uint8_t DummyCycles);
+int32_t S25HL512T_PageProgram(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *pData, uint32_t Size);
 int32_t S25HL512T_PageProgramQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *pData, uint32_t Size);
 int32_t S25HL512T_EraseSector4K(XSPI_HandleTypeDef *Ctx, uint32_t Address);
 int32_t S25HL512T_EraseBlock(XSPI_HandleTypeDef *Ctx, uint32_t Address);

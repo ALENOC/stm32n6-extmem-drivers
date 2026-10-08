@@ -130,8 +130,11 @@ static bool ExerciseDevice(const ExtMem_DeviceDescriptor_t *d)
   }
   if (d->Type == EXTMEM_TYPE_NOR_QUAD_ISSI)
   {
-    ASSERT_EQ(MockHAL_GetIssiReadParams(), IS25LP_FAST_QUAD_IO_DUMMY << 3);
-    ASSERT_EQ(s_h.DummyCycles, IS25LP_FAST_QUAD_IO_DUMMY);
+    /* IS25LQ/WQ have no Read Register: fixed mode byte + 4 dummy cycles, SRPV never sent */
+    bool hasReadRegister = d->DefaultReadDummyCycles > IS25LP_DEFAULT_QUAD_IO_DUMMY;
+    ASSERT_EQ(MockHAL_GetIssiReadParams(), hasReadRegister ? (IS25LP_FAST_QUAD_IO_DUMMY << 3) : 0U);
+    ASSERT_EQ(MockHAL_CountCommands(0xC0), hasReadRegister ? 1U : 0U);
+    ASSERT_EQ(s_h.DummyCycles, hasReadRegister ? IS25LP_FAST_QUAD_IO_DUMMY : IS25LP_DEFAULT_QUAD_IO_DUMMY);
   }
   if (d->Type == EXTMEM_TYPE_NOR_QUAD_INFINEON)
   {
@@ -157,6 +160,13 @@ static bool ExerciseDevice(const ExtMem_DeviceDescriptor_t *d)
   }
   MockHAL_ClearLog();
   ASSERT_EQ(ExtMem_Write(&s_h, addr, tx, sizeof(tx)), EXTMEM_OK);
+  if (d->Type == EXTMEM_TYPE_NOR_QUAD_INFINEON)
+  {
+    /* SEMPER Quad programs in 1S-1S-1S (12h); S25FL-L uses Quad Page Program (34h) */
+    bool semper = d->ManufacturerID == S25HL_MANUFACTURER_SEMPER;
+    ASSERT_EQ(MockHAL_CountCommands(0x12) > 0U, semper);
+    ASSERT_EQ(MockHAL_CountCommands(0x34) > 0U, !semper);
+  }
   memset(rx, 0, sizeof(rx));
   ASSERT_EQ(ExtMem_Read(&s_h, addr, rx, sizeof(rx)), EXTMEM_OK);
   ASSERT_EQ(memcmp(tx, rx, sizeof(tx)), 0);
@@ -412,6 +422,15 @@ bool test_extmem_manager_unified_autodetect(void)
     ASSERT_TRUE(s_h.pDevice == NULL);
     ASSERT_TRUE(ExtMem_IsFlash(&s_h));
     ASSERT_EQ(ExtMem_EraseChip(&s_h), EXTMEM_OK);
+    if (sfdpVendors[i].type == EXTMEM_TYPE_NOR_QUAD_INFINEON)
+    {
+      /* Unlisted Infineon part: 1S-1S-1S program (12h), valid on SEMPER Quad and FL-L alike */
+      uint8_t data[16] = {0};
+      MockHAL_ClearLog();
+      ASSERT_EQ(ExtMem_Write(&s_h, 0x100, data, sizeof(data)), EXTMEM_OK);
+      ASSERT_EQ(MockHAL_CountCommands(0x12), 1U);
+      ASSERT_EQ(MockHAL_CountCommands(0x34), 0U);
+    }
   }
   /* MT25Q found through SFDP above 512 Mbit: 512 Mbit dice */
   SetupAuto(0x20, 0xBB, 0x30);
@@ -466,7 +485,8 @@ bool test_extmem_manager_unified_autodetect(void)
   /* HyperRAM detection from ID0: manufacturer and row/column geometry */
   struct { uint16_t id0; const char *pn; uint32_t cap; ExtMem_Type_t type; } hr[] = {
     { 0x0C81, "S27KS0641",   8U * 1024U * 1024U, EXTMEM_TYPE_HYPERRAM_INFINEON },
-    { 0x0D81, "S27KS128",   16U * 1024U * 1024U, EXTMEM_TYPE_HYPERRAM_INFINEON },
+    { 0x0D81, "S70KS1281",  16U * 1024U * 1024U, EXTMEM_TYPE_HYPERRAM_INFINEON },
+    { 0x0E86, "S80KS2562",  32U * 1024U * 1024U, EXTMEM_TYPE_HYPERRAM_INFINEON },  /* Infineon ID 0110b */
     { 0x0C83, "IS66WVH8M8",  8U * 1024U * 1024U, EXTMEM_TYPE_HYPERRAM_ISSI },
     { 0x0D83, "IS66WVH16M8", 16U * 1024U * 1024U, EXTMEM_TYPE_HYPERRAM_ISSI },
     { 0x0F83, "IS66WVH_HyperRAM", 64U * 1024U * 1024U, EXTMEM_TYPE_HYPERRAM_ISSI },
@@ -527,7 +547,7 @@ bool test_extmem_manager_unified_autodetect(void)
   MockHAL_SetSfdpTable(s_BadSfdp, sizeof(s_BadSfdp));
   s_h.Config.ForcedCapacityBytes = 32U * 1024U * 1024U;
   ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_OK);
-  ASSERT_EQ(strcmp(s_h.Geometry.DeviceName, "S27KS256"), 0);
+  ASSERT_EQ(strcmp(s_h.Geometry.DeviceName, "S80KS2562"), 0);
 
   /* Forced type: by capacity, first of type, unknown capacity falls back to first of type */
   SetupAuto(0x00, 0x00, 0x00);
@@ -747,7 +767,7 @@ bool test_multi_density_shared_drivers(void)
   s_h.Config.Bus = EXTMEM_BUS_FMC_SRAM_BANK1_1;
   s_h.Config.ForcedCapacityBytes = 2U * 1024U * 1024U;
   ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_OK);
-  ASSERT_EQ(strcmp(s_h.Geometry.DeviceName, "IS66WV102416"), 0);
+  ASSERT_EQ(strcmp(s_h.Geometry.DeviceName, "IS66WVE1M16"), 0);
   MockHAL_Reset();
   memset(&s_h, 0, sizeof(s_h));
   s_h.Config.Bus = EXTMEM_BUS_FMC_SRAM_BANK1_1;

@@ -139,7 +139,7 @@ static bool s28hs_spi_operations(void)
 
   MockHAL_ClearLog();
   ASSERT_EQ(S28HS512T_Read(&h, EXTMEM_MODE_SPI, 0x100, rx, sizeof(rx), 0), S28HS512T_OK);
-  ASSERT_CMD(Test_NthCommand(0), I1S(0x0C), A1S(HAL_XSPI_ADDRESS_32_BITS, 0x100), D1S(32), DUMMY(8));
+  ASSERT_CMD(Test_NthCommand(0), I1S(0x0B), A1S(HAL_XSPI_ADDRESS_32_BITS, 0x100), D1S(32), DUMMY(8));
   ASSERT_EQ(memcmp(tx, rx, sizeof(tx)), 0);
 
   MockHAL_ClearLog();
@@ -154,7 +154,9 @@ static bool s28hs_spi_operations(void)
 
   MockHAL_ClearLog();
   ASSERT_EQ(S28HS512T_Reset(&h), S28HS512T_OK);
-  ASSERT_SEQUENCE(0, 0x66, 0x99);
+  /* The reset reloads the factory address length: EN4BA restores 4-byte addressing for 0Bh / RDAR */
+  ASSERT_SEQUENCE(0, 0x66, 0x99, 0xB7);
+  ASSERT_TRUE(MockHAL_Is4ByteMode());
 
   /* Busy device: the poll times out, status shows no failure */
   MockHAL_SetPollTimeout(true);
@@ -542,6 +544,20 @@ static bool mt35xu_operations(void)
   FAULT_SWEEP(FLASH_SETUP(0x2C, 0x5B, 0x1A), MT35XU_EraseDie(&h, EXTMEM_MODE_SPI, 0));
   FAULT_SWEEP(FLASH_SETUP(0x2C, 0x5B, 0x1A), MT35XU_EnableMemoryMappedModeDTR(&h, 20));
   FAULT_SWEEP(FLASH_SETUP(0x2C, 0x5B, 0x1A), MT35XU_Reset(&h));
+
+  /* Stacked dice: every die must report ready in consecutive FSR reads (3 extra reads after the poll) */
+  for (int dtr = 0; dtr < 2; dtr++)
+  {
+    ExtMem_Mode_t m = dtr ? EXTMEM_MODE_OCTAL_DTR : EXTMEM_MODE_SPI;
+    FLASH_SETUP(0x2C, 0x5B, 0x1C);
+    MockHAL_SetStackedBusyReads(1);   /* another die still busy once: poll again */
+    ASSERT_EQ(MT35XU_EraseSector4K(&h, m, 0x08000000U), MT35XU_OK);
+    ASSERT_NOT_NULL(MockHAL_FindEvent(MOCK_EV_AUTOPOLL, 1));
+    ASSERT_EQ(MockHAL_CountCommands(dtr ? 0x7070 : 0x70), 2U * MT35XU_MAX_DICE);
+    MockHAL_SetStackedBusyReads(MOCK_STACKED_BUSY_FOREVER);
+    ASSERT_EQ(MT35XU_EraseSector4K(&h, m, 0), MT35XU_ERROR);
+    MockHAL_SetStackedBusyReads(0);
+  }
   return true;
 }
 

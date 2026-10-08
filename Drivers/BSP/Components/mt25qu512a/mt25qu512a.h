@@ -3,7 +3,7 @@
   * @file    mt25qu512a.h
   * @author  STM32N6 External Memory Driver Suite Team
   * @brief   Driver header for Micron Quad SPI NOR Flash memory
-  *          (MT25QU / MT25QL and N25Q series: 32Mb up to 1Gb).
+  *          (MT25QU / MT25QL series: 32Mb up to 1Gb).
   ******************************************************************************
   * @attention
   *
@@ -68,6 +68,7 @@ extern "C" {
 #define MT25Q_CMD_CHIP_ERASE             0xC7U
 #define MT25Q_CMD_DIE_ERASE              0xC4U                   /* Die erase (1 Gb and above) */
 #define MT25Q_DIE_SIZE                   (64U * 1024U * 1024U)   /* 512 Mbit per die */
+#define MT25Q_MAX_DICE                   2U                      /* MT25QU01G / MT25QL01G: two 512 Mbit dice */
 #define MT25Q_CMD_ENTER_4BYTE_ADDR       0xB7U
 #define MT25Q_CMD_EXIT_4BYTE_ADDR        0xE9U
 #define MT25Q_CMD_RESET_ENABLE           0x66U

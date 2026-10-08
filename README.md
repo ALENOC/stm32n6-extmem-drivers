@@ -30,25 +30,27 @@ Supports **XSPI1**, **XSPI2**, **XSPI3** (Single, Quad, Octal DTR up to 200 MHz,
 
 ## 🚀 Key Features
 
-- **Comprehensive Infineon Technologies Coverage**:
-  - **SEMPER™ Octal NOR Flash** (`S28HS512T`, `S28HL512T`, `S28HS256T`, `S28HL256T`, `S28HS01GT`, `S28HS02GT`, `S28HL02GT`): xSPI Profile 1.0 protocol (8D-8D-8D DDR up to 200 MHz / 400 MB/s).
-  - **HyperFlash™** (`S26KS512S`, `S26KL512S`, `S26KS256S`, `S26KL256S`, `S26KS128S`, `S26KL128S`): native Cypress HyperBus™ interface at 1.8V / 3.0V.
-  - **HyperRAM™** (`S27KS0641`, `S27KL0641`, `S27KS128`, `S27KL128`, `S27KS256`, `S27KL256`, `S27KS512`, `S27HS/HL` 2.0 and 3.0 series).
-  - **SEMPER™ / FL Quad SPI Flash** (`S25HL512T`, `S25HS512T`, `S25FL256L`, `S25FL128L`, `S25FL512S`).
-- **Comprehensive ISSI (Integrated Silicon Solution Inc.) Coverage**:
-  - **Octal NOR Flash** (`IS25LX064`, `IS25WX064`, `IS25LX128`, `IS25WX128`, `IS25LX256`, `IS25WX256`, `IS25LX512`, `IS25WX512`): xSPI Profile 1.0/2.0 DTR mode up to 200 MHz.
-  - **HyperFlash™ NOR Flash** (`IS26KS128S`, `IS26KL128S`, `IS26KS256S`, `IS26KL256S`, `IS26KS512S`, `IS26KL512S`): 1.8V / 3.0V HyperBus™ interface up to 166 MHz.
-  - **Quad SPI NOR Flash** (`IS25LP` and `IS25WP` from 2Mb up to 512Mb: `020/040/080/016/032/064/128/256/512`, plus `IS25LE/WE` ultra-low power and `IS25LQ/WQ` series).
-  - **Parallel NOR Flash via FMC** (`IS29GL512`, `IS29GL256`, `IS29GL128`, `IS29GL064`, `IS29GL032`): 16-bit Parallel CFI NOR Flash.
-  - **OctalRAM, 8D-8D-8D OPI** (`IS66WVO8M8`, `IS66WVO16M8`, `IS66WVO32M8`, `IS66WVO64M8` and automotive `IS67WVO` series).
-  - **HyperRAM™ PSRAM** (`IS66WVH8M8`, `IS66WVH16M8`, `IS66WVH32M8` and automotive `IS67WVH` series).
-  - **Quad SPI PSRAM** (`IS66WVS1M8`, `IS66WVS2M8`, `IS66WVS4M8`, `IS66WVS16M8`).
-  - **Serial Static RAM** (`IS62WVS / IS65WVS 0648 / 1288 / 2568 / 5128` SPI/SDI/SQI).
-  - **Parallel Asynchronous PSRAM/SRAM via FMC** (`IS66WV / IS67WV 51216 / 102416 / 204816 / 409616` 16-bit).
-- **Comprehensive Micron Technology Coverage**:
-  - **Xccela™ Octal NOR Flash** (`MT35XU02G`, `MT35XU01G`, `MT35XL01G`, `MT35XU512A`, `MT35XL512A`, `MT35XU256A`, `MT35XL256A`): xSPI Profile 1.0 (8D-8D-8D DDR up to 200 MHz / 400 MB/s with DQS, Flag Status Register polling, 32-bit addressing).
-  - **MT25Q / N25Q Quad SPI NOR Flash** (`MT25QU` 1.8V & `MT25QL` 3.0V from 32Mb to 1Gb: `032/064/128/256/512/01G`): high-speed 1-4-4 Quad I/O up to 133 MHz with 4-byte address enter/exit support.
-  - **Parallel NOR Flash via FMC Bank 1** (`MT28EW128`, `MT28EW256`, `MT28EW512`, `MT28EW01G`): 16-bit Asynchronous Parallel CFI NOR Flash.
+- **Infineon Technologies**:
+  - **SEMPER™ Octal NOR Flash** (`S28HS256T`, `S28HL256T`, `S28HS512T`, `S28HL512T`, `S28HS01GT`, `S28HL01GT`, dual-die `S28HS02GT`, `S28HL02GT`): 8D-8D-8D DDR with DQS, up to 200 MHz (HS-T) / 166 MHz (HL-T).
+  - **HyperFlash™** (`S26KS512S`, `S26KL512S`, `S26KS256S`, `S26KS128S`): HyperBus™ at 166 MHz (1.8 V) / 100 MHz (3.0 V).
+  - **HyperRAM™** (`S27KS0641`, `S27KL0641`, dual-die `S70KS1281`, `S70KL1281`, `S80KS2562`): HyperBus™ up to 200 MHz.
+  - **SEMPER™ / FL-L Quad SPI Flash** (`S25HL512T`, `S25HS512T`, `S25FL256L`).
+  - **Asynchronous SRAM via FMC** (`CY62167EV30`).
+- **ISSI (Integrated Silicon Solution Inc.)**:
+  - **Octal NOR Flash** (`IS25LX/IS25WX` 064/128/256/512): 8D-8D-8D DDR, 200 MHz (WX, 1.8 V) / 133 MHz (LX, 3.0 V).
+  - **HyperFlash™** (`IS26KS/IS26KL` 128S/256S/512S).
+  - **Quad SPI NOR Flash** (`IS25LP/IS25WP` 080/016/032/064/128/256/512, `IS25LE128`, `IS25WE128`, `IS25LQ032B`, `IS25WQ032`).
+  - **Parallel NOR Flash via FMC** (`IS29GL032/064/128/256/512`).
+  - **OctalRAM** (`IS66WVO8M8/16M8/32M8/64M8`, automotive `IS67WVO8M8`).
+  - **HyperRAM™** (`IS66WVH8M8`, `IS66WVH16M8`).
+  - **Quad SPI PSRAM** (`IS66WVS1M8/2M8/4M8/8M8/16M8`, automotive `IS67WVS4M8/16M8`).
+  - **Serial SRAM** (`IS62WVS/IS65WVS` 0648/1288/2568/5128, SPI/SDI/SQI).
+  - **Asynchronous PSRAM via FMC** (`IS66WV51216`, `IS66WVE1M16`, `IS66WVE2M16`, `IS66WVE4M16`).
+- **Micron Technology**:
+  - **Xccela™ Octal NOR Flash** (`MT35XU256/512/01G/02G`, `MT35XL256/512/01G`): 8D-8D-8D DDR with DQS, stacked 1 Gb (2 dice) and 2 Gb (4 dice) parts polled die by die.
+  - **MT25Q Quad SPI NOR Flash** (`MT25QU` 1.8 V and `MT25QL` 3.0 V, 32 Mb to 1 Gb): 1-4-4 Quad I/O up to 125 MHz with the factory latency.
+  - **Parallel NOR Flash via FMC** (`MT28EW128/256/512/01G`).
+- Every part of the database is listed, with its limits, in [Docs/Supported_Memories_Matrix.md](Docs/Supported_Memories_Matrix.md).
 - **Auto-Discovery and Automatic Recognition**:
   - JEDEC ID (0x9F) lookup in the chip database, then a JEDEC JESD216 SFDP fallback for unlisted densities of the supported quad NOR vendors (ISSI, Micron MT25Q, Infineon).
   - HyperRAM detection through the HyperBus ID0 register (manufacturer and row/column geometry give the capacity).
@@ -70,24 +72,24 @@ Supports **XSPI1**, **XSPI2**, **XSPI3** (Single, Quad, Octal DTR up to 200 MHz,
 
 | Manufacturer | Memory Family | Bus Interface | Max Clock | Primary Mode | Component Driver |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Infineon** | SEMPER™ Octal NOR (`S28HS/S28HL`) | XSPI1 / XSPI2 | 200 MHz | 8D-8D-8D (Octal DTR) | `s28hs512t` |
+| **Infineon** | SEMPER™ Octal NOR (`S28HS/S28HL`) | XSPI1 / XSPI2 | 200 MHz (HS-T) / 166 MHz (HL-T) | 8D-8D-8D (Octal DTR) | `s28hs512t` |
 | **Infineon** | HyperFlash™ (`S26KS/S26KL`) | XSPI1 / XSPI2 | 166 MHz | HyperBus™ | `s26ks512s` |
-| **Infineon** | HyperRAM™ (`S27KS/S27KL/S27HS/S27HL`) | XSPI1 / XSPI2 | 200 MHz | HyperBus™ DDR | `s27ks0641` |
-| **Infineon** | SEMPER™ / FL Quad (`S25HL/S25HS/S25FL`) | XSPI1 / XSPI2 / XSPI3 | 133 MHz | 1-4-4 Quad SPI | `s25hl512t` |
-| **ISSI** | Octal NOR Flash (`IS25LX/IS25WX`) | XSPI1 / XSPI2 | 200 MHz | 8D-8D-8D (Octal DTR) | `is25lx256` |
+| **Infineon** | HyperRAM™ (`S27KS/S27KL`, `S70KS/S70KL`, `S80KS2562`) | XSPI1 / XSPI2 | 200 MHz | HyperBus™ DDR | `s27ks0641` |
+| **Infineon** | SEMPER™ / FL-L Quad (`S25HL/S25HS/S25FL`) | XSPI1 / XSPI2 / XSPI3 | 118 MHz | 1-4-4 Quad SPI | `s25hl512t` |
+| **ISSI** | Octal NOR Flash (`IS25LX/IS25WX`) | XSPI1 / XSPI2 | 200 MHz (WX) / 133 MHz (LX) | 8D-8D-8D (Octal DTR) | `is25lx256` |
 | **ISSI** | HyperFlash™ (`IS26KS/IS26KL`) | XSPI1 / XSPI2 | 166 MHz | HyperBus™ | `s26ks512s` |
-| **ISSI** | Quad NOR Flash (`IS25LP/IS25WP/IS25LE/WE/LQ/WQ`) | XSPI1 / XSPI2 / XSPI3 | 133 MHz | 1-4-4 Quad SPI | `is25lp256` |
+| **ISSI** | Quad NOR Flash (`IS25LP/IS25WP/IS25LE/WE/LQ/WQ`) | XSPI1 / XSPI2 / XSPI3 | 104 to 133 MHz (per part) | 1-4-4 Quad SPI | `is25lp256` |
 | **ISSI** | Parallel NOR Flash (`IS29GL032/064/128/256/512`) | FMC (16-bit) | 110 ns | 16-bit Parallel CFI NOR | `is29gl_fmc` |
 | **ISSI** | OctalRAM (`IS66WVO/IS67WVO`) | XSPI1 / XSPI2 | 200 MHz | 8D-8D-8D OPI (XSPI Macronix RAM mode) | `is66wvo32m8` |
-| **ISSI** | HyperRAM™ PSRAM (`IS66WVH/IS67WVH`) | XSPI1 / XSPI2 | 200 MHz | HyperBus™ DDR | `is66wvh16m8` |
+| **ISSI** | HyperRAM™ PSRAM (`IS66WVH`) | XSPI1 / XSPI2 | 166 MHz | HyperBus™ DDR | `is66wvh16m8` |
 | **ISSI** | Quad SPI PSRAM (`IS66WVS/IS67WVS`) | XSPI1 / XSPI2 / XSPI3 | 104 MHz | 1-4-4 Quad SPI | `is66wvs16m8` |
 | **ISSI** | Serial Static RAM (`IS62WVS/IS65WVS`) | XSPI1 / XSPI2 / XSPI3 | 20 MHz | SPI / SQI (1-1-1 / 4-4-4) | `is62wvs` |
-| **ISSI/IFX** | Parallel Asynch PSRAM (`IS66WV/CY62`) | FMC (16-bit) | Asynchronous (~10-55ns) | 16-bit Parallel SRAM/PSRAM | `is66wv_fmc` |
+| **ISSI/IFX** | Asynchronous PSRAM / SRAM (`IS66WV`, `IS66WVE`, `CY62167EV30`) | FMC (16-bit) | 70 ns | 16-bit Parallel SRAM/PSRAM | `is66wv_fmc` |
 | **Micron** | Xccela™ Octal NOR (`MT35XU/MT35XL`) | XSPI1 / XSPI2 | 200 MHz | 8D-8D-8D (Octal DTR) | `mt35xu512a` |
-| **Micron** | MT25Q Quad NOR (`MT25QU/MT25QL`) | XSPI1 / XSPI2 / XSPI3 | 133 MHz | 1-4-4 Quad SPI | `mt25qu512a` |
-| **Micron** | Parallel NOR Flash (`MT28EW`) | FMC (16-bit) | 100 MHz (70ns) | 16-bit Parallel CFI NOR | `is29gl_fmc` |
+| **Micron** | MT25Q Quad NOR (`MT25QU/MT25QL`) | XSPI1 / XSPI2 / XSPI3 | 125 MHz | 1-4-4 Quad SPI | `mt25qu512a` |
+| **Micron** | Parallel NOR Flash (`MT28EW`) | FMC (16-bit) | 110 ns | 16-bit Parallel CFI NOR | `is29gl_fmc` |
 
-*For the comprehensive matrix including ordering part numbers, packages, and voltage options, refer to [Docs/Supported_Memories_Matrix.md](Docs/Supported_Memories_Matrix.md).*
+*Per-part densities, voltages, die counts and clock limits: [Docs/Supported_Memories_Matrix.md](Docs/Supported_Memories_Matrix.md).*
 
 ---
 
@@ -251,9 +253,13 @@ The CI workflow runs all three targets on every push and pull request.
 - **SEMPER Octal 8D-8D-8D commands** repeat the opcode in the second instruction byte (for example `EEh EEh` for the read), as stated by the SFDP and the transaction tables of the SEMPER Octal datasheets.
 - **S28HS02GT / S28HL02GT (dual die)**: implemented from datasheet 002-23755. Each die has its own registers at its base address + 0x800000, status is polled on the die that runs the operation, chip erase is one addressed erase (61h) per die, and a write disable follows every program or erase so no die keeps WRPGEN set. Only the GZ speed grade (models 25/35) of the S28HS02GT runs 200 MHz DDR: the JEDEC ID does not identify the grade, so the database limits the part to 166 MHz.
 - **SEMPER erase**: the factory sector map is uniform 256 KB; the 4 KB erase is only executed by parts configured for hybrid sectors.
-- **S25Hx-T Quad I/O reads** use the factory memory latency (8 cycles plus 2 mode cycles), valid up to 118 MHz.
+- **SEMPER Octal in 1S-1S-1S** reads with Read Fast 0Bh (0Ch is not implemented) at the current address length: the driver keeps the part in 4-byte mode, also after a software reset.
+- **S25Hx-T Quad I/O reads** use the factory memory latency (8 cycles plus 2 mode cycles), valid up to 118 MHz. SEMPER Quad has no quad page program: it programs in 1S-1S-1S (12h); the S25FL-L uses Quad Page Program (34h).
 - **S25FL-L** shares the S25Hx-T driver: failure flags are read from SR2 and cleared with CLSR. A plain timeout on an S25FL-L whose SR1 protection bits (SEC / TBPROT) are set is reported as an error instead of a timeout.
-- **ISSI quad NOR**: the volatile Read Register is set to 11 dummy cycles (1-4-4 up to 139 MHz). Parts without a Read Register keep the factory 6 cycles (81 MHz).
+- **ISSI quad NOR**: the volatile Read Register is set to 11 dummy cycles; the database limits every part to the QUAD I/O FAST READ frequency its datasheet gives for 11 cycles (104 MHz on IS25WP256D/032D/016D, 112 MHz on IS25WP512M, 117 MHz on IS25LP512M, 133 MHz otherwise). IS25LQ/WQ have no Read Register: their fixed mode byte plus 4 dummy cycles run up to 104 MHz.
+- **MT25Q** keeps the factory 10 dummy cycles, which limit QUAD I/O FAST READ to 125 MHz.
+- **Stacked Micron parts** (MT25QU01G, MT35XU01G, MT35XU02G): successive flag status reads return the status of each die, so a program or erase completes only when every die reports ready.
+- **Dual-die HyperRAM** (S70KS1281 / S70KL1281): CR0 is written on both dice (CA35 selects the die) and deep power down is entered on both.
 - **ISSI IS66WVO OctalRAM** uses the XSPI "Macronix RAM" mode with fixed latency (STM32N6 erratum ES0620). On early STM32N6 silicon this mode only decodes 13 row address bits, so only the first 8 MBytes of larger OctalRAM parts are reachable (see ES0620).
 - **Self-refreshing RAMs** (HyperRAM, OctalRAM, quad PSRAM): CS# is released at least every `EXTMEM_PSRAM_MAX_CS_LOW_NS` (1 us, valid up to 105/125 degC).
 

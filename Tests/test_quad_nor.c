@@ -40,6 +40,15 @@ bool test_infineon_s25hl512t_quad_flash(void)
   ASSERT_EQ(S25HL512T_EnableQuadMode(&h), S25HL512T_OK);
   ASSERT_EQ(Test_CommandCount(), 2);
 
+  /* SEMPER Quad: PRPGE_4_1 (12h) in 1S-1S-1S, it has no quad page program */
+  MockHAL_ClearLog();
+  ASSERT_EQ(S25HL512T_PageProgram(&h, 0x1000, tx, sizeof(tx)), S25HL512T_OK);
+  ASSERT_CMD(Test_NthCommand(0), I1S(0x06), NOADDR, NODATA);
+  ASSERT_CMD(Test_NthCommand(1), I1S(0x12), A1S(HAL_XSPI_ADDRESS_32_BITS, 0x1000), D1S(256), DUMMY(0));
+  ASSERT_CMD(Test_NthCommand(2), I1S(0x05), NOADDR, D1S(1));
+  FAULT_SWEEP(FLASH_SETUP(0x34, 0x2A, 0x1A), S25HL512T_PageProgram(&h, 0, tx, 16));
+
+  /* S25FL-L: 4QPP (34h) */
   MockHAL_ClearLog();
   ASSERT_EQ(S25HL512T_PageProgramQuad(&h, 0x1000, tx, sizeof(tx)), S25HL512T_OK);
   ASSERT_CMD(Test_NthCommand(0), I1S(0x06), NOADDR, NODATA);
@@ -362,5 +371,15 @@ bool test_micron_mt25qu512a_quad_flash(void)
   FAULT_SWEEP(FLASH_SETUP(0x20, 0xBB, 0x20), MT25QU_EraseDie(&h, 0));
   FAULT_SWEEP(FLASH_SETUP(0x20, 0xBB, 0x20), MT25QU_EnableMemoryMappedModeEx(&h, 10, HAL_XSPI_ADDRESS_24_BITS));
   FAULT_SWEEP(FLASH_SETUP(0x20, 0xBB, 0x20), MT25QU_Reset(&h));
+  /* Stacked dice (MT25QU01G): both dice must report ready in consecutive FSR reads */
+  FLASH_SETUP(0x20, 0xBB, 0x21);
+  MockHAL_SetStackedBusyReads(1);
+  ASSERT_EQ(MT25QU_EraseSector4K(&h, 0x04000000U), MT25Q_OK);
+  ASSERT_NOT_NULL(MockHAL_FindEvent(MOCK_EV_AUTOPOLL, 1));
+  ASSERT_EQ(MockHAL_CountCommands(0x70), 2U * MT25Q_MAX_DICE);
+  MockHAL_SetStackedBusyReads(MOCK_STACKED_BUSY_FOREVER);
+  ASSERT_EQ(MT25QU_EraseSector4K(&h, 0), MT25Q_ERROR);
+  MockHAL_SetStackedBusyReads(0);
+
   return true;
 }

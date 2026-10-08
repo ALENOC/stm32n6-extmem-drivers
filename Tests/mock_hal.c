@@ -81,6 +81,8 @@ static uint16_t s_HyperID0;
 static uint16_t s_HyperID1;
 static uint16_t s_HyperCR0;
 static uint16_t s_HyperCR1;
+static uint16_t s_HyperCR0Die2;
+static uint32_t s_StackedBusyReads; /* Direct FSR reads answered "busy" by another die of a stack */  /* CR0 of the second die of a dual-die HyperRAM (CA35 = 1) */
 static bool     s_HyperFlash;
 static uint32_t s_HostAccessTime;
 static uint32_t s_HfState;
@@ -277,6 +279,8 @@ void MockHAL_Reset(void)
   s_HyperID1      = 0x0000;
   s_HyperCR0      = 0x8F1F; /* Datasheet power-on default */
   s_HyperCR1      = 0xFFC1;
+  s_HyperCR0Die2  = 0x8F1F;
+  s_StackedBusyReads = 0;
   s_HyperFlash    = false;
   s_HostAccessTime = 6;
   s_HfState       = 0;
@@ -316,6 +320,7 @@ void MockHAL_SetHyperBusID(uint16_t id0, uint16_t id1)
 }
 
 void MockHAL_SetHyperCR0(uint16_t cr0) { s_HyperCR0 = cr0; }
+void MockHAL_SetStackedBusyReads(uint32_t reads) { s_StackedBusyReads = reads; }
 
 /* HyperRAM initial latency selected by CR0[7:4] */
 static uint32_t Mock_HyperRamLatency(void)
@@ -381,6 +386,7 @@ uint16_t MockHAL_GetHyperReg(uint32_t addr)
     case 0x00000002U: return s_HyperID1;
     case 0x00001000U: return s_HyperCR0;
     case 0x00001002U: return s_HyperCR1;
+    case 0x00801000U: return s_HyperCR0Die2;
     default:          return 0U;
   }
 }
@@ -677,6 +683,7 @@ HAL_StatusTypeDef HAL_XSPI_Transmit(XSPI_HandleTypeDef *hxspi, const uint8_t *pD
       uint16_t val = (uint16_t)(((uint16_t)pData[0] << 8) | pData[1]);
       if (addr == 0x00001000U) s_HyperCR0 = val;
       else if (addr == 0x00001002U) s_HyperCR1 = val;
+      else if (addr == 0x00801000U) s_HyperCR0Die2 = val;
       return HAL_OK;
     }
 
@@ -900,7 +907,13 @@ HAL_StatusTypeDef HAL_XSPI_Receive(XSPI_HandleTypeDef *hxspi, uint8_t *pData, ui
       break;
     case 0x70: /* Read Flag Status Register */
       pData[0] = s_FSR;
-      if (len > 1U) pData[1] = s_FSR;
+      if (s_StackedBusyReads > 0U)
+      {
+        /* Another die of a stacked part is still programming or erasing */
+        pData[0] = (uint8_t)(s_FSR & 0x7FU);
+        if (s_StackedBusyReads != MOCK_STACKED_BUSY_FOREVER) s_StackedBusyReads--;
+      }
+      if (len > 1U) pData[1] = pData[0];
       break;
     case 0x35: /* Read Configuration Register 1 */
       pData[0] = s_CR1;

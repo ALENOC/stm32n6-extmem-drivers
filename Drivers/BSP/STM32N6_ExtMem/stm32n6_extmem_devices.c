@@ -42,7 +42,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 256 * 1024,
     .BlockSizeBytes          = 256 * 1024,
     .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 133,
+    .MaxClockFreqMHz         = 166,
     .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
     .DefaultReadDummyCycles  = 24,
     .DefaultWriteDummyCycles = 0
@@ -74,7 +74,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 256 * 1024,
     .BlockSizeBytes          = 256 * 1024,
     .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 133,
+    .MaxClockFreqMHz         = 166,
     .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
     .DefaultReadDummyCycles  = 24,
     .DefaultWriteDummyCycles = 0
@@ -91,6 +91,22 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .BlockSizeBytes          = 256 * 1024,
     .VoltageNominal          = 1.8f,
     .MaxClockFreqMHz         = 200,
+    .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
+    .DefaultReadDummyCycles  = 24,
+    .DefaultWriteDummyCycles = 0
+  },
+  {
+    .PartNumber              = "S28HL01GT",
+    .Type                    = EXTMEM_TYPE_NOR_OCTAL_SEMPER,
+    .ManufacturerID          = 0x34,
+    .MemoryTypeID            = 0x5A,
+    .DensityID               = 0x1B,
+    .CapacityBytes           = 128 * 1024 * 1024,
+    .PageSizeBytes           = 256,
+    .SectorSizeBytes         = 256 * 1024,
+    .BlockSizeBytes          = 256 * 1024,
+    .VoltageNominal          = 3.0f,
+    .MaxClockFreqMHz         = 166,
     .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
     .DefaultReadDummyCycles  = 24,
     .DefaultWriteDummyCycles = 0
@@ -201,7 +217,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
   },
 
   /* ========================================================================= */
-  /* INFINEON HYPERRAM(TM) (S27KS / S27KL / S27HS / S27HL)                     */
+  /* INFINEON HYPERRAM(TM) (S27KS / S27KL, S70KS / S70KL, S80KS2562)          */
   /* ========================================================================= */
   {
     .PartNumber              = "S27KS0641",
@@ -236,7 +252,8 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .DefaultWriteDummyCycles = 0
   },
   {
-    .PartNumber              = "S27KS128",
+    /* Dual-die stack of two 64 Mb dice, CA35 selects the die (datasheet 001-97964) */
+    .PartNumber              = "S70KS1281",
     .Type                    = EXTMEM_TYPE_HYPERRAM_INFINEON,
     .ManufacturerID          = 0x01,
     .MemoryTypeID            = 0x00,
@@ -249,28 +266,31 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .MaxClockFreqMHz         = 166,
     .PreferredMode           = EXTMEM_MODE_HYPERBUS,
     .DefaultReadDummyCycles  = 6,
-    .DefaultWriteDummyCycles = 0
+    .DefaultWriteDummyCycles = 0,
+    .DieCount                = 2
   },
   {
-    .PartNumber              = "S27KS256",
+    .PartNumber              = "S70KL1281",
     .Type                    = EXTMEM_TYPE_HYPERRAM_INFINEON,
     .ManufacturerID          = 0x01,
     .MemoryTypeID            = 0x00,
-    .DensityID               = 0x03,
-    .CapacityBytes           = 32 * 1024 * 1024,
+    .DensityID               = 0x02,
+    .CapacityBytes           = 16 * 1024 * 1024,
     .PageSizeBytes           = 0,
     .SectorSizeBytes         = 0,
     .BlockSizeBytes          = 0,
-    .VoltageNominal          = 1.8f,
-    .MaxClockFreqMHz         = 200,
+    .VoltageNominal          = 3.0f,
+    .MaxClockFreqMHz         = 100,
     .PreferredMode           = EXTMEM_MODE_HYPERBUS,
     .DefaultReadDummyCycles  = 6,
-    .DefaultWriteDummyCycles = 0
+    .DefaultWriteDummyCycles = 0,
+    .DieCount                = 2
   },
   {
-    .PartNumber              = "S27HS256",
+    /* 256 Mb HyperBus HyperRAM, ID0 manufacturer 0110b (datasheet 002-31337) */
+    .PartNumber              = "S80KS2562",
     .Type                    = EXTMEM_TYPE_HYPERRAM_INFINEON,
-    .ManufacturerID          = 0x01,
+    .ManufacturerID          = 0x06,
     .MemoryTypeID            = 0x00,
     .DensityID               = 0x03,
     .CapacityBytes           = 32 * 1024 * 1024,
@@ -352,7 +372,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 4 * 1024,
     .BlockSizeBytes          = 128 * 1024,
     .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 200,
+    .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
     .DefaultReadDummyCycles  = 20,
     .DefaultWriteDummyCycles = 0
@@ -384,7 +404,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 4 * 1024,
     .BlockSizeBytes          = 128 * 1024,
     .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 200,
+    .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
     .DefaultReadDummyCycles  = 20,
     .DefaultWriteDummyCycles = 0
@@ -416,7 +436,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 4 * 1024,
     .BlockSizeBytes          = 128 * 1024,
     .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 200,
+    .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
     .DefaultReadDummyCycles  = 20,
     .DefaultWriteDummyCycles = 0
@@ -448,7 +468,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 4 * 1024,
     .BlockSizeBytes          = 128 * 1024,
     .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 200,
+    .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
     .DefaultReadDummyCycles  = 20,
     .DefaultWriteDummyCycles = 0
@@ -573,6 +593,8 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
   /* ========================================================================= */
   /* ISSI QUAD SPI NOR FLASH (IS25LP / IS25WP / IS25LE / IS25WE / IS25LQ / WQ) */
   /* ========================================================================= */
+  /* ISSI quad: maximum clock of QUAD I/O FAST READ (EBh/ECh) with the 11 dummy cycles the driver programs
+   * (datasheet Table 6.11 "Read Dummy Cycles vs Max Frequency" of each density and voltage) */
   {
     .PartNumber              = "IS25LP512M",
     .Type                    = EXTMEM_TYPE_NOR_QUAD_ISSI,
@@ -584,7 +606,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 4 * 1024,
     .BlockSizeBytes          = 64 * 1024,
     .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 133,
+    .MaxClockFreqMHz         = 117,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
     .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
@@ -600,7 +622,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 4 * 1024,
     .BlockSizeBytes          = 64 * 1024,
     .VoltageNominal          = 1.8f,
-    .MaxClockFreqMHz         = 133,
+    .MaxClockFreqMHz         = 112,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
     .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
@@ -632,7 +654,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 4 * 1024,
     .BlockSizeBytes          = 64 * 1024,
     .VoltageNominal          = 1.8f,
-    .MaxClockFreqMHz         = 133,
+    .MaxClockFreqMHz         = 104,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
     .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
@@ -728,7 +750,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 4 * 1024,
     .BlockSizeBytes          = 64 * 1024,
     .VoltageNominal          = 1.8f,
-    .MaxClockFreqMHz         = 133,
+    .MaxClockFreqMHz         = 104,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
     .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
@@ -760,7 +782,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 4 * 1024,
     .BlockSizeBytes          = 64 * 1024,
     .VoltageNominal          = 1.8f,
-    .MaxClockFreqMHz         = 133,
+    .MaxClockFreqMHz         = 104,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
     .DefaultReadDummyCycles  = 11,
     .DefaultWriteDummyCycles = 0
@@ -810,7 +832,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 3.0f,
     .MaxClockFreqMHz         = 104,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 11,
+    .DefaultReadDummyCycles  = 6,
     .DefaultWriteDummyCycles = 0
   },
   {
@@ -826,14 +848,14 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .VoltageNominal          = 1.8f,
     .MaxClockFreqMHz         = 104,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 11,
+    .DefaultReadDummyCycles  = 6,
     .DefaultWriteDummyCycles = 0
   },
   {
     .PartNumber              = "IS25LE128",
     .Type                    = EXTMEM_TYPE_NOR_QUAD_ISSI,
     .ManufacturerID          = 0x9D,
-    .MemoryTypeID            = 0x7B,
+    .MemoryTypeID            = 0x60,
     .DensityID               = 0x18,
     .CapacityBytes           = 16 * 1024 * 1024,
     .PageSizeBytes           = 256,
@@ -849,7 +871,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .PartNumber              = "IS25WE128",
     .Type                    = EXTMEM_TYPE_NOR_QUAD_ISSI,
     .ManufacturerID          = 0x9D,
-    .MemoryTypeID            = 0x7B,
+    .MemoryTypeID            = 0x70,
     .DensityID               = 0x18,
     .CapacityBytes           = 16 * 1024 * 1024,
     .PageSizeBytes           = 256,
@@ -1317,8 +1339,10 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
   /* ========================================================================= */
   /* PARALLEL ASYNCHRONOUS PSRAM / SRAM (FMC)                                  */
   /* ========================================================================= */
+  /* ISSI async/page PSRAM x16 (IS66WVE4M16/1M16: 1.8 V ALL or 3.0 V BLL, IS66WVE2M16: 1.8 V only),
+   * 70 ns access, CE# low limited to tCEM */
   {
-    .PartNumber              = "IS66WV409616",
+    .PartNumber              = "IS66WVE4M16",
     .Type                    = EXTMEM_TYPE_PSRAM_PARALLEL_FMC,
     .ManufacturerID          = 0x00,
     .MemoryTypeID            = 0x00,
@@ -1334,7 +1358,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .DefaultWriteDummyCycles = 0
   },
   {
-    .PartNumber              = "IS66WV204816",
+    .PartNumber              = "IS66WVE2M16",
     .Type                    = EXTMEM_TYPE_PSRAM_PARALLEL_FMC,
     .ManufacturerID          = 0x00,
     .MemoryTypeID            = 0x00,
@@ -1343,14 +1367,14 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .PageSizeBytes           = 0,
     .SectorSizeBytes         = 0,
     .BlockSizeBytes          = 0,
-    .VoltageNominal          = 3.0f,
+    .VoltageNominal          = 1.8f,
     .MaxClockFreqMHz         = 100,
     .PreferredMode           = EXTMEM_MODE_PARALLEL_16BIT,
     .DefaultReadDummyCycles  = 0,
     .DefaultWriteDummyCycles = 0
   },
   {
-    .PartNumber              = "IS66WV102416",
+    .PartNumber              = "IS66WVE1M16",
     .Type                    = EXTMEM_TYPE_PSRAM_PARALLEL_FMC,
     .ManufacturerID          = 0x00,
     .MemoryTypeID            = 0x00,
@@ -1416,7 +1440,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
     .DefaultReadDummyCycles  = 20,
     .DefaultWriteDummyCycles = 0,
-    .DieCount                = 2
+    .DieCount                = 4
   },
   {
     .PartNumber              = "MT35XU01GBBA",
@@ -1518,8 +1542,9 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
   },
 
   /* ========================================================================= */
-  /* MICRON MT25Q / N25Q QUAD SPI NOR FLASH (MT25QU / MT25QL)                  */
+  /* MICRON MT25Q QUAD SPI NOR FLASH (MT25QU / MT25QL)                         */
   /* ========================================================================= */
+  /* MT25Q: the factory 10 dummy cycles cover QUAD I/O FAST READ (EBh/ECh) up to 125 MHz (datasheet clock tables) */
   {
     .PartNumber              = "MT25QU01GBBB",
     .Type                    = EXTMEM_TYPE_NOR_QUAD_MICRON,
@@ -1531,7 +1556,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 4 * 1024,
     .BlockSizeBytes          = 64 * 1024,
     .VoltageNominal          = 1.8f,
-    .MaxClockFreqMHz         = 133,
+    .MaxClockFreqMHz         = 125,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
     .DefaultReadDummyCycles  = 10,
     .DefaultWriteDummyCycles = 0,
@@ -1548,7 +1573,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 4 * 1024,
     .BlockSizeBytes          = 64 * 1024,
     .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 133,
+    .MaxClockFreqMHz         = 125,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
     .DefaultReadDummyCycles  = 10,
     .DefaultWriteDummyCycles = 0,
@@ -1565,7 +1590,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 4 * 1024,
     .BlockSizeBytes          = 64 * 1024,
     .VoltageNominal          = 1.8f,
-    .MaxClockFreqMHz         = 133,
+    .MaxClockFreqMHz         = 125,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
     .DefaultReadDummyCycles  = 10,
     .DefaultWriteDummyCycles = 0
@@ -1581,7 +1606,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 4 * 1024,
     .BlockSizeBytes          = 64 * 1024,
     .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 133,
+    .MaxClockFreqMHz         = 125,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
     .DefaultReadDummyCycles  = 10,
     .DefaultWriteDummyCycles = 0
@@ -1597,7 +1622,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 4 * 1024,
     .BlockSizeBytes          = 64 * 1024,
     .VoltageNominal          = 1.8f,
-    .MaxClockFreqMHz         = 133,
+    .MaxClockFreqMHz         = 125,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
     .DefaultReadDummyCycles  = 10,
     .DefaultWriteDummyCycles = 0
@@ -1613,7 +1638,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 4 * 1024,
     .BlockSizeBytes          = 64 * 1024,
     .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 133,
+    .MaxClockFreqMHz         = 125,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
     .DefaultReadDummyCycles  = 10,
     .DefaultWriteDummyCycles = 0
@@ -1629,7 +1654,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 4 * 1024,
     .BlockSizeBytes          = 64 * 1024,
     .VoltageNominal          = 1.8f,
-    .MaxClockFreqMHz         = 133,
+    .MaxClockFreqMHz         = 125,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
     .DefaultReadDummyCycles  = 10,
     .DefaultWriteDummyCycles = 0
@@ -1645,7 +1670,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 4 * 1024,
     .BlockSizeBytes          = 64 * 1024,
     .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 133,
+    .MaxClockFreqMHz         = 125,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
     .DefaultReadDummyCycles  = 10,
     .DefaultWriteDummyCycles = 0
@@ -1661,7 +1686,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 4 * 1024,
     .BlockSizeBytes          = 64 * 1024,
     .VoltageNominal          = 1.8f,
-    .MaxClockFreqMHz         = 133,
+    .MaxClockFreqMHz         = 125,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
     .DefaultReadDummyCycles  = 10,
     .DefaultWriteDummyCycles = 0
@@ -1677,7 +1702,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 4 * 1024,
     .BlockSizeBytes          = 64 * 1024,
     .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 133,
+    .MaxClockFreqMHz         = 125,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
     .DefaultReadDummyCycles  = 10,
     .DefaultWriteDummyCycles = 0
@@ -1693,7 +1718,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 4 * 1024,
     .BlockSizeBytes          = 64 * 1024,
     .VoltageNominal          = 1.8f,
-    .MaxClockFreqMHz         = 133,
+    .MaxClockFreqMHz         = 125,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
     .DefaultReadDummyCycles  = 10,
     .DefaultWriteDummyCycles = 0
@@ -1709,7 +1734,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 4 * 1024,
     .BlockSizeBytes          = 64 * 1024,
     .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 133,
+    .MaxClockFreqMHz         = 125,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
     .DefaultReadDummyCycles  = 10,
     .DefaultWriteDummyCycles = 0

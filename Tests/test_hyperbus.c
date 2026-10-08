@@ -232,20 +232,42 @@ static bool hyperram_common(const HyperRamOps_t *ops)
   return true;
 }
 
+/* Single-die adapters for the shared HyperRAM checks */
+static int32_t S27KS_Init1(XSPI_HandleTypeDef *Ctx, uint32_t Prescaler, uint32_t Size) { return S27KS0641_Init(Ctx, Prescaler, Size, 1U); }
+static int32_t S27KS_EnterDPD1(XSPI_HandleTypeDef *Ctx) { return S27KS0641_EnterDeepPowerDown(Ctx, 1U); }
+
 bool test_infineon_s27ks0641_hyperram(void)
 {
   static const HyperRamOps_t ops = {
-    S27KS0641_Init, S27KS0641_ReadRegister, S27KS0641_WriteRegister, S27KS0641_Read, S27KS0641_Write,
-    S27KS0641_EnableMemoryMappedMode, S27KS0641_EnterDeepPowerDown, S27KS0641_LeaveDeepPowerDown, S27KS_CR0_INIT_VALUE
+    S27KS_Init1, S27KS0641_ReadRegister, S27KS0641_WriteRegister, S27KS0641_Read, S27KS0641_Write,
+    S27KS0641_EnableMemoryMappedMode, S27KS_EnterDPD1, S27KS0641_LeaveDeepPowerDown, S27KS_CR0_INIT_VALUE
   };
   if (!hyperram_common(&ops)) return false;
+
+  /* S70KS1281: CR0 of both dice (CA35 = A22 selects the die), DPD entered on both */
+  {
+    XSPI_HandleTypeDef hd = {0};
+    HR_SETUP();
+    ASSERT_EQ(S27KS0641_Init(&hd, 2, HAL_XSPI_SIZE_128MB, 2U), S27KS_OK);
+    ASSERT_EQ(MockHAL_GetHyperReg(0x00001000U), S27KS_CR0_INIT_VALUE);
+    ASSERT_EQ(MockHAL_GetHyperReg(0x00801000U), S27KS_CR0_INIT_VALUE);
+    ASSERT_EQ(S27KS0641_EnterDeepPowerDown(&hd, 2U), S27KS_OK);
+    ASSERT_EQ(MockHAL_GetHyperReg(0x00001000U) & 0x8000U, 0U);
+    ASSERT_EQ(MockHAL_GetHyperReg(0x00801000U) & 0x8000U, 0U);
+    ASSERT_EQ(S27KS0641_Init(&hd, 2, HAL_XSPI_SIZE_128MB, 0U), S27KS_ERROR);
+    ASSERT_EQ(S27KS0641_Init(&hd, 2, HAL_XSPI_SIZE_128MB, 3U), S27KS_ERROR);
+    ASSERT_EQ(S27KS0641_EnterDeepPowerDown(&hd, 0U), S27KS_ERROR);
+    ASSERT_EQ(S27KS0641_EnterDeepPowerDown(&hd, 3U), S27KS_ERROR);
+    FAULT_SWEEP(HR_SETUP(), S27KS0641_Init(&hd, 2, HAL_XSPI_SIZE_128MB, 2U));
+    FAULT_SWEEP(HR_SETUP(), S27KS0641_EnterDeepPowerDown(&hd, 2U));
+  }
 
   /* DMA variants */
   XSPI_HandleTypeDef h = {0};
   uint8_t tx[32], rx[32];
   HR_SETUP();
   Test_Pattern(tx, sizeof(tx), 0x4C);
-  ASSERT_EQ(S27KS0641_Init(&h, 2, HAL_XSPI_SIZE_64MB), S27KS_OK);
+  ASSERT_EQ(S27KS0641_Init(&h, 2, HAL_XSPI_SIZE_64MB, 1U), S27KS_OK);
   ASSERT_EQ(S27KS0641_Write_DMA(&h, 0x40, tx, sizeof(tx)), S27KS_OK);
   ASSERT_NOT_NULL(MockHAL_FindEvent(MOCK_EV_TX_DMA, 0));
   ASSERT_EQ(S27KS0641_Read_DMA(&h, 0x40, rx, sizeof(rx)), S27KS_OK);

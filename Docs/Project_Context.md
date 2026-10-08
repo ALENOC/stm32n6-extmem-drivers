@@ -62,25 +62,33 @@ path; it does not replace validation on hardware.
 ## 5. Status
 
 Done:
-- [x] Protocol review of every driver against datasheets (SEMPER octal/quad, IS25LX/WX, MT35X,
-      MT25Q, IS25LP, S25FL-L, HyperRAM, HyperFlash, OctalRAM, quad PSRAM, serial SRAM, FMC NOR/PSRAM)
+- [x] Every driver checked against the full vendor datasheet of each family (October 2026 audit), see section 6
 - [x] HAL mock aligned with the STM32CubeN6 headers, including HAL parameter and state checks
 - [x] 100% line and branch coverage, cross-compilation against the real HAL in CI
-- [x] Stacked-die support (MT25Q 1 Gb, MT35X 1/2 Gb, S28HS02GT / S28HL02GT per datasheet 002-23755)
-- [x] SEMPER Octal checked against datasheet 002-23755: repeated 8D command extension, per-die
-      registers, addressed die erase, WRDIS after each operation, erase timeouts, deep power down
+- [x] Stacked dice: MT25Q 1 Gb, MT35X 1/2 Gb (all dice polled), S28HS02GT / S28HL02GT (datasheet 002-23755),
+      S70KS1281 dual-die HyperRAM
+- [x] Device table: part numbers checked against the datasheets and every clock limit matched to the
+      latency the driver programs
 
 Open (need hardware):
 - [ ] Board validation of every memory family at its maximum clock (ID, program/erase, XIP, CRC)
 - [ ] IS66WVO parts above 8 MBytes on early STM32N6 silicon (erratum ES0620, Macronix RAM mode)
 - [ ] XSPI delay block / sample shifting tuning for 200 MHz DTR on a specific board
 
+Open (documents not found):
+- [ ] IS29GL512 and IS25WQ032: no datasheet found, the entries follow IS29GL256 and IS25LQ032B
+- [ ] IS66WVH: the available PDF uses a scrambled font, the ID0 manufacturer code (0011b) comes from earlier sources
+
 ## 6. Reference documents used
 
+Vendor datasheets (full documents) used for the audit of each driver:
+- Infineon: SEMPER Octal 002-18216 (S28HS/HL 512T/01GT) and 002-23755 (S28HS/HL02GT), SEMPER Quad 002-23660
+  (S25HS/HL 256T/512T/01GT), FL-L 002-00124 (S25FL128L/256L), HyperFlash
+  001-99198 (S26KS/KL), HyperRAM 001-97964 (S27KS0641/S70KS1281), 002-31337 (S80KS2562), S27KS0642/0643,
+  CY62167EV30
+- ISSI: IS25LX/WX 032/064, 128/256, 512M; IS25LP/WP 080D/016D/032D/064D/128F/256D/512M; IS25LQ032B;
+  IS25LE/WE128E; IS26KS/KL; IS66/67WVO 8M8/16M8/32M8/64M8; IS66WVH8M8/16M8; IS66/67WVS4M8/16M8;
+  IS62/65WVS 0648/1288/2568/5128; IS66WV51216; IS66WVE1M16/2M16/4M16; IS29GL032/064/128/256
+- Micron: MT35XU512ABA, MT35XU02G; MT25QU128/256/512/01G, MT25QL256; MT28EW
 - ST: RM0486 (STM32N6 reference manual), ES0620 (STM32N6 errata), STM32N6570-DK BSP, STM32CubeN6 HAL
-- Infineon: SEMPER Octal 002-18216, 2 Gb SEMPER Octal 002-23755 Rev. *M (S28HS02GT / S28HL02GT),
-  SEMPER Quad 002-23660 / 002-12345, SEMPER Quad DDP (2 Gb),
-  S25FL128L/256L 002-00124, S27KL0642/S27KS0642 002-31332
-- ISSI: IS25WX064/032, IS25LP256D/IS25WP256D, IS66/67WVO8M8, IS66/67WVS16M8, IS66WVH16M8,
-  IS62/65WVS0648/1288/2568/5128
-- Linux kernel `drivers/mtd/spi-nor` (spansion.c, micron-st.c, sfdp.c)
+- Linux kernel `drivers/mtd/spi-nor` (spansion.c, micron-st.c, sfdp.c), used as a cross-check only

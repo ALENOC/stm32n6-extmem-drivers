@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file    s27ks0641.c
   * @author  STM32N6 External Memory Driver Suite Team
-  * @brief   Driver implementation for Infineon HyperRAM(TM) (S27KS / S27KL / S27HS / HL).
+  * @brief   Driver implementation for Infineon HyperRAM(TM) (S27KS / S27KL, S70KS / S70KL, S80KS2562).
   ******************************************************************************
   */
 
@@ -56,9 +56,14 @@ int32_t S27KS0641_WriteRegister(XSPI_HandleTypeDef *Ctx, uint32_t RegAddr, uint1
   return (HAL_XSPI_Transmit(Ctx, buf, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? S27KS_OK : S27KS_ERROR;
 }
 
-int32_t S27KS0641_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_t MemorySize)
+int32_t S27KS0641_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_t MemorySize, uint8_t Dice)
 {
   XSPI_HyperbusCfgTypeDef sHyperbusCfg = {0};
+
+  if (Dice == 0U || Dice > S27KS_MAX_DICE)
+  {
+    return S27KS_ERROR;
+  }
 
   Ctx->Init.FifoThresholdByte       = 8;
   Ctx->Init.MemoryType              = HAL_XSPI_MEMTYPE_HYPERBUS;
@@ -90,11 +95,13 @@ int32_t S27KS0641_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_
     return S27KS_ERROR;
   }
 
-  /* Configure Configuration Register 0: 6 cycles, variable latency */
-  uint16_t cr0Val = S27KS_CR0_INIT_VALUE;
-  if (S27KS0641_WriteRegister(Ctx, S27KS_REG_CR0, cr0Val) != S27KS_OK)
+  /* Configuration Register 0 of every die: 7 clocks, variable latency */
+  for (uint32_t die = 0; die < Dice; die++)
   {
-    return S27KS_ERROR;
+    if (S27KS0641_WriteRegister(Ctx, (die * S27KS_DIE_STRIDE) + S27KS_REG_CR0, S27KS_CR0_INIT_VALUE) != S27KS_OK)
+    {
+      return S27KS_ERROR;
+    }
   }
 
   return S27KS_OK;
@@ -198,14 +205,21 @@ int32_t S27KS0641_EnableMemoryMappedMode(XSPI_HandleTypeDef *Ctx)
   return (HAL_XSPI_MemoryMapped(Ctx, &sMem) == HAL_OK) ? S27KS_OK : S27KS_ERROR;
 }
 
-int32_t S27KS0641_EnterDeepPowerDown(XSPI_HandleTypeDef *Ctx)
+int32_t S27KS0641_EnterDeepPowerDown(XSPI_HandleTypeDef *Ctx, uint8_t Dice)
 {
-  uint16_t cr0 = 0;
+  if (Dice == 0U || Dice > S27KS_MAX_DICE) return S27KS_ERROR;
 
-  /* Deep power down is entered by writing 0 to CR0[15] */
-  if (S27KS0641_ReadRegister(Ctx, S27KS_REG_CR0, &cr0) != S27KS_OK) return S27KS_ERROR;
-  cr0 = (uint16_t)(cr0 & ~S27KS_CR0_DPD_NORMAL);
-  return S27KS0641_WriteRegister(Ctx, S27KS_REG_CR0, cr0);
+  /* Deep power down is entered by writing 0 to CR0[15] of each die. Waking up needs no
+   * per-die access: every die sees the shared CS# of the next transaction. */
+  for (uint32_t die = 0; die < Dice; die++)
+  {
+    uint32_t reg = (die * S27KS_DIE_STRIDE) + S27KS_REG_CR0;
+    uint16_t cr0 = 0;
+    if (S27KS0641_ReadRegister(Ctx, reg, &cr0) != S27KS_OK) return S27KS_ERROR;
+    cr0 = (uint16_t)(cr0 & ~S27KS_CR0_DPD_NORMAL);
+    if (S27KS0641_WriteRegister(Ctx, reg, cr0) != S27KS_OK) return S27KS_ERROR;
+  }
+  return S27KS_OK;
 }
 
 int32_t S27KS0641_LeaveDeepPowerDown(XSPI_HandleTypeDef *Ctx)

@@ -50,6 +50,7 @@ extern "C" {
 /* HyperRAM ID0[3:0] manufacturer codes */
 #define EXTMEM_HYPERRAM_MFG_CYPRESS   0x01U  /*!< Cypress / Infineon HyperRAM         */
 #define EXTMEM_HYPERRAM_MFG_ISSI      0x03U  /*!< ISSI HyperRAM                       */
+#define EXTMEM_HYPERRAM_MFG_INFINEON  0x06U  /*!< Infineon HyperRAM 2.0 (S80KS2562)   */
 
 /* Memory Classification -----------------------------------------------------*/
 typedef enum {
@@ -59,10 +60,10 @@ typedef enum {
   EXTMEM_TYPE_NOR_OCTAL_MICRON,    /*!< Micron Xccela Octal NOR Flash (MT35XU / MT35XL) */
   EXTMEM_TYPE_NOR_QUAD_INFINEON,   /*!< Infineon SEMPER / FL Quad SPI Flash             */
   EXTMEM_TYPE_NOR_QUAD_ISSI,       /*!< ISSI Quad SPI Flash (IS25LP / IS25WP / IS25LQ / IS25WQ / IS25LE / IS25WE) */
-  EXTMEM_TYPE_NOR_QUAD_MICRON,     /*!< Micron Quad SPI Flash (MT25QU / MT25QL / N25Q)  */
+  EXTMEM_TYPE_NOR_QUAD_MICRON,     /*!< Micron Quad SPI Flash (MT25QU / MT25QL)         */
   EXTMEM_TYPE_HYPERFLASH_INFINEON, /*!< Infineon HyperFlash (S26KS / S26KL)             */
   EXTMEM_TYPE_HYPERFLASH_ISSI,     /*!< ISSI HyperFlash (IS26KS / IS26KL)               */
-  EXTMEM_TYPE_HYPERRAM_INFINEON,   /*!< Infineon HyperRAM (S27KS / S27KL / S27HS / HL)  */
+  EXTMEM_TYPE_HYPERRAM_INFINEON,   /*!< Infineon HyperRAM (S27KS / S27KL / S70KS / S80KS) */
   EXTMEM_TYPE_HYPERRAM_ISSI,       /*!< ISSI HyperRAM (IS66WVH / IS67WVH)               */
   EXTMEM_TYPE_PSRAM_OCTAL_ISSI,    /*!< ISSI Octal PSRAM (IS66WVO / IS67WVO)            */
   EXTMEM_TYPE_PSRAM_QUAD_ISSI,     /*!< ISSI Quad PSRAM (IS66WVS / IS67WVS)             */

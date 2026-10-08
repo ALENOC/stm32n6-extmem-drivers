@@ -38,19 +38,19 @@ static int32_t MT25QU_AutoPollingMemReady(XSPI_HandleTypeDef *Ctx, uint32_t Time
   uint32_t start = HAL_GetTick();
   for (;;)
   {
-    if (HAL_XSPI_Command(Ctx, &sCmd, Timeout) != HAL_OK) return MT25Q_ERROR;
-    if (HAL_XSPI_AutoPolling(Ctx, &sCfg, Timeout) != HAL_OK) return MT25Q_ERROR;
+    if (HAL_XSPI_Command(Ctx, &sCmd, Timeout) != HAL_OK) { return MT25Q_ERROR; }
+    if (HAL_XSPI_AutoPolling(Ctx, &sCfg, Timeout) != HAL_OK) { return MT25Q_ERROR; }
 
     bool allReady = true;
     for (uint32_t die = 1U; die < MT25Q_MAX_DICE; die++)
     {
       uint8_t fsr = 0;
-      if (HAL_XSPI_Command(Ctx, &sCmd, Timeout) != HAL_OK) return MT25Q_ERROR;
-      if (HAL_XSPI_Receive(Ctx, &fsr, Timeout) != HAL_OK) return MT25Q_ERROR;
-      if ((fsr & MT25Q_FSR_READY) == 0U) allReady = false;
+      if (HAL_XSPI_Command(Ctx, &sCmd, Timeout) != HAL_OK) { return MT25Q_ERROR; }
+      if (HAL_XSPI_Receive(Ctx, &fsr, Timeout) != HAL_OK) { return MT25Q_ERROR; }
+      if ((fsr & MT25Q_FSR_READY) == 0U) { allReady = false; }
     }
-    if (allReady) return MT25Q_OK;
-    if ((HAL_GetTick() - start) > Timeout) return MT25Q_ERROR;
+    if (allReady) { return MT25Q_OK; }
+    if ((HAL_GetTick() - start) > Timeout) { return MT25Q_ERROR; }
   }
 }
 
@@ -71,7 +71,7 @@ int32_t MT25QU_ReadID(XSPI_HandleTypeDef *Ctx, uint8_t *pID)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT25Q_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT25Q_ERROR; }
   return (HAL_XSPI_Receive(Ctx, pID, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? MT25Q_OK : MT25Q_ERROR;
 }
 
@@ -92,7 +92,7 @@ int32_t MT25QU_ReadStatus(XSPI_HandleTypeDef *Ctx, uint8_t *pStatus)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT25Q_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT25Q_ERROR; }
   return (HAL_XSPI_Receive(Ctx, pStatus, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? MT25Q_OK : MT25Q_ERROR;
 }
 
@@ -113,7 +113,7 @@ int32_t MT25QU_ReadFlagStatus(XSPI_HandleTypeDef *Ctx, uint8_t *pFlagStatus)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT25Q_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT25Q_ERROR; }
   return (HAL_XSPI_Receive(Ctx, pFlagStatus, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? MT25Q_OK : MT25Q_ERROR;
 }
 
@@ -140,7 +140,7 @@ int32_t MT25QU_Enter4ByteAddressMode(XSPI_HandleTypeDef *Ctx)
   XSPI_RegularCmdTypeDef sCmd = {0};
 
 
-  if (MT25QU_WriteEnable(Ctx) != MT25Q_OK) return MT25Q_ERROR;
+  if (MT25QU_WriteEnable(Ctx) != MT25Q_OK) { return MT25Q_ERROR; }
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -161,7 +161,7 @@ int32_t MT25QU_Exit4ByteAddressMode(XSPI_HandleTypeDef *Ctx)
   XSPI_RegularCmdTypeDef sCmd = {0};
 
 
-  if (MT25QU_WriteEnable(Ctx) != MT25Q_OK) return MT25Q_ERROR;
+  if (MT25QU_WriteEnable(Ctx) != MT25Q_OK) { return MT25Q_ERROR; }
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -193,9 +193,9 @@ int32_t MT25QU_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_t M
   Ctx->Init.FreeRunningClock        = HAL_XSPI_FREERUNCLK_DISABLE;
   Ctx->Init.WrapSize                = HAL_XSPI_WRAP_NOT_SUPPORTED;
 
-  if (HAL_XSPI_Init(Ctx) != HAL_OK) return MT25Q_ERROR;
+  if (HAL_XSPI_Init(Ctx) != HAL_OK) { return MT25Q_ERROR; }
 
-  if (MT25QU_Reset(Ctx) != MT25Q_OK) return MT25Q_ERROR;
+  if (MT25QU_Reset(Ctx) != MT25Q_OK) { return MT25Q_ERROR; }
 
   /* Above 128 Mbits (16 MBytes, DEVSIZE code HAL_XSPI_SIZE_128MB) the array needs 4-byte addresses */
   if (MemorySize > HAL_XSPI_SIZE_128MB)
@@ -222,10 +222,10 @@ int32_t MT25QU_ReadQuadEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pD
   sCmd.DataMode           = HAL_XSPI_DATA_4_LINES;
   sCmd.DataDTRMode        = HAL_XSPI_DATA_DTR_DISABLE;
   sCmd.DataLength         = Size;
-  sCmd.DummyCycles        = (DummyCycles > 0) ? DummyCycles : 10;
+  sCmd.DummyCycles        = (DummyCycles > 0U) ? DummyCycles : 10U;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT25Q_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT25Q_ERROR; }
   return (HAL_XSPI_Receive(Ctx, pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? MT25Q_OK : MT25Q_ERROR;
 }
 
@@ -238,7 +238,7 @@ int32_t MT25QU_PageProgramQuadEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, cons
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
-  if (MT25QU_WriteEnable(Ctx) != MT25Q_OK) return MT25Q_ERROR;
+  if (MT25QU_WriteEnable(Ctx) != MT25Q_OK) { return MT25Q_ERROR; }
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -256,8 +256,8 @@ int32_t MT25QU_PageProgramQuadEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, cons
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT25Q_ERROR;
-  if (HAL_XSPI_Transmit(Ctx, pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT25Q_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT25Q_ERROR; }
+  if (HAL_XSPI_Transmit(Ctx, pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT25Q_ERROR; }
 
   return MT25QU_AutoPollingMemReady(Ctx, HAL_XSPI_TIMEOUT_DEFAULT_VALUE);
 }
@@ -271,7 +271,7 @@ int32_t MT25QU_EraseSector4KEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint32
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
-  if (MT25QU_WriteEnable(Ctx) != MT25Q_OK) return MT25Q_ERROR;
+  if (MT25QU_WriteEnable(Ctx) != MT25Q_OK) { return MT25Q_ERROR; }
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -287,7 +287,7 @@ int32_t MT25QU_EraseSector4KEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint32
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT25Q_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT25Q_ERROR; }
   return MT25QU_AutoPollingMemReady(Ctx, 2000);
 }
 
@@ -300,7 +300,7 @@ int32_t MT25QU_EraseBlock64KEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint32
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
-  if (MT25QU_WriteEnable(Ctx) != MT25Q_OK) return MT25Q_ERROR;
+  if (MT25QU_WriteEnable(Ctx) != MT25Q_OK) { return MT25Q_ERROR; }
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -316,7 +316,7 @@ int32_t MT25QU_EraseBlock64KEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint32
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT25Q_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT25Q_ERROR; }
   return MT25QU_AutoPollingMemReady(Ctx, 3000);
 }
 
@@ -329,7 +329,7 @@ int32_t MT25QU_EraseChip(XSPI_HandleTypeDef *Ctx)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
-  if (MT25QU_WriteEnable(Ctx) != MT25Q_OK) return MT25Q_ERROR;
+  if (MT25QU_WriteEnable(Ctx) != MT25Q_OK) { return MT25Q_ERROR; }
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -342,7 +342,7 @@ int32_t MT25QU_EraseChip(XSPI_HandleTypeDef *Ctx)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT25Q_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT25Q_ERROR; }
   return MT25QU_AutoPollingMemReady(Ctx, 600000);
 }
 
@@ -350,7 +350,7 @@ int32_t MT25QU_EraseDie(XSPI_HandleTypeDef *Ctx, uint32_t DieAddress)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
-  if (MT25QU_WriteEnable(Ctx) != MT25Q_OK) return MT25Q_ERROR;
+  if (MT25QU_WriteEnable(Ctx) != MT25Q_OK) { return MT25Q_ERROR; }
 
   /* Multi-die parts (1 Gb and above) reject BULK ERASE: DIE ERASE needs 4-byte address mode */
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
@@ -367,7 +367,7 @@ int32_t MT25QU_EraseDie(XSPI_HandleTypeDef *Ctx, uint32_t DieAddress)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT25Q_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT25Q_ERROR; }
   return MT25QU_AutoPollingMemReady(Ctx, 600000);
 }
 
@@ -387,10 +387,10 @@ int32_t MT25QU_EnableMemoryMappedModeEx(XSPI_HandleTypeDef *Ctx, uint8_t DummyCy
   sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
   sCmd.DataMode           = HAL_XSPI_DATA_4_LINES;
   sCmd.DataDTRMode        = HAL_XSPI_DATA_DTR_DISABLE;
-  sCmd.DummyCycles        = (DummyCycles > 0) ? DummyCycles : 10;
+  sCmd.DummyCycles        = (DummyCycles > 0U) ? DummyCycles : 10U;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT25Q_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT25Q_ERROR; }
 
   sMem.TimeOutActivation = HAL_XSPI_TIMEOUT_COUNTER_DISABLE;
   return (HAL_XSPI_MemoryMapped(Ctx, &sMem) == HAL_OK) ? MT25Q_OK : MT25Q_ERROR;
@@ -416,10 +416,10 @@ int32_t MT25QU_Reset(XSPI_HandleTypeDef *Ctx)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT25Q_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT25Q_ERROR; }
 
   sCmd.Instruction = MT25Q_CMD_RESET;
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT25Q_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT25Q_ERROR; }
 
   HAL_Delay(2);
   return MT25Q_OK;

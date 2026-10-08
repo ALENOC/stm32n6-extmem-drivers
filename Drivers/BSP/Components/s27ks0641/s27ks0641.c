@@ -52,7 +52,7 @@ int32_t S27KS0641_WriteRegister(XSPI_HandleTypeDef *Ctx, uint32_t RegAddr, uint1
   }
 
   /* HyperBus transfers register words most significant byte first */
-  uint8_t buf[2] = { (uint8_t)((Value >> 8) & 0xFF), (uint8_t)(Value & 0xFF) };
+  const uint8_t buf[2U] = { (uint8_t)((Value >> 8U) & 0xFFU), (uint8_t)(Value & 0xFFU) };
   return (HAL_XSPI_Transmit(Ctx, buf, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? S27KS_OK : S27KS_ERROR;
 }
 
@@ -207,7 +207,7 @@ int32_t S27KS0641_EnableMemoryMappedMode(XSPI_HandleTypeDef *Ctx)
 
 int32_t S27KS0641_EnterDeepPowerDown(XSPI_HandleTypeDef *Ctx, uint8_t Dice)
 {
-  if (Dice == 0U || Dice > S27KS_MAX_DICE) return S27KS_ERROR;
+  if (Dice == 0U || Dice > S27KS_MAX_DICE) { return S27KS_ERROR; }
 
   /* Deep power down is entered by writing 0 to CR0[15] of each die. Waking up needs no
    * per-die access: every die sees the shared CS# of the next transaction. */
@@ -215,9 +215,9 @@ int32_t S27KS0641_EnterDeepPowerDown(XSPI_HandleTypeDef *Ctx, uint8_t Dice)
   {
     uint32_t reg = (die * S27KS_DIE_STRIDE) + S27KS_REG_CR0;
     uint16_t cr0 = 0;
-    if (S27KS0641_ReadRegister(Ctx, reg, &cr0) != S27KS_OK) return S27KS_ERROR;
+    if (S27KS0641_ReadRegister(Ctx, reg, &cr0) != S27KS_OK) { return S27KS_ERROR; }
     cr0 = (uint16_t)(cr0 & ~S27KS_CR0_DPD_NORMAL);
-    if (S27KS0641_WriteRegister(Ctx, reg, cr0) != S27KS_OK) return S27KS_ERROR;
+    if (S27KS0641_WriteRegister(Ctx, reg, cr0) != S27KS_OK) { return S27KS_ERROR; }
   }
   return S27KS_OK;
 }

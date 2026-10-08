@@ -126,17 +126,19 @@ stm32n6-extmem-drivers/
 │   ├── test_fmc.c                   # FMC PSRAM/SRAM and parallel NOR
 │   ├── test_manager.c               # Unified manager, every database device end to end
 │   ├── coverage_report.py           # gcov summary used by `make coverage`
+│   ├── misra_report.py              # MISRA addon summary used by `make static-analysis`
 │   ├── extmem_unit_tests.h          # Unit test declarations
 │   └── main_test.c                  # Host test runner for Linux/macOS/Windows
 ├── Docs/
 │   ├── STM32CubeIDE_Integration_Guide.md # Step-by-step CubeIDE setup & Linker guide
 │   ├── Supported_Memories_Matrix.md      # Every part of the device table with its limits
 │   ├── Hardware_Design_and_Pinout.md     # STM32N6 pinout, PCB layout guidelines, VDDIO domains
+│   ├── Static_Analysis.md                # Analysis tools, results and MISRA deviations
 │   └── Project_Context.md                # Architecture, conventions, status, datasheet sources
 ├── .github/
 │   └── workflows/
-│       └── ci.yml                   # CI: host tests, coverage, examples, Cortex-M55 cross-compile
-├── Makefile                         # test, coverage, examples and target-check targets
+│       └── ci.yml                   # CI: host tests, coverage, examples, Cortex-M55 cross-compile, static analysis
+├── Makefile                         # test, coverage, examples, target-check and static-analysis targets
 ├── LICENSE                          # MIT License and Disclaimer of Liability
 └── README.md
 ```
@@ -230,7 +232,8 @@ if (ExtMem_Write(&hextmem, 0x00000000, txData, sizeof(txData)) == EXTMEM_OK &&
 | Host unit tests on a HAL mock | Done | 21 test groups, all passing |
 | Line and branch coverage of the driver sources | Measured at 100% / 100% | `make coverage` (gcov); the CI gate enforces 100% of lines, branches are reported |
 | Cross-compilation against the real STM32CubeN6 HAL (Cortex-M55) | Done in CI | `make target-check`, compile only, no link or run |
-| Static analysis (MISRA, cppcheck, etc.) | Not done | |
+| Static analysis (GCC `-fanalyzer`, cppcheck, clang-tidy) | Done, 0 findings | `make static-analysis`, enforced in CI; see [Docs/Static_Analysis.md](Docs/Static_Analysis.md) |
+| MISRA C:2012 | Partial check only | cppcheck MISRA addon: 671 remaining findings documented as deviations (1132 before fixes); no compliance claim |
 | Execution on STM32N6 hardware | **Not done** | |
 | Tests with physical memory devices | **Not done** | |
 | Throughput benchmarks | **Not done** | `Examples/extmem_benchmark.c` provided, no results yet |
@@ -255,9 +258,10 @@ make coverage      # gcov line + branch coverage of the 16 driver sources (100% 
 make examples      # the examples must keep compiling against the driver API
 make target-check  # cross-compile for Cortex-M55 against the STM32CubeN6 HAL (needs arm-none-eabi-gcc
                    # and the HAL, device and CMSIS repositories next to this one, as in CI)
+make static-analysis  # GCC -fanalyzer, cppcheck, clang-tidy and the cppcheck MISRA C:2012 addon report
 ```
 
-The CI workflow runs all four targets on every push and pull request to `main`.
+The CI workflow runs all five targets on every push and pull request to `main`.
 
 ---
 
@@ -290,13 +294,14 @@ The driver code and the host tests are complete for the parts in the device tabl
 
 ## 🤝 Contributing
 
-Issues and pull requests are welcome, especially hardware test reports: please state the board, memory part number and date code, bus clock and what was tested. Code changes must keep `make test`, `make coverage`, `make examples` and `make target-check` passing, and protocol changes should cite the datasheet section they rely on.
+Issues and pull requests are welcome, especially hardware test reports: please state the board, memory part number and date code, bus clock and what was tested. Code changes must keep `make test`, `make coverage`, `make examples`, `make target-check` and `make static-analysis` passing, and protocol changes should cite the datasheet section they rely on.
 
 ## 📚 Detailed Documentation
 
 - [STM32CubeIDE Integration Guide](Docs/STM32CubeIDE_Integration_Guide.md)
 - [Supported Memories Matrix](Docs/Supported_Memories_Matrix.md)
 - [Hardware Design & High-Speed PCB Routing Guidelines](Docs/Hardware_Design_and_Pinout.md)
+- [Static Analysis (tools, results, MISRA deviations)](Docs/Static_Analysis.md)
 - [Project Context (architecture, conventions, status, sources)](Docs/Project_Context.md)
 
 ---

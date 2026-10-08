@@ -25,7 +25,7 @@ int32_t IS62WVS_ReadModeRegister(XSPI_HandleTypeDef *Ctx, uint8_t *pMode)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS62WVS_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS62WVS_ERROR; }
   return (HAL_XSPI_Receive(Ctx, pMode, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS62WVS_OK : IS62WVS_ERROR;
 }
 
@@ -46,7 +46,7 @@ int32_t IS62WVS_WriteModeRegister(XSPI_HandleTypeDef *Ctx, uint8_t Mode)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS62WVS_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS62WVS_ERROR; }
   return (HAL_XSPI_Transmit(Ctx, &Mode, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS62WVS_OK : IS62WVS_ERROR;
 }
 
@@ -67,10 +67,10 @@ int32_t IS62WVS_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_t 
   Ctx->Init.FreeRunningClock        = HAL_XSPI_FREERUNCLK_DISABLE;
   Ctx->Init.WrapSize                = HAL_XSPI_WRAP_NOT_SUPPORTED;
 
-  if (HAL_XSPI_Init(Ctx) != HAL_OK) return IS62WVS_ERROR;
+  if (HAL_XSPI_Init(Ctx) != HAL_OK) { return IS62WVS_ERROR; }
 
   /* Reset to single SPI mode and configure Sequential mode for continuous read/write */
-  if (IS62WVS_Reset(Ctx) != IS62WVS_OK) return IS62WVS_ERROR;
+  if (IS62WVS_Reset(Ctx) != IS62WVS_OK) { return IS62WVS_ERROR; }
 
   return IS62WVS_WriteModeRegister(Ctx, IS62WVS_MODE_SEQUENTIAL);
 }
@@ -131,7 +131,7 @@ static int32_t IS62WVS_Read_Chunk(XSPI_HandleTypeDef *Ctx, uint32_t Address, uin
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS62WVS_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS62WVS_ERROR; }
   return (HAL_XSPI_Receive(Ctx, pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS62WVS_OK : IS62WVS_ERROR;
 }
 
@@ -155,7 +155,7 @@ static int32_t IS62WVS_Write_Chunk(XSPI_HandleTypeDef *Ctx, uint32_t Address, co
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS62WVS_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS62WVS_ERROR; }
   return (HAL_XSPI_Transmit(Ctx, (const uint8_t *)pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS62WVS_OK : IS62WVS_ERROR;
 }
 
@@ -179,7 +179,7 @@ static int32_t IS62WVS_ReadQuad_Chunk(XSPI_HandleTypeDef *Ctx, uint32_t Address,
   sCmd.DummyCycles        = DummyCycles;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS62WVS_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS62WVS_ERROR; }
   return (HAL_XSPI_Receive(Ctx, pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS62WVS_OK : IS62WVS_ERROR;
 }
 
@@ -203,7 +203,7 @@ static int32_t IS62WVS_WriteQuad_Chunk(XSPI_HandleTypeDef *Ctx, uint32_t Address
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS62WVS_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS62WVS_ERROR; }
   return (HAL_XSPI_Transmit(Ctx, (const uint8_t *)pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS62WVS_OK : IS62WVS_ERROR;
 }
 
@@ -227,14 +227,14 @@ int32_t IS62WVS_EnableMemoryMappedMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyCyc
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS62WVS_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS62WVS_ERROR; }
 
   /* Configure Read Command */
   sCmd.OperationType = HAL_XSPI_OPTYPE_READ_CFG;
   sCmd.Instruction   = IS62WVS_CMD_READ;
   sCmd.DummyCycles   = DummyCycles;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS62WVS_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS62WVS_ERROR; }
 
   sMem.TimeOutActivation = HAL_XSPI_TIMEOUT_COUNTER_DISABLE;
   return (HAL_XSPI_MemoryMapped(Ctx, &sMem) == HAL_OK) ? IS62WVS_OK : IS62WVS_ERROR;
@@ -254,9 +254,9 @@ int32_t IS62WVS_Read(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, 
   while (Size > 0U)
   {
     uint32_t chunk = IS62WVS_DIE_SIZE - (Address % IS62WVS_DIE_SIZE);
-    if (chunk > Size) chunk = Size;
+    if (chunk > Size) { chunk = Size; }
     int32_t ret = IS62WVS_Read_Chunk(Ctx, Address, pData, chunk);
-    if (ret != IS62WVS_OK) return ret;
+    if (ret != IS62WVS_OK) { return ret; }
     Address += chunk;
     pData += chunk;
     Size -= chunk;
@@ -270,9 +270,9 @@ int32_t IS62WVS_Write(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *
   while (Size > 0U)
   {
     uint32_t chunk = IS62WVS_DIE_SIZE - (Address % IS62WVS_DIE_SIZE);
-    if (chunk > Size) chunk = Size;
+    if (chunk > Size) { chunk = Size; }
     int32_t ret = IS62WVS_Write_Chunk(Ctx, Address, pData, chunk);
-    if (ret != IS62WVS_OK) return ret;
+    if (ret != IS62WVS_OK) { return ret; }
     Address += chunk;
     pData += chunk;
     Size -= chunk;
@@ -286,9 +286,9 @@ int32_t IS62WVS_ReadQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pDa
   while (Size > 0U)
   {
     uint32_t chunk = IS62WVS_DIE_SIZE - (Address % IS62WVS_DIE_SIZE);
-    if (chunk > Size) chunk = Size;
+    if (chunk > Size) { chunk = Size; }
     int32_t ret = IS62WVS_ReadQuad_Chunk(Ctx, Address, pData, chunk, DummyCycles);
-    if (ret != IS62WVS_OK) return ret;
+    if (ret != IS62WVS_OK) { return ret; }
     Address += chunk;
     pData += chunk;
     Size -= chunk;
@@ -302,9 +302,9 @@ int32_t IS62WVS_WriteQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8
   while (Size > 0U)
   {
     uint32_t chunk = IS62WVS_DIE_SIZE - (Address % IS62WVS_DIE_SIZE);
-    if (chunk > Size) chunk = Size;
+    if (chunk > Size) { chunk = Size; }
     int32_t ret = IS62WVS_WriteQuad_Chunk(Ctx, Address, pData, chunk);
-    if (ret != IS62WVS_OK) return ret;
+    if (ret != IS62WVS_OK) { return ret; }
     Address += chunk;
     pData += chunk;
     Size -= chunk;

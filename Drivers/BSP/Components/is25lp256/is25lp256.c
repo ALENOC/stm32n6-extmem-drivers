@@ -25,7 +25,7 @@ int32_t IS25LP256_ReadID(XSPI_HandleTypeDef *Ctx, uint8_t *pID)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS25LP_ERROR; }
   return (HAL_XSPI_Receive(Ctx, pID, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS25LP_OK : IS25LP_ERROR;
 }
 
@@ -65,7 +65,7 @@ int32_t IS25LP256_AutoPollingMemReady(XSPI_HandleTypeDef *Ctx, uint32_t Timeout)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS25LP_ERROR; }
 
   sCfg.MatchValue    = 0x00;
   sCfg.MatchMask     = IS25LP_SR_WIP;
@@ -87,17 +87,17 @@ int32_t IS25LP256_EnableQuadMode(XSPI_HandleTypeDef *Ctx)
   sCmd.Instruction      = IS25LP_CMD_READ_STATUS;
   sCmd.DataMode         = HAL_XSPI_DATA_1_LINE;
   sCmd.DataLength       = 1;
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
-  if (HAL_XSPI_Receive(Ctx, &status, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS25LP_ERROR; }
+  if (HAL_XSPI_Receive(Ctx, &status, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS25LP_ERROR; }
 
-  if ((status & IS25LP_SR_QE) == 0)
+  if ((status & IS25LP_SR_QE) == 0U)
   {
     status |= IS25LP_SR_QE;
-    if (IS25LP256_WriteEnable(Ctx) != IS25LP_OK) return IS25LP_ERROR;
+    if (IS25LP256_WriteEnable(Ctx) != IS25LP_OK) { return IS25LP_ERROR; }
 
     sCmd.Instruction = IS25LP_CMD_WRITE_STATUS;
-    if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
-    if (HAL_XSPI_Transmit(Ctx, &status, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
+    if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS25LP_ERROR; }
+    if (HAL_XSPI_Transmit(Ctx, &status, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS25LP_ERROR; }
 
     return IS25LP256_AutoPollingMemReady(Ctx, 1000);
   }
@@ -109,7 +109,7 @@ int32_t IS25LP_Enter4ByteAddressMode(XSPI_HandleTypeDef *Ctx)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
-  if (IS25LP256_WriteEnable(Ctx) != IS25LP_OK) return IS25LP_ERROR;
+  if (IS25LP256_WriteEnable(Ctx) != IS25LP_OK) { return IS25LP_ERROR; }
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -129,7 +129,7 @@ int32_t IS25LP_Exit4ByteAddressMode(XSPI_HandleTypeDef *Ctx)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
-  if (IS25LP256_WriteEnable(Ctx) != IS25LP_OK) return IS25LP_ERROR;
+  if (IS25LP256_WriteEnable(Ctx) != IS25LP_OK) { return IS25LP_ERROR; }
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -178,7 +178,7 @@ int32_t IS25LP_ReadQuadEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pD
   sCmd.DummyCycles        = IS25LP_QuadIoDummyAfterMode(DummyCycles);
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS25LP_ERROR; }
   return (HAL_XSPI_Receive(Ctx, pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS25LP_OK : IS25LP_ERROR;
 }
 
@@ -192,7 +192,7 @@ int32_t IS25LP_PageProgramQuadEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, cons
   XSPI_RegularCmdTypeDef sCmd = {0};
   bool is4Byte = (AddressWidth == HAL_XSPI_ADDRESS_32_BITS);
 
-  if (IS25LP256_WriteEnable(Ctx) != IS25LP_OK) return IS25LP_ERROR;
+  if (IS25LP256_WriteEnable(Ctx) != IS25LP_OK) { return IS25LP_ERROR; }
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -210,8 +210,8 @@ int32_t IS25LP_PageProgramQuadEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, cons
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
-  if (HAL_XSPI_Transmit(Ctx, (const uint8_t *)pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS25LP_ERROR; }
+  if (HAL_XSPI_Transmit(Ctx, (const uint8_t *)pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS25LP_ERROR; }
 
   return IS25LP256_AutoPollingMemReady(Ctx, 5000);
 }
@@ -226,7 +226,7 @@ int32_t IS25LP_EraseSector4KEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint32
   XSPI_RegularCmdTypeDef sCmd = {0};
   bool is4Byte = (AddressWidth == HAL_XSPI_ADDRESS_32_BITS);
 
-  if (IS25LP256_WriteEnable(Ctx) != IS25LP_OK) return IS25LP_ERROR;
+  if (IS25LP256_WriteEnable(Ctx) != IS25LP_OK) { return IS25LP_ERROR; }
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -242,7 +242,7 @@ int32_t IS25LP_EraseSector4KEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint32
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS25LP_ERROR; }
   return IS25LP256_AutoPollingMemReady(Ctx, 1000);
 }
 
@@ -256,7 +256,7 @@ int32_t IS25LP_EraseBlock64KEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint32
   XSPI_RegularCmdTypeDef sCmd = {0};
   bool is4Byte = (AddressWidth == HAL_XSPI_ADDRESS_32_BITS);
 
-  if (IS25LP256_WriteEnable(Ctx) != IS25LP_OK) return IS25LP_ERROR;
+  if (IS25LP256_WriteEnable(Ctx) != IS25LP_OK) { return IS25LP_ERROR; }
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -272,7 +272,7 @@ int32_t IS25LP_EraseBlock64KEx(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint32
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS25LP_ERROR; }
   return IS25LP256_AutoPollingMemReady(Ctx, 2000);
 }
 
@@ -285,7 +285,7 @@ int32_t IS25LP256_ChipErase(XSPI_HandleTypeDef *Ctx)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
-  if (IS25LP256_WriteEnable(Ctx) != IS25LP_OK) return IS25LP_ERROR;
+  if (IS25LP256_WriteEnable(Ctx) != IS25LP_OK) { return IS25LP_ERROR; }
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -298,7 +298,7 @@ int32_t IS25LP256_ChipErase(XSPI_HandleTypeDef *Ctx)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS25LP_ERROR; }
   return IS25LP256_AutoPollingMemReady(Ctx, 250000);
 }
 
@@ -327,7 +327,7 @@ int32_t IS25LP_EnableMemoryMappedModeEx(XSPI_HandleTypeDef *Ctx, uint8_t DummyCy
   sCmd.DummyCycles        = IS25LP_QuadIoDummyAfterMode(DummyCycles);
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS25LP_ERROR; }
 
   sMem.TimeOutActivation = HAL_XSPI_TIMEOUT_COUNTER_DISABLE;
   return (HAL_XSPI_MemoryMapped(Ctx, &sMem) == HAL_OK) ? IS25LP_OK : IS25LP_ERROR;
@@ -353,10 +353,10 @@ int32_t IS25LP256_Reset(XSPI_HandleTypeDef *Ctx)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS25LP_ERROR; }
 
   sCmd.Instruction = IS25LP_CMD_RESET;
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS25LP_ERROR; }
 
   HAL_Delay(1);
   return IS25LP_OK;
@@ -382,13 +382,13 @@ int32_t IS25LP256_SetReadDummyCycles(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycle
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
-  if (HAL_XSPI_Transmit(Ctx, &params, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS25LP_ERROR; }
+  if (HAL_XSPI_Transmit(Ctx, &params, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS25LP_ERROR; }
 
   /* RDRP: older parts without a Read Register ignore SRPV and keep the factory latency */
   sCmd.Instruction = IS25LP_CMD_READ_READ_PARAMS;
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
-  if (HAL_XSPI_Receive(Ctx, &readBack, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS25LP_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS25LP_ERROR; }
+  if (HAL_XSPI_Receive(Ctx, &readBack, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS25LP_ERROR; }
 
   *pApplied = (readBack == params) ? DummyCycles : IS25LP_DEFAULT_QUAD_IO_DUMMY;
   return IS25LP_OK;

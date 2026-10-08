@@ -107,9 +107,9 @@ static inline const ExtMem_DeviceDescriptor_t* ExtMem_FindDevice(uint8_t mfg, ui
     }
     if (ExtMem_DeviceDatabase[i].ManufacturerID == mfg)
     {
-      if (ExtMem_DeviceDatabase[i].MemoryTypeID == 0 || ExtMem_DeviceDatabase[i].MemoryTypeID == memType)
+      if (ExtMem_DeviceDatabase[i].MemoryTypeID == 0U || ExtMem_DeviceDatabase[i].MemoryTypeID == memType)
       {
-        if (ExtMem_DeviceDatabase[i].DensityID == 0 || ExtMem_DeviceDatabase[i].DensityID == density)
+        if (ExtMem_DeviceDatabase[i].DensityID == 0U || ExtMem_DeviceDatabase[i].DensityID == density)
         {
           return &ExtMem_DeviceDatabase[i];
         }
@@ -122,7 +122,7 @@ static inline const ExtMem_DeviceDescriptor_t* ExtMem_FindDevice(uint8_t mfg, ui
 /* Lookup helper by exact or partial part number */
 static inline const ExtMem_DeviceDescriptor_t* ExtMem_FindDeviceByPartNumber(const char *partNumber)
 {
-  if (partNumber == NULL) return NULL;
+  if (partNumber == NULL) { return NULL; }
 
   /* Pass 1: Exact match */
   for (size_t i = 0; i < EXTMEM_DEVICE_DATABASE_SIZE; i++)
@@ -152,7 +152,7 @@ static inline const ExtMem_DeviceDescriptor_t* ExtMem_FindDeviceByTypeAndCapacit
   {
     if (ExtMem_DeviceDatabase[i].Type == type)
     {
-      if (capacityBytes == 0 || ExtMem_DeviceDatabase[i].CapacityBytes == capacityBytes)
+      if (capacityBytes == 0U || ExtMem_DeviceDatabase[i].CapacityBytes == capacityBytes)
       {
         return &ExtMem_DeviceDatabase[i];
       }

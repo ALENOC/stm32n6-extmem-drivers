@@ -54,19 +54,19 @@ static int32_t MT35XU_AutoPollingMemReady(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t
   uint32_t start = HAL_GetTick();
   for (;;)
   {
-    if (HAL_XSPI_Command(Ctx, &sCmd, Timeout) != HAL_OK) return MT35XU_ERROR;
-    if (HAL_XSPI_AutoPolling(Ctx, &sCfg, Timeout) != HAL_OK) return MT35XU_ERROR;
+    if (HAL_XSPI_Command(Ctx, &sCmd, Timeout) != HAL_OK) { return MT35XU_ERROR; }
+    if (HAL_XSPI_AutoPolling(Ctx, &sCfg, Timeout) != HAL_OK) { return MT35XU_ERROR; }
 
     bool allReady = true;
     for (uint32_t die = 1U; die < MT35XU_MAX_DICE; die++)
     {
       uint8_t fsr[2] = {0};
-      if (HAL_XSPI_Command(Ctx, &sCmd, Timeout) != HAL_OK) return MT35XU_ERROR;
-      if (HAL_XSPI_Receive(Ctx, fsr, Timeout) != HAL_OK) return MT35XU_ERROR;
-      if ((fsr[0] & MT35XU_FSR_READY) == 0U) allReady = false;
+      if (HAL_XSPI_Command(Ctx, &sCmd, Timeout) != HAL_OK) { return MT35XU_ERROR; }
+      if (HAL_XSPI_Receive(Ctx, fsr, Timeout) != HAL_OK) { return MT35XU_ERROR; }
+      if ((fsr[0] & MT35XU_FSR_READY) == 0U) { allReady = false; }
     }
-    if (allReady) return MT35XU_OK;
-    if ((HAL_GetTick() - start) > Timeout) return MT35XU_ERROR;
+    if (allReady) { return MT35XU_OK; }
+    if ((HAL_GetTick() - start) > Timeout) { return MT35XU_ERROR; }
   }
 }
 
@@ -87,7 +87,7 @@ int32_t MT35XU_ReadID(XSPI_HandleTypeDef *Ctx, uint8_t *pID)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT35XU_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT35XU_ERROR; }
   return (HAL_XSPI_Receive(Ctx, pID, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? MT35XU_OK : MT35XU_ERROR;
 }
 
@@ -108,7 +108,7 @@ int32_t MT35XU_ReadStatus(XSPI_HandleTypeDef *Ctx, uint8_t *pStatus)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT35XU_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT35XU_ERROR; }
   return (HAL_XSPI_Receive(Ctx, pStatus, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? MT35XU_OK : MT35XU_ERROR;
 }
 
@@ -129,7 +129,7 @@ int32_t MT35XU_ReadFlagStatus(XSPI_HandleTypeDef *Ctx, uint8_t *pFlagStatus)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT35XU_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT35XU_ERROR; }
   return (HAL_XSPI_Receive(Ctx, pFlagStatus, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? MT35XU_OK : MT35XU_ERROR;
 }
 
@@ -191,7 +191,7 @@ static int32_t MT35XU_WriteVCRSpi(XSPI_HandleTypeDef *Ctx, uint32_t RegAddr, uin
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
-  if (MT35XU_WriteEnable(Ctx) != MT35XU_OK) return MT35XU_ERROR;
+  if (MT35XU_WriteEnable(Ctx) != MT35XU_OK) { return MT35XU_ERROR; }
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -209,21 +209,21 @@ static int32_t MT35XU_WriteVCRSpi(XSPI_HandleTypeDef *Ctx, uint32_t RegAddr, uin
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT35XU_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT35XU_ERROR; }
   return (HAL_XSPI_Transmit(Ctx, &Value, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? MT35XU_OK : MT35XU_ERROR;
 }
 
 int32_t MT35XU_EnterOctalDTRMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles)
 {
   /* 1. Extended SPI defaults to 3-byte addressing: the 32-bit VCR writes below need 4-byte mode */
-  if (MT35XU_WriteEnable(Ctx) != MT35XU_OK) return MT35XU_ERROR;
-  if (MT35XU_SpiSimpleCommand(Ctx, MT35XU_CMD_ENTER_4BYTE_ADDR) != MT35XU_OK) return MT35XU_ERROR;
+  if (MT35XU_WriteEnable(Ctx) != MT35XU_OK) { return MT35XU_ERROR; }
+  if (MT35XU_SpiSimpleCommand(Ctx, MT35XU_CMD_ENTER_4BYTE_ADDR) != MT35XU_OK) { return MT35XU_ERROR; }
 
   /* 2. Dummy cycles for 8D-8D-8D array reads (VCR address 0x01 holds the cycle count) */
-  if (MT35XU_WriteVCRSpi(Ctx, MT35XU_VCR_ADDR_DUMMY_CYCLES, (DummyCycles > 0U) ? DummyCycles : 20U) != MT35XU_OK) return MT35XU_ERROR;
+  if (MT35XU_WriteVCRSpi(Ctx, MT35XU_VCR_ADDR_DUMMY_CYCLES, (DummyCycles > 0U) ? DummyCycles : 20U) != MT35XU_OK) { return MT35XU_ERROR; }
 
   /* 3. Octal DDR with DQS (VCR address 0x00) */
-  if (MT35XU_WriteVCRSpi(Ctx, MT35XU_VCR_ADDR_IO_MODE, MT35XU_VCR_IO_MODE_OCTAL_DTR) != MT35XU_OK) return MT35XU_ERROR;
+  if (MT35XU_WriteVCRSpi(Ctx, MT35XU_VCR_ADDR_IO_MODE, MT35XU_VCR_IO_MODE_OCTAL_DTR) != MT35XU_OK) { return MT35XU_ERROR; }
 
   HAL_Delay(1);
   return MT35XU_OK;
@@ -233,9 +233,9 @@ int32_t MT35XU_ExitOctalMode(XSPI_HandleTypeDef *Ctx)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
   /* 8D writes are 2 bytes wide: restore VCR 0x00 (I/O mode) and VCR 0x01 (dummy cycles) together */
-  uint8_t vcrValue[2] = { MT35XU_VCR_IO_MODE_EXT_SPI, MT35XU_VCR_DUMMY_DEFAULT };
+  const uint8_t vcrValue[2] = { MT35XU_VCR_IO_MODE_EXT_SPI, MT35XU_VCR_DUMMY_DEFAULT };
 
-  if (MT35XU_WriteEnableOctal(Ctx) != MT35XU_OK) return MT35XU_ERROR;
+  if (MT35XU_WriteEnableOctal(Ctx) != MT35XU_OK) { return MT35XU_ERROR; }
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_8_LINES;
@@ -253,8 +253,8 @@ int32_t MT35XU_ExitOctalMode(XSPI_HandleTypeDef *Ctx)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT35XU_ERROR;
-  if (HAL_XSPI_Transmit(Ctx, vcrValue, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT35XU_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT35XU_ERROR; }
+  if (HAL_XSPI_Transmit(Ctx, vcrValue, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT35XU_ERROR; }
 
   HAL_Delay(1);
   return MT35XU_OK;
@@ -276,7 +276,7 @@ int32_t MT35XU_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_t M
   Ctx->Init.FreeRunningClock        = HAL_XSPI_FREERUNCLK_DISABLE;
   Ctx->Init.WrapSize                = HAL_XSPI_WRAP_NOT_SUPPORTED;
 
-  if (HAL_XSPI_Init(Ctx) != HAL_OK) return MT35XU_ERROR;
+  if (HAL_XSPI_Init(Ctx) != HAL_OK) { return MT35XU_ERROR; }
 
   return MT35XU_Reset(Ctx);
 }
@@ -301,7 +301,7 @@ int32_t MT35XU_Read(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t Addres
     sCmd.AddressDTRMode     = HAL_XSPI_ADDRESS_DTR_ENABLE;
     sCmd.DataMode           = HAL_XSPI_DATA_8_LINES;
     sCmd.DataDTRMode        = HAL_XSPI_DATA_DTR_ENABLE;
-    sCmd.DummyCycles        = (DummyCycles > 0) ? DummyCycles : 16;
+    sCmd.DummyCycles        = (DummyCycles > 0U) ? DummyCycles : 16U;
     sCmd.DQSMode            = HAL_XSPI_DQS_ENABLE;
   }
   else
@@ -319,7 +319,7 @@ int32_t MT35XU_Read(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t Addres
     sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
   }
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT35XU_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT35XU_ERROR; }
   return (HAL_XSPI_Receive(Ctx, pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? MT35XU_OK : MT35XU_ERROR;
 }
 
@@ -329,7 +329,7 @@ int32_t MT35XU_PageProgram(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t
 
   if (Mode == EXTMEM_MODE_OCTAL_DTR)
   {
-    if (MT35XU_WriteEnableOctal(Ctx) != MT35XU_OK) return MT35XU_ERROR;
+    if (MT35XU_WriteEnableOctal(Ctx) != MT35XU_OK) { return MT35XU_ERROR; }
 
     sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
     sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_8_LINES;
@@ -349,7 +349,7 @@ int32_t MT35XU_PageProgram(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t
   }
   else
   {
-    if (MT35XU_WriteEnable(Ctx) != MT35XU_OK) return MT35XU_ERROR;
+    if (MT35XU_WriteEnable(Ctx) != MT35XU_OK) { return MT35XU_ERROR; }
 
     sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
     sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -368,8 +368,8 @@ int32_t MT35XU_PageProgram(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t
     sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
   }
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT35XU_ERROR;
-  if (HAL_XSPI_Transmit(Ctx, pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT35XU_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT35XU_ERROR; }
+  if (HAL_XSPI_Transmit(Ctx, pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT35XU_ERROR; }
 
   return MT35XU_AutoPollingMemReady(Ctx, Mode, HAL_XSPI_TIMEOUT_DEFAULT_VALUE);
 }
@@ -380,7 +380,7 @@ int32_t MT35XU_EraseSector4K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32
 
   if (Mode == EXTMEM_MODE_OCTAL_DTR)
   {
-    if (MT35XU_WriteEnableOctal(Ctx) != MT35XU_OK) return MT35XU_ERROR;
+    if (MT35XU_WriteEnableOctal(Ctx) != MT35XU_OK) { return MT35XU_ERROR; }
 
     sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
     sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_8_LINES;
@@ -398,7 +398,7 @@ int32_t MT35XU_EraseSector4K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32
   }
   else
   {
-    if (MT35XU_WriteEnable(Ctx) != MT35XU_OK) return MT35XU_ERROR;
+    if (MT35XU_WriteEnable(Ctx) != MT35XU_OK) { return MT35XU_ERROR; }
 
     sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
     sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -415,7 +415,7 @@ int32_t MT35XU_EraseSector4K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32
     sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
   }
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT35XU_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT35XU_ERROR; }
   return MT35XU_AutoPollingMemReady(Ctx, Mode, 2000);
 }
 
@@ -425,7 +425,7 @@ int32_t MT35XU_EraseBlock128K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint3
 
   if (Mode == EXTMEM_MODE_OCTAL_DTR)
   {
-    if (MT35XU_WriteEnableOctal(Ctx) != MT35XU_OK) return MT35XU_ERROR;
+    if (MT35XU_WriteEnableOctal(Ctx) != MT35XU_OK) { return MT35XU_ERROR; }
 
     sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
     sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_8_LINES;
@@ -443,7 +443,7 @@ int32_t MT35XU_EraseBlock128K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint3
   }
   else
   {
-    if (MT35XU_WriteEnable(Ctx) != MT35XU_OK) return MT35XU_ERROR;
+    if (MT35XU_WriteEnable(Ctx) != MT35XU_OK) { return MT35XU_ERROR; }
 
     sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
     sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -460,7 +460,7 @@ int32_t MT35XU_EraseBlock128K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint3
     sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
   }
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT35XU_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT35XU_ERROR; }
   return MT35XU_AutoPollingMemReady(Ctx, Mode, 3000);
 }
 
@@ -470,7 +470,7 @@ int32_t MT35XU_EraseChip(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode)
 
   if (Mode == EXTMEM_MODE_OCTAL_DTR)
   {
-    if (MT35XU_WriteEnableOctal(Ctx) != MT35XU_OK) return MT35XU_ERROR;
+    if (MT35XU_WriteEnableOctal(Ctx) != MT35XU_OK) { return MT35XU_ERROR; }
 
     sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
     sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_8_LINES;
@@ -485,7 +485,7 @@ int32_t MT35XU_EraseChip(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode)
   }
   else
   {
-    if (MT35XU_WriteEnable(Ctx) != MT35XU_OK) return MT35XU_ERROR;
+    if (MT35XU_WriteEnable(Ctx) != MT35XU_OK) { return MT35XU_ERROR; }
 
     sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
     sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -499,7 +499,7 @@ int32_t MT35XU_EraseChip(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode)
     sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
   }
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT35XU_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT35XU_ERROR; }
   return MT35XU_AutoPollingMemReady(Ctx, Mode, 600000);
 }
 
@@ -517,7 +517,7 @@ int32_t MT35XU_EraseDie(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t Di
 
   if (Mode == EXTMEM_MODE_OCTAL_DTR)
   {
-    if (MT35XU_WriteEnableOctal(Ctx) != MT35XU_OK) return MT35XU_ERROR;
+    if (MT35XU_WriteEnableOctal(Ctx) != MT35XU_OK) { return MT35XU_ERROR; }
     sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_8_LINES;
     sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_16_BITS;
     sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_ENABLE;
@@ -527,7 +527,7 @@ int32_t MT35XU_EraseDie(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t Di
   }
   else
   {
-    if (MT35XU_WriteEnable(Ctx) != MT35XU_OK) return MT35XU_ERROR;
+    if (MT35XU_WriteEnable(Ctx) != MT35XU_OK) { return MT35XU_ERROR; }
     sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
     sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_8_BITS;
     sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
@@ -536,7 +536,7 @@ int32_t MT35XU_EraseDie(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t Di
     sCmd.AddressDTRMode     = HAL_XSPI_ADDRESS_DTR_DISABLE;
   }
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT35XU_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT35XU_ERROR; }
   return MT35XU_AutoPollingMemReady(Ctx, Mode, 600000);
 }
 
@@ -556,10 +556,10 @@ int32_t MT35XU_EnableMemoryMappedModeDTR(XSPI_HandleTypeDef *Ctx, uint8_t DummyC
   sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
   sCmd.DataMode           = HAL_XSPI_DATA_8_LINES;
   sCmd.DataDTRMode        = HAL_XSPI_DATA_DTR_ENABLE;
-  sCmd.DummyCycles        = (DummyCycles > 0) ? DummyCycles : 16;
+  sCmd.DummyCycles        = (DummyCycles > 0U) ? DummyCycles : 16U;
   sCmd.DQSMode            = HAL_XSPI_DQS_ENABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT35XU_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT35XU_ERROR; }
 
   sMem.TimeOutActivation = HAL_XSPI_TIMEOUT_COUNTER_DISABLE;
   return (HAL_XSPI_MemoryMapped(Ctx, &sMem) == HAL_OK) ? MT35XU_OK : MT35XU_ERROR;
@@ -580,10 +580,10 @@ int32_t MT35XU_Reset(XSPI_HandleTypeDef *Ctx)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT35XU_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT35XU_ERROR; }
 
   sCmd.Instruction = MT35XU_CMD_RESET;
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return MT35XU_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return MT35XU_ERROR; }
 
   HAL_Delay(2);
   return MT35XU_OK;

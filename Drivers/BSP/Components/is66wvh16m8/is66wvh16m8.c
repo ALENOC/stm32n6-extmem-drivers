@@ -19,10 +19,10 @@ int32_t IS66WVH16M8_ReadRegister(XSPI_HandleTypeDef *Ctx, uint32_t RegAddr, uint
   sCmd.DataLength   = 2;
   sCmd.DQSMode      = HAL_XSPI_DQS_ENABLE;
 
-  if (HAL_XSPI_HyperbusCmd(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVH_ERROR;
+  if (HAL_XSPI_HyperbusCmd(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS66WVH_ERROR; }
 
   uint8_t buf[2];
-  if (HAL_XSPI_Receive(Ctx, buf, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVH_ERROR;
+  if (HAL_XSPI_Receive(Ctx, buf, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS66WVH_ERROR; }
 
   /* HyperBus transfers register words most significant byte first */
   *pValue = (uint16_t)(((uint16_t)buf[0] << 8) | buf[1]);
@@ -40,10 +40,10 @@ int32_t IS66WVH16M8_WriteRegister(XSPI_HandleTypeDef *Ctx, uint32_t RegAddr, uin
   sCmd.DataLength   = 2;
   sCmd.DQSMode      = HAL_XSPI_DQS_ENABLE;
 
-  if (HAL_XSPI_HyperbusCmd(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVH_ERROR;
+  if (HAL_XSPI_HyperbusCmd(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS66WVH_ERROR; }
 
   /* HyperBus transfers register words most significant byte first */
-  uint8_t buf[2] = { (uint8_t)((Value >> 8) & 0xFF), (uint8_t)(Value & 0xFF) };
+  const uint8_t buf[2U] = { (uint8_t)((Value >> 8U) & 0xFFU), (uint8_t)(Value & 0xFFU) };
   return (HAL_XSPI_Transmit(Ctx, buf, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS66WVH_OK : IS66WVH_ERROR;
 }
 
@@ -51,7 +51,7 @@ int32_t IS66WVH16M8_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint3
 {
   XSPI_HyperbusCfgTypeDef sHyperbusCfg = {0};
 
-  if (Dice == 0U || Dice > IS66WVH_MAX_DICE) return IS66WVH_ERROR;
+  if (Dice == 0U || Dice > IS66WVH_MAX_DICE) { return IS66WVH_ERROR; }
 
   Ctx->Init.FifoThresholdByte       = 8;
   Ctx->Init.MemoryType              = HAL_XSPI_MEMTYPE_HYPERBUS;
@@ -68,20 +68,20 @@ int32_t IS66WVH16M8_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint3
   Ctx->Init.FreeRunningClock        = HAL_XSPI_FREERUNCLK_DISABLE;
   Ctx->Init.WrapSize                = HAL_XSPI_WRAP_NOT_SUPPORTED;
 
-  if (HAL_XSPI_Init(Ctx) != HAL_OK) return IS66WVH_ERROR;
+  if (HAL_XSPI_Init(Ctx) != HAL_OK) { return IS66WVH_ERROR; }
 
   sHyperbusCfg.RWRecoveryTimeCycle = 4;
   sHyperbusCfg.AccessTimeCycle     = IS66WVH_LATENCY_CLOCKS; /* Must match CR0[7:4] */
   sHyperbusCfg.WriteZeroLatency    = HAL_XSPI_LATENCY_ON_WRITE;
   sHyperbusCfg.LatencyMode         = (Dice > 1U) ? HAL_XSPI_FIXED_LATENCY : HAL_XSPI_VARIABLE_LATENCY;
 
-  if (HAL_XSPI_HyperbusCfg(Ctx, &sHyperbusCfg, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVH_ERROR;
+  if (HAL_XSPI_HyperbusCfg(Ctx, &sHyperbusCfg, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS66WVH_ERROR; }
 
   /* CR0 of every die; the dual-die package only supports fixed latency */
   uint16_t cr0Val = (Dice > 1U) ? IS66WVH_CR0_INIT_VALUE_DDP : IS66WVH_CR0_INIT_VALUE;
   for (uint32_t die = 0; die < Dice; die++)
   {
-    if (IS66WVH16M8_WriteRegister(Ctx, (die * IS66WVH_DIE_STRIDE) + IS66WVH_REG_CR0, cr0Val) != IS66WVH_OK) return IS66WVH_ERROR;
+    if (IS66WVH16M8_WriteRegister(Ctx, (die * IS66WVH_DIE_STRIDE) + IS66WVH_REG_CR0, cr0Val) != IS66WVH_OK) { return IS66WVH_ERROR; }
   }
   return IS66WVH_OK;
 }
@@ -97,7 +97,7 @@ int32_t IS66WVH16M8_Read(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pDa
   sCmd.DataLength   = Size;
   sCmd.DQSMode      = HAL_XSPI_DQS_ENABLE;
 
-  if (HAL_XSPI_HyperbusCmd(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVH_ERROR;
+  if (HAL_XSPI_HyperbusCmd(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS66WVH_ERROR; }
   return (HAL_XSPI_Receive(Ctx, pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS66WVH_OK : IS66WVH_ERROR;
 }
 
@@ -112,7 +112,7 @@ int32_t IS66WVH16M8_Write(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8
   sCmd.DataLength   = Size;
   sCmd.DQSMode      = HAL_XSPI_DQS_ENABLE;
 
-  if (HAL_XSPI_HyperbusCmd(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVH_ERROR;
+  if (HAL_XSPI_HyperbusCmd(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS66WVH_ERROR; }
   return (HAL_XSPI_Transmit(Ctx, (const uint8_t *)pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS66WVH_OK : IS66WVH_ERROR;
 }
 
@@ -128,7 +128,7 @@ int32_t IS66WVH16M8_EnableMemoryMappedMode(XSPI_HandleTypeDef *Ctx)
   sCmd.DataLength   = 1; /* Ignored in memory-mapped mode, but the HAL requires at least 1 */
   sCmd.DQSMode      = HAL_XSPI_DQS_ENABLE;
 
-  if (HAL_XSPI_HyperbusCmd(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVH_ERROR;
+  if (HAL_XSPI_HyperbusCmd(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS66WVH_ERROR; }
 
   sMem.TimeOutActivation = HAL_XSPI_TIMEOUT_COUNTER_DISABLE;
   return (HAL_XSPI_MemoryMapped(Ctx, &sMem) == HAL_OK) ? IS66WVH_OK : IS66WVH_ERROR;
@@ -139,7 +139,7 @@ int32_t IS66WVH16M8_EnterDeepPowerDown(XSPI_HandleTypeDef *Ctx)
   uint16_t cr0 = 0;
 
   /* Deep power down is entered by writing 0 to CR0[15] */
-  if (IS66WVH16M8_ReadRegister(Ctx, IS66WVH_REG_CR0, &cr0) != IS66WVH_OK) return IS66WVH_ERROR;
+  if (IS66WVH16M8_ReadRegister(Ctx, IS66WVH_REG_CR0, &cr0) != IS66WVH_OK) { return IS66WVH_ERROR; }
   cr0 = (uint16_t)(cr0 & ~IS66WVH_CR0_DPD_NORMAL);
   return IS66WVH16M8_WriteRegister(Ctx, IS66WVH_REG_CR0, cr0);
 }

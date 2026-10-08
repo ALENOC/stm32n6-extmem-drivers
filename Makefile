@@ -73,7 +73,7 @@ TARGET_CFLAGS   = -mcpu=cortex-m55 -mthumb -mfloat-abi=hard -std=c11 -O2 -Wall -
                   -DSTM32N657xx -DUSE_HAL_DRIVER
 DRIVER_INCLUDES = $(patsubst %,-I %,$(filter-out -I Tests,$(INCLUDES)))
 
-.PHONY: all test coverage examples target-check clean
+.PHONY: all test coverage examples target-check static-analysis clean
 
 all: $(TARGET)
 
@@ -112,6 +112,38 @@ target-check:
 	  $(ARM_CC) $(TARGET_CFLAGS) -I $(TARGET_BUILD) -I $(STM32N6_HAL_DIR)/Inc -I $(STM32N6_DEV_DIR)/Include \
 	    -I $(CMSIS_CORE_DIR) $(DRIVER_INCLUDES) -c $$f -o $(TARGET_BUILD)/$$(basename $$f .c).o || exit 1; \
 	done
+
+# Static analysis of the driver sources (host build of the headers, no hardware needed):
+#  - GCC -fanalyzer and cppcheck (warning, style, performance, portability) must report nothing;
+#  - clang-tidy (clang-analyzer, bugprone, cert, misc) must report nothing outside the documented exclusions;
+#  - the cppcheck MISRA C:2012 addon is run and summarised; its findings are documented deviations.
+CPPCHECK     ?= cppcheck
+CLANG_TIDY   ?= clang-tidy
+MISRA_ADDON  ?= /usr/lib/x86_64-linux-gnu/cppcheck/addons/misra.py
+SA_BUILD     = build/static-analysis
+TIDY_CHECKS  = -*,clang-analyzer-*,bugprone-*,cert-*,misc-*,-misc-include-cleaner,-bugprone-easily-swappable-parameters,$\
+               -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,$\
+               -bugprone-reserved-identifier,-cert-dcl37-c,-cert-dcl51-cpp
+SA_DEFS      = -DEXTMEM_UNIT_TEST $(INCLUDES)
+
+static-analysis:
+	@mkdir -p $(SA_BUILD)
+	@echo "== GCC -fanalyzer"
+	@for f in $(DRIVER_SRCS); do \
+	  $(CC) -std=c11 $(SA_DEFS) -O2 -Wall -Wextra -Werror -fanalyzer -c $$f -o $(SA_BUILD)/$$(basename $$f .c).o || exit 1; \
+	done
+	@echo "== cppcheck"
+	$(CPPCHECK) --enable=warning,style,performance,portability --error-exitcode=1 --quiet --std=c11 $(SA_DEFS) $(DRIVER_SRCS)
+	@echo "== clang-tidy"
+	$(CLANG_TIDY) --quiet --checks='$(TIDY_CHECKS)' --warnings-as-errors='*' $(DRIVER_SRCS) -- -std=c11 $(SA_DEFS)
+	@echo "== cppcheck MISRA C:2012 addon"
+	@rm -f $(SA_BUILD)/misra.jsonl
+	@for f in $(DRIVER_SRCS); do \
+	  $(CPPCHECK) --dump --quiet --std=c11 $(SA_DEFS) $$f || exit 1; \
+	  mv $$f.dump $(SA_BUILD)/$$(basename $$f).dump; \
+	  python3 $(MISRA_ADDON) --cli $(SA_BUILD)/$$(basename $$f).dump >> $(SA_BUILD)/misra.jsonl 2>/dev/null || exit 1; \
+	done
+	python3 Tests/misra_report.py $(SA_BUILD)/misra.jsonl
 
 clean:
 	rm -f $(OBJS) $(TARGET) *.gcov $(SRCS:.c=.gcda) $(SRCS:.c=.gcno)

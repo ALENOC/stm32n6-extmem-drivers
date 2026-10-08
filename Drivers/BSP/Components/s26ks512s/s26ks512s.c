@@ -45,7 +45,7 @@ static int32_t HyperFlash_WriteWord(XSPI_HandleTypeDef *Ctx, uint32_t Addr, uint
     return S26KS512S_ERROR;
   }
 
-  uint8_t buf[2] = { (uint8_t)((Val >> 8) & 0xFF), (uint8_t)(Val & 0xFF) };
+  const uint8_t buf[2U] = { (uint8_t)((Val >> 8U) & 0xFFU), (uint8_t)(Val & 0xFFU) };
   return (HAL_XSPI_Transmit(Ctx, buf, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? S26KS512S_OK : S26KS512S_ERROR;
 }
 
@@ -83,7 +83,7 @@ int32_t S26KS512S_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_
   Ctx->Init.FifoThresholdByte       = 8;
   Ctx->Init.MemoryType              = HAL_XSPI_MEMTYPE_HYPERBUS;
   Ctx->Init.MemoryMode              = HAL_XSPI_SINGLE_MEM;
-  Ctx->Init.MemorySize              = (MemorySize > 0) ? MemorySize : HAL_XSPI_SIZE_512MB; /* 512 Mbits = 64 MBytes */
+  Ctx->Init.MemorySize              = (MemorySize > 0U) ? MemorySize : HAL_XSPI_SIZE_512MB; /* 512 Mbits = 64 MBytes */
   Ctx->Init.MemorySelect            = HAL_XSPI_CSSEL_NCS1;
   Ctx->Init.ChipSelectHighTimeCycle = 4;
   Ctx->Init.ClockMode               = HAL_XSPI_CLOCK_MODE_0;
@@ -169,9 +169,9 @@ int32_t S26KS512S_WaitUntilReady(XSPI_HandleTypeDef *Ctx, uint32_t TimeoutMs)
     {
       return S26KS512S_ERROR;
     }
-    if (status & S26KS_SR_DEVICE_READY)
+    if ((status & S26KS_SR_DEVICE_READY) != 0U)
     {
-      if (status & (S26KS_SR_ERASE_ERROR | S26KS_SR_PROGRAM_ERROR))
+      if ((status & (S26KS_SR_ERASE_ERROR | S26KS_SR_PROGRAM_ERROR)) != 0U)
       {
         (void)S26KS512S_ClearStatus(Ctx);
         return S26KS512S_ERROR;
@@ -186,10 +186,10 @@ int32_t S26KS512S_WaitUntilReady(XSPI_HandleTypeDef *Ctx, uint32_t TimeoutMs)
 
 static int32_t S26KS512S_ProgramBytes(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *pBytes)
 {
-  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR1, S26KS_CMD_UNLOCK_DATA1) != S26KS512S_OK) return S26KS512S_ERROR;
-  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR2, S26KS_CMD_UNLOCK_DATA2) != S26KS512S_OK) return S26KS512S_ERROR;
-  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR1, S26KS_CMD_WORD_PROGRAM) != S26KS512S_OK) return S26KS512S_ERROR;
-  if (HyperFlash_WriteBytes(Ctx, Address, pBytes) != S26KS512S_OK) return S26KS512S_ERROR;
+  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR1, S26KS_CMD_UNLOCK_DATA1) != S26KS512S_OK) { return S26KS512S_ERROR; }
+  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR2, S26KS_CMD_UNLOCK_DATA2) != S26KS512S_OK) { return S26KS512S_ERROR; }
+  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR1, S26KS_CMD_WORD_PROGRAM) != S26KS512S_OK) { return S26KS512S_ERROR; }
+  if (HyperFlash_WriteBytes(Ctx, Address, pBytes) != S26KS512S_OK) { return S26KS512S_ERROR; }
 
   return S26KS512S_WaitUntilReady(Ctx, 50);
 }
@@ -197,7 +197,7 @@ static int32_t S26KS512S_ProgramBytes(XSPI_HandleTypeDef *Ctx, uint32_t Address,
 int32_t S26KS512S_ProgramWord(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint16_t Data)
 {
   /* Data is the little-endian value seen by the CPU at Address in memory-mapped mode */
-  uint8_t bytes[2] = { (uint8_t)(Data & 0xFF), (uint8_t)((Data >> 8) & 0xFF) };
+  const uint8_t bytes[2U] = { (uint8_t)(Data & 0xFFU), (uint8_t)((Data >> 8U) & 0xFFU) };
   return S26KS512S_ProgramBytes(Ctx, Address & ~1U, bytes);
 }
 
@@ -230,34 +230,34 @@ int32_t S26KS512S_ProgramBuffer(XSPI_HandleTypeDef *Ctx, uint32_t Address, const
 
 int32_t S26KS512S_EraseSector(XSPI_HandleTypeDef *Ctx, uint32_t SectorAddress)
 {
-  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR1, S26KS_CMD_UNLOCK_DATA1) != S26KS512S_OK) return S26KS512S_ERROR;
-  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR2, S26KS_CMD_UNLOCK_DATA2) != S26KS512S_OK) return S26KS512S_ERROR;
-  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR1, S26KS_CMD_SECTOR_ERASE_SETUP) != S26KS512S_OK) return S26KS512S_ERROR;
-  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR1, S26KS_CMD_UNLOCK_DATA1) != S26KS512S_OK) return S26KS512S_ERROR;
-  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR2, S26KS_CMD_UNLOCK_DATA2) != S26KS512S_OK) return S26KS512S_ERROR;
-  if (HyperFlash_WriteWord(Ctx, SectorAddress, S26KS_CMD_SECTOR_ERASE_CONFIRM) != S26KS512S_OK) return S26KS512S_ERROR;
+  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR1, S26KS_CMD_UNLOCK_DATA1) != S26KS512S_OK) { return S26KS512S_ERROR; }
+  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR2, S26KS_CMD_UNLOCK_DATA2) != S26KS512S_OK) { return S26KS512S_ERROR; }
+  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR1, S26KS_CMD_SECTOR_ERASE_SETUP) != S26KS512S_OK) { return S26KS512S_ERROR; }
+  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR1, S26KS_CMD_UNLOCK_DATA1) != S26KS512S_OK) { return S26KS512S_ERROR; }
+  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR2, S26KS_CMD_UNLOCK_DATA2) != S26KS512S_OK) { return S26KS512S_ERROR; }
+  if (HyperFlash_WriteWord(Ctx, SectorAddress, S26KS_CMD_SECTOR_ERASE_CONFIRM) != S26KS512S_OK) { return S26KS512S_ERROR; }
 
   return S26KS512S_WaitUntilReady(Ctx, 2000); /* Sector erase can take up to ~1.5s */
 }
 
 int32_t S26KS512S_EraseChip(XSPI_HandleTypeDef *Ctx)
 {
-  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR1, S26KS_CMD_UNLOCK_DATA1) != S26KS512S_OK) return S26KS512S_ERROR;
-  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR2, S26KS_CMD_UNLOCK_DATA2) != S26KS512S_OK) return S26KS512S_ERROR;
-  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR1, S26KS_CMD_SECTOR_ERASE_SETUP) != S26KS512S_OK) return S26KS512S_ERROR;
-  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR1, S26KS_CMD_UNLOCK_DATA1) != S26KS512S_OK) return S26KS512S_ERROR;
-  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR2, S26KS_CMD_UNLOCK_DATA2) != S26KS512S_OK) return S26KS512S_ERROR;
-  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR1, S26KS_CMD_CHIP_ERASE_CONFIRM) != S26KS512S_OK) return S26KS512S_ERROR;
+  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR1, S26KS_CMD_UNLOCK_DATA1) != S26KS512S_OK) { return S26KS512S_ERROR; }
+  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR2, S26KS_CMD_UNLOCK_DATA2) != S26KS512S_OK) { return S26KS512S_ERROR; }
+  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR1, S26KS_CMD_SECTOR_ERASE_SETUP) != S26KS512S_OK) { return S26KS512S_ERROR; }
+  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR1, S26KS_CMD_UNLOCK_DATA1) != S26KS512S_OK) { return S26KS512S_ERROR; }
+  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR2, S26KS_CMD_UNLOCK_DATA2) != S26KS512S_OK) { return S26KS512S_ERROR; }
+  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR1, S26KS_CMD_CHIP_ERASE_CONFIRM) != S26KS512S_OK) { return S26KS512S_ERROR; }
 
   return S26KS512S_WaitUntilReady(Ctx, 250000);
 }
 
 int32_t S26KS512S_ReadCFI(XSPI_HandleTypeDef *Ctx, uint32_t WordOffset, uint16_t *pData)
 {
-  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR1, S26KS_CMD_ENTER_CFI) != S26KS512S_OK) return S26KS512S_ERROR;
-  int32_t res = HyperFlash_ReadWord(Ctx, WordOffset * 2, pData);
+  if (HyperFlash_WriteWord(Ctx, S26KS_UNLOCK_ADDR1, S26KS_CMD_ENTER_CFI) != S26KS512S_OK) { return S26KS512S_ERROR; }
+  int32_t res = HyperFlash_ReadWord(Ctx, WordOffset * 2U, pData);
   /* Always leave CFI mode, even when the read failed */
-  if (S26KS512S_Reset(Ctx) != S26KS512S_OK) return S26KS512S_ERROR;
+  if (S26KS512S_Reset(Ctx) != S26KS512S_OK) { return S26KS512S_ERROR; }
   return res;
 }
 

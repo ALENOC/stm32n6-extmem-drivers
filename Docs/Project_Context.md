@@ -54,8 +54,9 @@ stays LOW longer than `EXTMEM_PSRAM_MAX_CS_LOW_NS`.
 | `make coverage` | gcov line and branch coverage of every driver source, 100% required |
 | `make examples` | Examples compile against the driver API |
 | `make target-check` | Cross-compile drivers and examples for Cortex-M55 against the STM32CubeN6 HAL |
+| `make static-analysis` | GCC `-fanalyzer`, cppcheck and clang-tidy (must report nothing), MISRA C:2012 addon report ([Static_Analysis.md](Static_Analysis.md)) |
 
-CI (`.github/workflows/ci.yml`) runs all four on every push and pull request to `main`.
+CI (`.github/workflows/ci.yml`) runs all five on every push and pull request to `main`.
 The host suite proves the drivers issue the documented command sequences and handle every error
 path; it does not replace validation on hardware.
 
@@ -65,6 +66,8 @@ Done:
 - [x] Every driver checked against the full vendor datasheet of each family (October 2026 audit), see section 6
 - [x] HAL mock aligned with the STM32CubeN6 headers, including HAL parameter and state checks
 - [x] 100% line and branch coverage, cross-compilation against the real HAL in CI
+- [x] Static analysis with GCC `-fanalyzer`, cppcheck and clang-tidy clean in CI; MISRA C:2012 addon findings
+      reduced from 1132 to 671, the rest documented as deviations (not a compliance claim)
 - [x] Stacked dice: MT25Q 1 Gb, MT35X 1/2 Gb (all dice polled), S28HS02GT / S28HL02GT (datasheet 002-23755),
       S70KS1281 and IS66WVH64M8 dual-die HyperRAM
 - [x] Device table: part numbers checked against the datasheets and every clock limit matched to the

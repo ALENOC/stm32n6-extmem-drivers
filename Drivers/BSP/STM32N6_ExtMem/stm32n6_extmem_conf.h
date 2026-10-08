@@ -53,7 +53,7 @@ extern "C" {
   *        The driver programs DCR2.PRESCALER = divider - 1 (RM0486: Fclk = Fkernel / (PRESCALER + 1)).
   */
 #ifndef EXTMEM_DEFAULT_CLOCK_PRESCALER
-#define EXTMEM_DEFAULT_CLOCK_PRESCALER       2
+#define EXTMEM_DEFAULT_CLOCK_PRESCALER       2U
 #endif
 
 /**

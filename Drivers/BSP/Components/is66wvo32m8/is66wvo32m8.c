@@ -13,7 +13,7 @@
 static void IS66WVO_FillCommand(XSPI_RegularCmdTypeDef *sCmd, uint32_t OperationType, uint32_t Instruction,
                                 uint32_t Address, uint32_t Size, uint32_t DummyCycles)
 {
-  memset(sCmd, 0, sizeof(*sCmd));
+  (void)memset(sCmd, 0, sizeof(*sCmd));
   sCmd->OperationType      = OperationType;
   sCmd->InstructionMode    = HAL_XSPI_INSTRUCTION_8_LINES;
   sCmd->InstructionWidth   = HAL_XSPI_INSTRUCTION_16_BITS;
@@ -37,8 +37,8 @@ int32_t IS66WVO32M8_ReadReg(XSPI_HandleTypeDef *Ctx, uint32_t RegAddr, uint16_t 
   uint8_t buf[2] = {0};
 
   IS66WVO_FillCommand(&sCmd, HAL_XSPI_OPTYPE_COMMON_CFG, IS66WVO_CMD_READ_REG, RegAddr, 2U, DummyCycles);
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVO_ERROR;
-  if (HAL_XSPI_Receive(Ctx, buf, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVO_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS66WVO_ERROR; }
+  if (HAL_XSPI_Receive(Ctx, buf, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS66WVO_ERROR; }
 
   /* Macronix RAM mode already restores the little-endian word order in memory */
   *pValue = (uint16_t)(buf[0] | ((uint16_t)buf[1] << 8));
@@ -48,12 +48,12 @@ int32_t IS66WVO32M8_ReadReg(XSPI_HandleTypeDef *Ctx, uint32_t RegAddr, uint16_t 
 int32_t IS66WVO32M8_WriteReg(XSPI_HandleTypeDef *Ctx, uint32_t RegAddr, uint16_t Value)
 {
   XSPI_RegularCmdTypeDef sCmd;
-  uint8_t buf[2] = { (uint8_t)(Value & 0xFFU), (uint8_t)(Value >> 8) };
+  const uint8_t buf[2] = { (uint8_t)(Value & 0xFFU), (uint8_t)(Value >> 8) };
 
   /* Register writes have zero latency and are never masked */
   IS66WVO_FillCommand(&sCmd, HAL_XSPI_OPTYPE_COMMON_CFG, IS66WVO_CMD_WRITE_REG, RegAddr, 2U, 0U);
   sCmd.DQSMode = HAL_XSPI_DQS_DISABLE;
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVO_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS66WVO_ERROR; }
   return (HAL_XSPI_Transmit(Ctx, buf, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS66WVO_OK : IS66WVO_ERROR;
 }
 
@@ -61,13 +61,13 @@ int32_t IS66WVO32M8_ReadID(XSPI_HandleTypeDef *Ctx, uint16_t *pId, uint32_t *pCa
 {
   uint16_t id = 0;
 
-  if (IS66WVO32M8_ReadReg(Ctx, IS66WVO_REG_ID, &id, IS66WVO_DUMMY_CYCLES) != IS66WVO_OK) return IS66WVO_ERROR;
+  if (IS66WVO32M8_ReadReg(Ctx, IS66WVO_REG_ID, &id, IS66WVO_DUMMY_CYCLES) != IS66WVO_OK) { return IS66WVO_ERROR; }
   *pId = id;
 
   /* Byte-addressed rows and columns: capacity = 2^(row bits + column bits) bytes */
-  uint32_t rowBits = ((uint32_t)(id >> IS66WVO_ID_ROW_BITS_POS) & 0x1FU) + 1U;
-  uint32_t colBits = ((uint32_t)(id >> IS66WVO_ID_COL_BITS_POS) & 0x0FU) + 1U;
-  *pCapacityBytes = ((rowBits + colBits) < 32U) ? (1UL << (rowBits + colBits)) : 0U;
+  uint32_t rowBits = (((uint32_t)id >> IS66WVO_ID_ROW_BITS_POS) & 0x1FU) + 1U;
+  uint32_t colBits = (((uint32_t)id >> IS66WVO_ID_COL_BITS_POS) & 0x0FU) + 1U;
+  *pCapacityBytes = ((rowBits + colBits) < 32U) ? (1U << (rowBits + colBits)) : 0U;
   return IS66WVO_OK;
 }
 
@@ -98,14 +98,14 @@ int32_t IS66WVO32M8_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint3
 
   /* The OctalRAM has no software reset. A register write has zero latency whatever the current
    * latency setting, so the configuration is written first and every read uses it afterwards. */
-  if (IS66WVO32M8_WriteReg(Ctx, IS66WVO_REG_CR, IS66WVO_CR_INIT_VALUE) != IS66WVO_OK) return IS66WVO_ERROR;
+  if (IS66WVO32M8_WriteReg(Ctx, IS66WVO_REG_CR, IS66WVO_CR_INIT_VALUE) != IS66WVO_OK) { return IS66WVO_ERROR; }
 
   /* Check that an ISSI OctalRAM answers and that the configuration was accepted */
-  if (IS66WVO32M8_ReadID(Ctx, &id, &capacity) != IS66WVO_OK) return IS66WVO_ERROR;
-  if ((id & IS66WVO_ID_MANUFACTURER_MASK) != IS66WVO_ID_MANUFACTURER_ISSI) return IS66WVO_ERROR;
+  if (IS66WVO32M8_ReadID(Ctx, &id, &capacity) != IS66WVO_OK) { return IS66WVO_ERROR; }
+  if ((id & IS66WVO_ID_MANUFACTURER_MASK) != IS66WVO_ID_MANUFACTURER_ISSI) { return IS66WVO_ERROR; }
 
   uint16_t cr = 0;
-  if (IS66WVO32M8_ReadReg(Ctx, IS66WVO_REG_CR, &cr, IS66WVO_DUMMY_CYCLES) != IS66WVO_OK) return IS66WVO_ERROR;
+  if (IS66WVO32M8_ReadReg(Ctx, IS66WVO_REG_CR, &cr, IS66WVO_DUMMY_CYCLES) != IS66WVO_OK) { return IS66WVO_ERROR; }
   if ((cr & (IS66WVO_CR_LC_MASK | IS66WVO_CR_FIXED_LATENCY)) != (IS66WVO_CR_LC_7_CLOCKS | IS66WVO_CR_FIXED_LATENCY))
   {
     return IS66WVO_ERROR;
@@ -121,7 +121,7 @@ static int32_t IS66WVO_Transfer(XSPI_HandleTypeDef *Ctx, bool Write, uint8_t *pD
 
   IS66WVO_FillCommand(&sCmd, HAL_XSPI_OPTYPE_COMMON_CFG, Write ? IS66WVO_CMD_WRITE_LINEAR : IS66WVO_CMD_READ_LINEAR,
                       Addr, Size, (DummyCycles > 0U) ? DummyCycles : IS66WVO_DUMMY_CYCLES);
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVO_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS66WVO_ERROR; }
   if (Write)
   {
     return (HAL_XSPI_Transmit(Ctx, pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS66WVO_OK : IS66WVO_ERROR;
@@ -141,11 +141,11 @@ static int32_t IS66WVO_Access(XSPI_HandleTypeDef *Ctx, bool Write, uint8_t *pDat
       uint8_t word[2];
       uint32_t base = Addr & ~1U;
       uint32_t lane = Addr & 1U;
-      if (IS66WVO_Transfer(Ctx, false, word, base, 2U, DummyCycles) != IS66WVO_OK) return IS66WVO_ERROR;
+      if (IS66WVO_Transfer(Ctx, false, word, base, 2U, DummyCycles) != IS66WVO_OK) { return IS66WVO_ERROR; }
       if (Write)
       {
         word[lane] = *pData;
-        if (IS66WVO_Transfer(Ctx, true, word, base, 2U, DummyCycles) != IS66WVO_OK) return IS66WVO_ERROR;
+        if (IS66WVO_Transfer(Ctx, true, word, base, 2U, DummyCycles) != IS66WVO_OK) { return IS66WVO_ERROR; }
       }
       else
       {
@@ -158,9 +158,9 @@ static int32_t IS66WVO_Access(XSPI_HandleTypeDef *Ctx, bool Write, uint8_t *pDat
     }
 
     uint32_t chunk = IS66WVO_ROW_SIZE - (Addr % IS66WVO_ROW_SIZE);
-    if (chunk > Size) chunk = Size;
+    if (chunk > Size) { chunk = Size; }
     chunk &= ~1U;
-    if (IS66WVO_Transfer(Ctx, Write, pData, Addr, chunk, DummyCycles) != IS66WVO_OK) return IS66WVO_ERROR;
+    if (IS66WVO_Transfer(Ctx, Write, pData, Addr, chunk, DummyCycles) != IS66WVO_OK) { return IS66WVO_ERROR; }
     pData += chunk;
     Addr  += chunk;
     Size  -= chunk;
@@ -190,7 +190,7 @@ int32_t IS66WVO32M8_Read_DMA(XSPI_HandleTypeDef *Ctx, uint8_t *pData, uint32_t R
   }
   IS66WVO_FillCommand(&sCmd, HAL_XSPI_OPTYPE_COMMON_CFG, IS66WVO_CMD_READ_LINEAR, ReadAddr, Size,
                       (DummyCycles > 0U) ? DummyCycles : IS66WVO_DUMMY_CYCLES);
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVO_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS66WVO_ERROR; }
   return (HAL_XSPI_Receive_DMA(Ctx, pData) == HAL_OK) ? IS66WVO_OK : IS66WVO_ERROR;
 }
 
@@ -204,7 +204,7 @@ int32_t IS66WVO32M8_Write_DMA(XSPI_HandleTypeDef *Ctx, const uint8_t *pData, uin
   }
   IS66WVO_FillCommand(&sCmd, HAL_XSPI_OPTYPE_COMMON_CFG, IS66WVO_CMD_WRITE_LINEAR, WriteAddr, Size,
                       (DummyCycles > 0U) ? DummyCycles : IS66WVO_DUMMY_CYCLES);
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVO_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS66WVO_ERROR; }
   return (HAL_XSPI_Transmit_DMA(Ctx, pData) == HAL_OK) ? IS66WVO_OK : IS66WVO_ERROR;
 }
 
@@ -215,11 +215,11 @@ int32_t IS66WVO32M8_EnableMemoryMappedMode(XSPI_HandleTypeDef *Ctx, uint32_t Rea
 
   IS66WVO_FillCommand(&sCmd, HAL_XSPI_OPTYPE_WRITE_CFG, IS66WVO_CMD_WRITE_LINEAR, 0U, 0U,
                       (WriteDummyCycles > 0U) ? WriteDummyCycles : IS66WVO_DUMMY_CYCLES);
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVO_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS66WVO_ERROR; }
 
   IS66WVO_FillCommand(&sCmd, HAL_XSPI_OPTYPE_READ_CFG, IS66WVO_CMD_READ_LINEAR, 0U, 0U,
                       (ReadDummyCycles > 0U) ? ReadDummyCycles : IS66WVO_DUMMY_CYCLES);
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVO_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return IS66WVO_ERROR; }
 
   sMem.TimeOutActivation = HAL_XSPI_TIMEOUT_COUNTER_DISABLE;
   return (HAL_XSPI_MemoryMapped(Ctx, &sMem) == HAL_OK) ? IS66WVO_OK : IS66WVO_ERROR;
@@ -237,7 +237,7 @@ int32_t IS66WVO32M8_LeaveDeepPowerDown(XSPI_HandleTypeDef *Ctx)
 
   /* Any access keeps CS# LOW longer than tDPDX (200 ns) and starts the wake-up (tDPDOUT, 150 us).
    * Array content is lost in deep power down and the configuration register is written again. */
-  if (IS66WVO32M8_ReadReg(Ctx, IS66WVO_REG_ID, &dummy, IS66WVO_DUMMY_CYCLES) != IS66WVO_OK) return IS66WVO_ERROR;
+  if (IS66WVO32M8_ReadReg(Ctx, IS66WVO_REG_ID, &dummy, IS66WVO_DUMMY_CYCLES) != IS66WVO_OK) { return IS66WVO_ERROR; }
   HAL_Delay(1);
   return IS66WVO32M8_WriteReg(Ctx, IS66WVO_REG_CR, IS66WVO_CR_INIT_VALUE);
 }

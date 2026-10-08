@@ -25,7 +25,7 @@ int32_t S25HL512T_ReadID(XSPI_HandleTypeDef *Ctx, uint8_t *pID)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
   return (HAL_XSPI_Receive(Ctx, pID, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? S25HL512T_OK : S25HL512T_ERROR;
 }
 
@@ -65,7 +65,7 @@ int32_t S25HL512T_AutoPollingMemReady(XSPI_HandleTypeDef *Ctx, uint32_t Timeout)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
 
   sCfg.MatchValue    = 0x00;
   sCfg.MatchMask     = S25HL_SR1_WIP;
@@ -83,8 +83,8 @@ int32_t S25HL512T_AutoPollingMemReady(XSPI_HandleTypeDef *Ctx, uint32_t Timeout)
    * SEMPER reports it in STR1V[6:5] (cleared by CLPEF 82h); its STR2V[7:5] read as 0. */
   uint8_t sr = 0;
   sCmd.Instruction = S25HL_CMD_READ_STATUS2;
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
-  if (HAL_XSPI_Receive(Ctx, &sr, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
+  if (HAL_XSPI_Receive(Ctx, &sr, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
   if ((sr & (S25FL_SR2_PRG_ERR | S25FL_SR2_ERS_ERR)) != 0U)
   {
     sCmd.Instruction = S25FL_CMD_CLEAR_STATUS;
@@ -92,8 +92,8 @@ int32_t S25HL512T_AutoPollingMemReady(XSPI_HandleTypeDef *Ctx, uint32_t Timeout)
   else
   {
     sCmd.Instruction = S25HL_CMD_READ_STATUS1;
-    if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
-    if (HAL_XSPI_Receive(Ctx, &sr, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
+    if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
+    if (HAL_XSPI_Receive(Ctx, &sr, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
     if ((sr & (S25HL_SR1_PRG_ERR | S25HL_SR1_ERS_ERR)) == 0U)
     {
       return S25HL512T_TIMEOUT;
@@ -118,25 +118,25 @@ int32_t S25HL512T_EnableQuadMode(XSPI_HandleTypeDef *Ctx)
   sCmd.Instruction      = S25HL_CMD_READ_STATUS1;
   sCmd.DataMode         = HAL_XSPI_DATA_1_LINE;
   sCmd.DataLength       = 1;
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
-  if (HAL_XSPI_Receive(Ctx, &status1, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
+  if (HAL_XSPI_Receive(Ctx, &status1, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
 
   /* Read Config1 */
   sCmd.Instruction = S25HL_CMD_READ_CONFIG1;
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
-  if (HAL_XSPI_Receive(Ctx, &config1, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
+  if (HAL_XSPI_Receive(Ctx, &config1, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
 
-  if ((config1 & S25HL_CR1_QUAD_ENABLE) == 0)
+  if ((config1 & S25HL_CR1_QUAD_ENABLE) == 0U)
   {
     config1 |= S25HL_CR1_QUAD_ENABLE;
-    if (S25HL512T_WriteEnable(Ctx) != S25HL512T_OK) return S25HL512T_ERROR;
+    if (S25HL512T_WriteEnable(Ctx) != S25HL512T_OK) { return S25HL512T_ERROR; }
 
     /* Write Status1 and Config1 (2 bytes) */
     sCmd.Instruction = S25HL_CMD_WRITE_STATUS1;
     sCmd.DataLength  = 2;
-    if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
-    uint8_t data[2] = { status1, config1 };
-    if (HAL_XSPI_Transmit(Ctx, data, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
+    if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
+    const uint8_t data[2] = { status1, config1 };
+    if (HAL_XSPI_Transmit(Ctx, data, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
 
     return S25HL512T_AutoPollingMemReady(Ctx, 1000);
   }
@@ -164,10 +164,10 @@ int32_t S25HL512T_ReadQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *p
   sCmd.DataMode           = HAL_XSPI_DATA_4_LINES;
   sCmd.DataDTRMode        = HAL_XSPI_DATA_DTR_DISABLE;
   sCmd.DataLength         = Size;
-  sCmd.DummyCycles        = (DummyCycles > 0) ? DummyCycles : S25HL_DEFAULT_READ_LATENCY;
+  sCmd.DummyCycles        = (DummyCycles > 0U) ? DummyCycles : S25HL_DEFAULT_READ_LATENCY;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
   return (HAL_XSPI_Receive(Ctx, pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? S25HL512T_OK : S25HL512T_ERROR;
 }
 
@@ -177,7 +177,7 @@ int32_t S25HL512T_PageProgram(XSPI_HandleTypeDef *Ctx, uint32_t Address, const u
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
-  if (S25HL512T_WriteEnable(Ctx) != S25HL512T_OK) return S25HL512T_ERROR;
+  if (S25HL512T_WriteEnable(Ctx) != S25HL512T_OK) { return S25HL512T_ERROR; }
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -195,8 +195,8 @@ int32_t S25HL512T_PageProgram(XSPI_HandleTypeDef *Ctx, uint32_t Address, const u
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
-  if (HAL_XSPI_Transmit(Ctx, (const uint8_t *)pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
+  if (HAL_XSPI_Transmit(Ctx, (const uint8_t *)pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
 
   return S25HL512T_AutoPollingMemReady(Ctx, 5000);
 }
@@ -206,7 +206,7 @@ int32_t S25HL512T_PageProgramQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, con
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
-  if (S25HL512T_WriteEnable(Ctx) != S25HL512T_OK) return S25HL512T_ERROR;
+  if (S25HL512T_WriteEnable(Ctx) != S25HL512T_OK) { return S25HL512T_ERROR; }
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -224,8 +224,8 @@ int32_t S25HL512T_PageProgramQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, con
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
-  if (HAL_XSPI_Transmit(Ctx, (const uint8_t *)pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
+  if (HAL_XSPI_Transmit(Ctx, (const uint8_t *)pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
 
   return S25HL512T_AutoPollingMemReady(Ctx, 5000);
 }
@@ -234,7 +234,7 @@ int32_t S25HL512T_EraseSector4K(XSPI_HandleTypeDef *Ctx, uint32_t Address)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
-  if (S25HL512T_WriteEnable(Ctx) != S25HL512T_OK) return S25HL512T_ERROR;
+  if (S25HL512T_WriteEnable(Ctx) != S25HL512T_OK) { return S25HL512T_ERROR; }
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -250,7 +250,7 @@ int32_t S25HL512T_EraseSector4K(XSPI_HandleTypeDef *Ctx, uint32_t Address)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
   return S25HL512T_AutoPollingMemReady(Ctx, 1000);
 }
 
@@ -258,7 +258,7 @@ int32_t S25HL512T_EraseBlock(XSPI_HandleTypeDef *Ctx, uint32_t Address)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
-  if (S25HL512T_WriteEnable(Ctx) != S25HL512T_OK) return S25HL512T_ERROR;
+  if (S25HL512T_WriteEnable(Ctx) != S25HL512T_OK) { return S25HL512T_ERROR; }
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -274,7 +274,7 @@ int32_t S25HL512T_EraseBlock(XSPI_HandleTypeDef *Ctx, uint32_t Address)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
   return S25HL512T_AutoPollingMemReady(Ctx, S25HL_TIMEOUT_BLOCK_ERASE_MS);
 }
 
@@ -282,7 +282,7 @@ int32_t S25HL512T_ChipErase(XSPI_HandleTypeDef *Ctx)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
-  if (S25HL512T_WriteEnable(Ctx) != S25HL512T_OK) return S25HL512T_ERROR;
+  if (S25HL512T_WriteEnable(Ctx) != S25HL512T_OK) { return S25HL512T_ERROR; }
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -295,7 +295,7 @@ int32_t S25HL512T_ChipErase(XSPI_HandleTypeDef *Ctx)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
   return S25HL512T_AutoPollingMemReady(Ctx, S25HL_TIMEOUT_CHIP_ERASE_MS);
 }
 
@@ -318,10 +318,10 @@ int32_t S25HL512T_EnableMemoryMappedMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyC
   sCmd.AlternateBytes        = S25HL_MODE_BITS_NO_CONTINUOUS;
   sCmd.DataMode           = HAL_XSPI_DATA_4_LINES;
   sCmd.DataDTRMode        = HAL_XSPI_DATA_DTR_DISABLE;
-  sCmd.DummyCycles        = (DummyCycles > 0) ? DummyCycles : S25HL_DEFAULT_READ_LATENCY;
+  sCmd.DummyCycles        = (DummyCycles > 0U) ? DummyCycles : S25HL_DEFAULT_READ_LATENCY;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
 
   sMem.TimeOutActivation = HAL_XSPI_TIMEOUT_COUNTER_DISABLE;
   return (HAL_XSPI_MemoryMapped(Ctx, &sMem) == HAL_OK) ? S25HL512T_OK : S25HL512T_ERROR;
@@ -342,10 +342,10 @@ int32_t S25HL512T_Reset(XSPI_HandleTypeDef *Ctx)
   sCmd.DummyCycles        = 0;
   sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
 
   sCmd.Instruction = S25HL_CMD_RESET;
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
+  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S25HL512T_ERROR; }
 
   HAL_Delay(1);
   return S25HL512T_OK;

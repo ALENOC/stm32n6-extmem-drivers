@@ -92,14 +92,14 @@ static void IS66WV_FMC_CopyOut(uint32_t BaseAddr, uint32_t Offset, const uint8_t
 
 int32_t IS66WV_FMC_Read(uint32_t BaseAddr, uint32_t Offset, uint8_t *pData, uint32_t Size)
 {
-  if (pData == NULL) return IS66WV_FMC_ERROR;
+  if (pData == NULL) { return IS66WV_FMC_ERROR; }
   IS66WV_FMC_CopyIn(BaseAddr, Offset, pData, Size);
   return IS66WV_FMC_OK;
 }
 
 int32_t IS66WV_FMC_Write(uint32_t BaseAddr, uint32_t Offset, const uint8_t *pData, uint32_t Size)
 {
-  if (pData == NULL) return IS66WV_FMC_ERROR;
+  if (pData == NULL) { return IS66WV_FMC_ERROR; }
   IS66WV_FMC_CopyOut(BaseAddr, Offset, pData, Size);
   return IS66WV_FMC_OK;
 }
@@ -112,7 +112,7 @@ int32_t IS66WV_FMC_TestPattern(uint32_t BaseAddr, uint32_t TestSizeBytes)
   for (uint32_t i = 0; i < words; i++)
   {
     uint32_t v = 0xAA550000U ^ i;
-    uint8_t b[4] = { (uint8_t)v, (uint8_t)(v >> 8), (uint8_t)(v >> 16), (uint8_t)(v >> 24) };
+    const uint8_t b[4] = { (uint8_t)v, (uint8_t)(v >> 8), (uint8_t)(v >> 16), (uint8_t)(v >> 24) };
     IS66WV_FMC_CopyOut(BaseAddr, i * 4U, b, 4U);
   }
 

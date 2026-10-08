@@ -23,7 +23,7 @@
 static inline void FMC_WriteWord(uint32_t BaseAddr, uint32_t WordOffset, uint16_t Data)
 {
 #ifdef EXTMEM_UNIT_TEST
-  MockHAL_FmcWrite16(BaseAddr, WordOffset * 2, Data);
+  MockHAL_FmcWrite16(BaseAddr, WordOffset * 2U, Data);
 #else
   volatile uint16_t *pDst = (volatile uint16_t *)(uintptr_t)(BaseAddr + (WordOffset * 2));
   *pDst = Data;
@@ -33,7 +33,7 @@ static inline void FMC_WriteWord(uint32_t BaseAddr, uint32_t WordOffset, uint16_
 static inline uint16_t FMC_ReadWord(uint32_t BaseAddr, uint32_t WordOffset)
 {
 #ifdef EXTMEM_UNIT_TEST
-  return MockHAL_FmcRead16(BaseAddr, WordOffset * 2);
+  return MockHAL_FmcRead16(BaseAddr, WordOffset * 2U);
 #else
   volatile uint16_t *pSrc = (volatile uint16_t *)(uintptr_t)(BaseAddr + (WordOffset * 2));
   return *pSrc;
@@ -100,7 +100,7 @@ int32_t IS29GL_FMC_Reset(uint32_t BaseAddr)
 
 int32_t IS29GL_FMC_ReadID(uint32_t BaseAddr, uint16_t *pMfgId, uint16_t *pDevId)
 {
-  if (pMfgId == NULL || pDevId == NULL) return IS29GL_FMC_ERROR;
+  if (pMfgId == NULL || pDevId == NULL) { return IS29GL_FMC_ERROR; }
 
   /* Autoselect Command Sequence */
   FMC_WriteWord(BaseAddr, IS29GL_UNLOCK_ADDR1, IS29GL_CMD_UNLOCK_DATA1);
@@ -116,7 +116,7 @@ int32_t IS29GL_FMC_ReadID(uint32_t BaseAddr, uint16_t *pMfgId, uint16_t *pDevId)
 
 int32_t IS29GL_FMC_Read(uint32_t BaseAddr, uint32_t Offset, uint8_t *pData, uint32_t Size)
 {
-  if (pData == NULL) return IS29GL_FMC_ERROR;
+  if (pData == NULL) { return IS29GL_FMC_ERROR; }
 #ifdef EXTMEM_UNIT_TEST
   (void)BaseAddr;
   MockHAL_RamRead(Offset, pData, Size);
@@ -142,7 +142,7 @@ static int32_t IS29GL_FMC_PollDQ7(uint32_t BaseAddr, uint32_t WordOffset, uint16
     {
       return IS29GL_FMC_OK;
     }
-    if (status & IS29GL_SR_DQ5_EXCEEDED)
+    if ((status & IS29GL_SR_DQ5_EXCEEDED) != 0U)
     {
       /* DQ7 must be read again after DQ5 goes high */
       status = FMC_ReadWord(BaseAddr, WordOffset);
@@ -165,7 +165,7 @@ static int32_t IS29GL_FMC_PollDQ7(uint32_t BaseAddr, uint32_t WordOffset, uint16
 
 int32_t IS29GL_FMC_ProgramWord(uint32_t BaseAddr, uint32_t Offset, uint16_t Data)
 {
-  uint32_t wordOffset = Offset / 2;
+  uint32_t wordOffset = Offset / 2U;
 
   FMC_WriteWord(BaseAddr, IS29GL_UNLOCK_ADDR1, IS29GL_CMD_UNLOCK_DATA1);
   FMC_WriteWord(BaseAddr, IS29GL_UNLOCK_ADDR2, IS29GL_CMD_UNLOCK_DATA2);
@@ -210,7 +210,7 @@ int32_t IS29GL_FMC_ProgramBuffer(uint32_t BaseAddr, uint32_t Offset, const uint8
 
 int32_t IS29GL_FMC_EraseSector(uint32_t BaseAddr, uint32_t SectorOffset)
 {
-  uint32_t wordOffset = SectorOffset / 2;
+  uint32_t wordOffset = SectorOffset / 2U;
 
   FMC_WriteWord(BaseAddr, IS29GL_UNLOCK_ADDR1, IS29GL_CMD_UNLOCK_DATA1);
   FMC_WriteWord(BaseAddr, IS29GL_UNLOCK_ADDR2, IS29GL_CMD_UNLOCK_DATA2);

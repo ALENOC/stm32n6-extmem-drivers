@@ -53,7 +53,7 @@ int32_t SFDP_ReadAndParse(XSPI_HandleTypeDef *hxspi, SFDP_FlashParams_t *pParams
     return EXTMEM_INVALID_PARAM;
   }
 
-  memset(pParams, 0, sizeof(SFDP_FlashParams_t));
+  (void)memset(pParams, 0, sizeof(SFDP_FlashParams_t));
 
   /* 1. Read SFDP Header at offset 0 */
   if (SFDP_RawRead(hxspi, 0x000000, (uint8_t *)&hdr, sizeof(hdr)) != EXTMEM_OK)
@@ -73,13 +73,13 @@ int32_t SFDP_ReadAndParse(XSPI_HandleTypeDef *hxspi, SFDP_FlashParams_t *pParams
   }
 
   /* Verify JEDEC Parameter ID (LSB: 0x00, MSB: 0xFF) */
-  if (paramHdr.ParamID_LSB != 0x00 || paramHdr.ParamID_MSB != 0xFF)
+  if (paramHdr.ParamID_LSB != 0x00U || paramHdr.ParamID_MSB != 0xFFU)
   {
     return EXTMEM_NOT_SUPPORTED;
   }
 
   uint32_t tablePtr = paramHdr.TablePointer;
-  uint32_t readLen = (paramHdr.TableLengthDwords > 16) ? (16 * 4) : (paramHdr.TableLengthDwords * 4);
+  uint32_t readLen = (paramHdr.TableLengthDwords > 16U) ? (16U * 4U) : (paramHdr.TableLengthDwords * 4U);
 
   /* JESD216 requires at least 9 DWORDs in the Basic Flash Parameter Table */
   if (paramHdr.TableLengthDwords < 9U)
@@ -95,7 +95,7 @@ int32_t SFDP_ReadAndParse(XSPI_HandleTypeDef *hxspi, SFDP_FlashParams_t *pParams
   /* Never trust fields beyond the advertised table length */
   if (readLen < sizeof(bpt))
   {
-    memset((uint8_t *)bpt + readLen, 0, sizeof(bpt) - readLen);
+    (void)memset((uint8_t *)bpt + readLen, 0, sizeof(bpt) - readLen);
   }
 
   /* DWORD 1 (JESD216 BFPT) */
@@ -106,7 +106,7 @@ int32_t SFDP_ReadAndParse(XSPI_HandleTypeDef *hxspi, SFDP_FlashParams_t *pParams
 
   /* DWORD 2: Flash Memory Density */
   uint32_t dw2 = bpt[1];
-  if (dw2 & 0x80000000U)
+  if ((dw2 & 0x80000000U) != 0U)
   {
     /* Density is 2^N bits; anything at or above 2^35 bits does not fit in 32 bits of bytes */
     uint32_t power = dw2 & 0x7FFFFFFFU;
@@ -120,14 +120,14 @@ int32_t SFDP_ReadAndParse(XSPI_HandleTypeDef *hxspi, SFDP_FlashParams_t *pParams
   /* DWORD 1 bit 21 = 1-4-4 supported, bit 22 = 1-1-4 supported.
    * DWORD 3: [4:0] 1-4-4 wait states, [7:5] 1-4-4 mode clocks, [15:8] 1-4-4 opcode,
    *          [20:16] 1-1-4 wait states, [23:21] 1-1-4 mode clocks, [31:24] 1-1-4 opcode */
-  if (bpt[0] & (1U << 21))
+  if ((bpt[0] & (1U << 21)) != 0U)
   {
     pParams->SupportsQuad_1_4_4 = true;
     pParams->OpcodeQuad_1_4_4   = (uint8_t)((bpt[2] >> 8) & 0xFFU);
     pParams->DummyQuad_1_4_4    = (uint8_t)((bpt[2] & 0x1FU) + ((bpt[2] >> 5) & 0x07U));
   }
 
-  if (bpt[0] & (1U << 22))
+  if ((bpt[0] & (1U << 22)) != 0U)
   {
     pParams->SupportsQuad_1_1_4 = true;
     pParams->OpcodeQuad_1_1_4   = (uint8_t)((bpt[2] >> 24) & 0xFFU);
@@ -187,40 +187,44 @@ int32_t SFDP_ReadDieRegisterMap(XSPI_HandleTypeDef *hxspi, uint32_t *pVregBase, 
     return EXTMEM_INVALID_PARAM;
   }
 
-  if (SFDP_RawRead(hxspi, 0x000000, (uint8_t *)&hdr, sizeof(hdr)) != EXTMEM_OK) return EXTMEM_ERROR;
-  if (hdr.Signature != SFDP_SIGNATURE) return EXTMEM_NOT_SUPPORTED;
+  if (SFDP_RawRead(hxspi, 0x000000, (uint8_t *)&hdr, sizeof(hdr)) != EXTMEM_OK) { return EXTMEM_ERROR; }
+  if (hdr.Signature != SFDP_SIGNATURE) { return EXTMEM_NOT_SUPPORTED; }
 
   /* NumParameterHdrs is 0-based */
   for (uint32_t i = 0; i <= hdr.NumParameterHdrs; i++)
   {
     SFDP_ParamHeader_t ph;
-    if (SFDP_RawRead(hxspi, 0x08U + (i * 8U), (uint8_t *)&ph, sizeof(ph)) != EXTMEM_OK) return EXTMEM_ERROR;
+    if (SFDP_RawRead(hxspi, 0x08U + (i * 8U), (uint8_t *)&ph, sizeof(ph)) != EXTMEM_OK) { return EXTMEM_ERROR; }
 
     uint32_t id = ((uint32_t)ph.ParamID_MSB << 8) | ph.ParamID_LSB;
-    uint32_t dw[2 * (SFDP_MAX_DICE - 1U)] = {0};
+    uint32_t dw[2U * (SFDP_MAX_DICE - 1U)] = {0};
     uint32_t len = ph.TableLengthDwords;
 
     if (id == SFDP_PARAM_ID_SCCR && len >= 1U)
     {
       /* SCCR DWORD 1: volatile register base address of die 0 */
-      if (SFDP_RawRead(hxspi, ph.TablePointer, (uint8_t *)dw, 4U) != EXTMEM_OK) return EXTMEM_ERROR;
+      if (SFDP_RawRead(hxspi, ph.TablePointer, (uint8_t *)dw, 4U) != EXTMEM_OK) { return EXTMEM_ERROR; }
       pVregBase[0] = dw[0];
       haveSccr = true;
     }
     else if (id == SFDP_PARAM_ID_SCCR_MC && len >= 2U)
     {
       /* One (volatile, non-volatile) DWORD pair per additional die */
-      if (len > (2U * (SFDP_MAX_DICE - 1U))) len = 2U * (SFDP_MAX_DICE - 1U);
-      if (SFDP_RawRead(hxspi, ph.TablePointer, (uint8_t *)dw, len * 4U) != EXTMEM_OK) return EXTMEM_ERROR;
+      if (len > (2U * (SFDP_MAX_DICE - 1U))) { len = 2U * (SFDP_MAX_DICE - 1U); }
+      if (SFDP_RawRead(hxspi, ph.TablePointer, (uint8_t *)dw, len * 4U) != EXTMEM_OK) { return EXTMEM_ERROR; }
       dice = (uint8_t)(1U + (len / 2U));
       for (uint32_t d = 1; d < dice; d++)
       {
-        pVregBase[d] = dw[(d - 1U) * 2U];
+        pVregBase[d] = dw[((size_t)d - 1U) * 2U];
       }
+    }
+    else
+    {
+      /* Other parameter tables are not needed for the die map */
     }
   }
 
-  if (!haveSccr) return EXTMEM_NOT_SUPPORTED;
+  if (!haveSccr) { return EXTMEM_NOT_SUPPORTED; }
   *pDice = dice;
   return EXTMEM_OK;
 }

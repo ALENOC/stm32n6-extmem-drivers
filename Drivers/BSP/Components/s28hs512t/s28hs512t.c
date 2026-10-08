@@ -16,7 +16,6 @@ static struct {
   S28HS512T_DieLayout_t   Layout;
 } s_DieLayouts[S28HS_MAX_LAYOUTS];
 
-static const S28HS512T_DieLayout_t s_SingleDie = { 1U, 0U, { S28HS_REG_VOLATILE_BASE, 0U, 0U, 0U } };
 
 int32_t S28HS512T_SetDieLayout(XSPI_HandleTypeDef *Ctx, const S28HS512T_DieLayout_t *pLayout)
 {
@@ -54,8 +53,9 @@ static const S28HS512T_DieLayout_t *S28HS_GetLayout(const XSPI_HandleTypeDef *Ct
 {
   for (uint32_t i = 0; i < S28HS_MAX_LAYOUTS; i++)
   {
-    if (s_DieLayouts[i].Ctx == Ctx) return &s_DieLayouts[i].Layout;
+    if (s_DieLayouts[i].Ctx == Ctx) { return &s_DieLayouts[i].Layout; }
   }
+  static const S28HS512T_DieLayout_t s_SingleDie = { 1U, 0U, { S28HS_REG_VOLATILE_BASE, 0U, 0U, 0U } };
   return &s_SingleDie;
 }
 
@@ -64,8 +64,9 @@ static uint32_t S28HS_VregForAddress(const XSPI_HandleTypeDef *Ctx, uint32_t Add
 {
   const S28HS512T_DieLayout_t *l = S28HS_GetLayout(Ctx);
   uint32_t die = (l->Dice > 1U) ? (Address / l->DieSize) : 0U;
-  if (die >= l->Dice) die = l->Dice - 1U;
-  return l->VregBase[die];
+  if (die >= l->Dice) { die = l->Dice - 1U; }
+  /* S28HS512T_SetDieLayout() keeps Dice <= S28HS_MAX_DICE: the modulo only makes that bound visible */
+  return l->VregBase[die % S28HS_MAX_DICE];
 }
 
 int32_t S28HS512T_ReadID(XSPI_HandleTypeDef *Ctx, uint8_t *pID)
@@ -231,7 +232,7 @@ int32_t S28HS512T_WriteAnyReg(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint3
     return S28HS512T_ERROR;
   }
 
-  uint8_t buf[2] = { Value, Value };
+  const uint8_t buf[2] = { Value, Value };
   return (HAL_XSPI_Transmit(Ctx, buf, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? S28HS512T_OK : S28HS512T_ERROR;
 }
 
@@ -319,13 +320,13 @@ static int32_t S28HS_PollDie(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32
   uint8_t sr1 = 0;
   if (Mode == EXTMEM_MODE_OCTAL_DTR)
   {
-    if (S28HS512T_ReadAnyReg(Ctx, Mode, Vreg + S28HS_REG_OFS_STATUS1, &sr1) != S28HS512T_OK) return S28HS512T_ERROR;
+    if (S28HS512T_ReadAnyReg(Ctx, Mode, Vreg + S28HS_REG_OFS_STATUS1, &sr1) != S28HS512T_OK) { return S28HS512T_ERROR; }
   }
   else
   {
     sCmd.OperationType = HAL_XSPI_OPTYPE_COMMON_CFG;
-    if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S28HS512T_ERROR;
-    if (HAL_XSPI_Receive(Ctx, &sr1, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S28HS512T_ERROR;
+    if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S28HS512T_ERROR; }
+    if (HAL_XSPI_Receive(Ctx, &sr1, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) { return S28HS512T_ERROR; }
   }
   if ((sr1 & (S28HS_SR1_PRG_ERR | S28HS_SR1_ERS_ERR)) == 0U)
   {
@@ -383,7 +384,7 @@ int32_t S28HS512T_EnterOctalDTRMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles
   (void)DummyCycles;
 
   /* 1. Factory default is 3-byte addressing: switch to 4-byte before any 32-bit register access */
-  if (S28HS512T_Enter4ByteAddressMode(Ctx) != S28HS512T_OK) return S28HS512T_ERROR;
+  if (S28HS512T_Enter4ByteAddressMode(Ctx) != S28HS512T_OK) { return S28HS512T_ERROR; }
 
   /* Each die of a stacked part has its own volatile registers: configure them all (die 0 last,
    * so the register accesses of the other dice are still sent in 1S-1S-1S) */
@@ -393,21 +394,21 @@ int32_t S28HS512T_EnterOctalDTRMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles
     uint8_t cfr2 = 0, cfr3 = 0;
 
     /* 2. Memory array read latency in CFR2V[3:0], keep 4-byte addressing */
-    if (S28HS512T_ReadAnyReg(Ctx, EXTMEM_MODE_SPI, vreg + S28HS_REG_OFS_CFR2, &cfr2) != S28HS512T_OK) return S28HS512T_ERROR;
+    if (S28HS512T_ReadAnyReg(Ctx, EXTMEM_MODE_SPI, vreg + S28HS_REG_OFS_CFR2, &cfr2) != S28HS512T_OK) { return S28HS512T_ERROR; }
     cfr2 = (uint8_t)((cfr2 & ~S28HS_CFR2V_MEMLAT_MASK) | S28HS_CFR2V_MEMLAT_24_CYCLES | S28HS_CFR2V_ADRBYT_4BYTE);
-    if (S28HS512T_WriteEnable(Ctx, EXTMEM_MODE_SPI) != S28HS512T_OK) return S28HS512T_ERROR;
-    if (S28HS512T_WriteAnyReg(Ctx, EXTMEM_MODE_SPI, vreg + S28HS_REG_OFS_CFR2, cfr2) != S28HS512T_OK) return S28HS512T_ERROR;
+    if (S28HS512T_WriteEnable(Ctx, EXTMEM_MODE_SPI) != S28HS512T_OK) { return S28HS512T_ERROR; }
+    if (S28HS512T_WriteAnyReg(Ctx, EXTMEM_MODE_SPI, vreg + S28HS_REG_OFS_CFR2, cfr2) != S28HS512T_OK) { return S28HS512T_ERROR; }
 
     /* 3. Volatile register read latency for 8D-8D-8D at full speed: VRGLAT = 11 (6 cycles) in CFR3V[7:6].
      *    The factory value (3 cycles) is only valid up to 25 MHz in DDR. */
-    if (S28HS512T_ReadAnyReg(Ctx, EXTMEM_MODE_SPI, vreg + S28HS_REG_OFS_CFR3, &cfr3) != S28HS512T_OK) return S28HS512T_ERROR;
+    if (S28HS512T_ReadAnyReg(Ctx, EXTMEM_MODE_SPI, vreg + S28HS_REG_OFS_CFR3, &cfr3) != S28HS512T_OK) { return S28HS512T_ERROR; }
     cfr3 = (uint8_t)((cfr3 & ~S28HS_CFR3V_VRGLAT_MASK) | S28HS_CFR3V_VRGLAT_CODE_11);
-    if (S28HS512T_WriteEnable(Ctx, EXTMEM_MODE_SPI) != S28HS512T_OK) return S28HS512T_ERROR;
-    if (S28HS512T_WriteAnyReg(Ctx, EXTMEM_MODE_SPI, vreg + S28HS_REG_OFS_CFR3, cfr3) != S28HS512T_OK) return S28HS512T_ERROR;
+    if (S28HS512T_WriteEnable(Ctx, EXTMEM_MODE_SPI) != S28HS512T_OK) { return S28HS512T_ERROR; }
+    if (S28HS512T_WriteAnyReg(Ctx, EXTMEM_MODE_SPI, vreg + S28HS_REG_OFS_CFR3, cfr3) != S28HS512T_OK) { return S28HS512T_ERROR; }
 
     /* 4. Switch the interface of this die to 8D-8D-8D through CFR5V */
-    if (S28HS512T_WriteEnable(Ctx, EXTMEM_MODE_SPI) != S28HS512T_OK) return S28HS512T_ERROR;
-    if (S28HS512T_WriteAnyReg(Ctx, EXTMEM_MODE_SPI, vreg + S28HS_REG_OFS_CFR5, S28HS_CFR5V_OCTAL_DTR) != S28HS512T_OK) return S28HS512T_ERROR;
+    if (S28HS512T_WriteEnable(Ctx, EXTMEM_MODE_SPI) != S28HS512T_OK) { return S28HS512T_ERROR; }
+    if (S28HS512T_WriteAnyReg(Ctx, EXTMEM_MODE_SPI, vreg + S28HS_REG_OFS_CFR5, S28HS_CFR5V_OCTAL_DTR) != S28HS512T_OK) { return S28HS512T_ERROR; }
   }
 
   /* Every die is now in 8D-8D-8D: clear the WRPGEN still set in the dice not written last */
@@ -423,8 +424,8 @@ int32_t S28HS512T_ExitOctalDTRMode(XSPI_HandleTypeDef *Ctx)
   /* An 8D software reset reloads every volatile register (interface, MEMLAT, VRGLAT, address length)
    * from the non-volatile defaults, so the device is back in 1S-1S-1S with factory latencies.
    * Reset enable and reset act on every die in parallel. */
-  if (S28HS_SimpleCmd(Ctx, EXTMEM_MODE_OCTAL_DTR, 0U, S28HS_DTR_CMD_RESET_ENABLE) != S28HS512T_OK) return S28HS512T_ERROR;
-  if (S28HS_SimpleCmd(Ctx, EXTMEM_MODE_OCTAL_DTR, 0U, S28HS_DTR_CMD_RESET) != S28HS512T_OK) return S28HS512T_ERROR;
+  if (S28HS_SimpleCmd(Ctx, EXTMEM_MODE_OCTAL_DTR, 0U, S28HS_DTR_CMD_RESET_ENABLE) != S28HS512T_OK) { return S28HS512T_ERROR; }
+  if (S28HS_SimpleCmd(Ctx, EXTMEM_MODE_OCTAL_DTR, 0U, S28HS_DTR_CMD_RESET) != S28HS512T_OK) { return S28HS512T_ERROR; }
 
   HAL_Delay(1); /* tSR = 83 us */
   return S28HS512T_OK;
@@ -535,7 +536,7 @@ int32_t S28HS512T_EraseSector4K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uin
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
-  if (S28HS512T_WriteEnable(Ctx, Mode) != S28HS512T_OK) return S28HS512T_ERROR;
+  if (S28HS512T_WriteEnable(Ctx, Mode) != S28HS512T_OK) { return S28HS512T_ERROR; }
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
@@ -576,7 +577,7 @@ int32_t S28HS512T_EraseBlock256K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, ui
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
-  if (S28HS512T_WriteEnable(Ctx, Mode) != S28HS512T_OK) return S28HS512T_ERROR;
+  if (S28HS512T_WriteEnable(Ctx, Mode) != S28HS512T_OK) { return S28HS512T_ERROR; }
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
@@ -618,7 +619,7 @@ static int32_t S28HS_EraseUnit(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, bool
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
-  if (S28HS512T_WriteEnable(Ctx, Mode) != S28HS512T_OK) return S28HS512T_ERROR;
+  if (S28HS512T_WriteEnable(Ctx, Mode) != S28HS512T_OK) { return S28HS512T_ERROR; }
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.AddressMode        = HAL_XSPI_ADDRESS_NONE;
@@ -673,7 +674,7 @@ int32_t S28HS512T_ChipErase(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode)
   for (uint32_t die = 0; die < layout->Dice; die++)
   {
     int32_t ret = S28HS_EraseUnit(Ctx, Mode, true, die * layout->DieSize, layout->VregBase[die]);
-    if (ret != S28HS512T_OK) return ret;
+    if (ret != S28HS512T_OK) { return ret; }
   }
   return S28HS512T_OK;
 }
@@ -709,8 +710,8 @@ int32_t S28HS512T_EnableMemoryMappedModeDTR(XSPI_HandleTypeDef *Ctx, uint8_t Dum
 
 int32_t S28HS512T_Reset(XSPI_HandleTypeDef *Ctx)
 {
-  if (S28HS_SimpleCmd(Ctx, EXTMEM_MODE_SPI, S28HS_CMD_RESET_ENABLE, 0U) != S28HS512T_OK) return S28HS512T_ERROR;
-  if (S28HS_SimpleCmd(Ctx, EXTMEM_MODE_SPI, S28HS_CMD_RESET, 0U) != S28HS512T_OK) return S28HS512T_ERROR;
+  if (S28HS_SimpleCmd(Ctx, EXTMEM_MODE_SPI, S28HS_CMD_RESET_ENABLE, 0U) != S28HS512T_OK) { return S28HS512T_ERROR; }
+  if (S28HS_SimpleCmd(Ctx, EXTMEM_MODE_SPI, S28HS_CMD_RESET, 0U) != S28HS512T_OK) { return S28HS512T_ERROR; }
 
   HAL_Delay(1); /* tSR = 83 us */
 
@@ -744,7 +745,7 @@ int32_t S28HS512T_LeaveDeepPowerDown(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode
 
 int32_t S28HS512T_GetInfo(S28HS512T_Info_t *pInfo)
 {
-  if (pInfo == NULL) return S28HS512T_ERROR;
+  if (pInfo == NULL) { return S28HS512T_ERROR; }
   pInfo->FlashSize      = S28HS512T_FLASH_SIZE;
   pInfo->PageSize       = S28HS512T_PAGE_SIZE;
   pInfo->Sector4KSize   = S28HS512T_SECTOR_4K;

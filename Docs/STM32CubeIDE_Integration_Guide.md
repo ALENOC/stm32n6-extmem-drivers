@@ -1,7 +1,10 @@
-# Complete STM32CubeIDE Integration Guide
+# STM32CubeIDE Integration Guide
 ## STM32N6 External Memory Driver Suite (Infineon, ISSI & Micron)
 
-This step-by-step guide explains how to integrate the external memory driver suite into any **STM32CubeIDE** project targeting the **STM32N6** microcontroller family (STM32N657, STM32N647, STM32N655, etc.).
+How to add the driver suite to an **STM32CubeIDE** project for the **STM32N6** series. The MPU
+configuration (`Examples/extmem_mpu.c`) is compile-checked against the STM32CubeN6 HAL in CI; the linker
+fragment and the `main.c` example are templates. None of it has been run on hardware yet: adapt base
+addresses, sizes and buses to your board.
 
 ---
 
@@ -56,21 +59,22 @@ MyProject_STM32N6/
 
 ### 2. STM32CubeMX Configuration (Pinout & Clocks)
 
-1. **Enable XSPI Peripherals (XSPI1, XSPI2, or XSPI3)**:
-   - Select **XSPI1** (or XSPI2/3) in CubeMX.
-   - **Mode**:
-     - For Octal memories (Infineon S28HS, ISSI IS25LX, ISSI IS66WVO, Micron MT35XU): *Octal Mode* (8 I/O lines + DQS + CLK + NCS).
-     - For HyperBus memories (Infineon S26KS HyperFlash, S27KS HyperRAM, ISSI IS66WVH): *HyperBus Mode*.
-     - For Quad memories (Infineon S25HL, ISSI IS25LP, ISSI IS66WVS, Micron MT25QU): *Quad Mode*.
-2. **Clock Configuration**:
-   - Ensure the `XSPI_CLK` source clock is configured to 400 MHz (or 200/266 MHz).
-   - With prescaler `2`, the memory operates at 200 MHz DDR (400 MB/s).
-3. **Power / VDDIO Range**:
-   - For clock frequencies above 133 MHz, the `VDDIO` power domain **must be set to 1.8V**.
-   - In CubeMX: *System Core* -> *PWR* -> *VDDIO2 Range* = **1.8V**.
-
----
-
+1. **XSPI peripheral and pins**:
+   - Enable the XSPI instance wired to the memory and generate `HAL_XSPI_MspInit()` with the pins of the
+     XSPIM port you use (pin reference in [Hardware_Design_and_Pinout.md](Hardware_Design_and_Pinout.md)).
+   - Interface width: 8 data lines + DQS for octal NOR, OctalRAM and HyperBus parts, 4 data lines for quad
+     NOR, quad PSRAM and serial SRAM.
+   - `ExtMem_Init()` re-initialises the XSPI handle itself (memory type, size, clock divider, chip-select
+     boundary) and routes the instance to the XSPIM port, so the CubeMX XSPI parameters other than the pins
+     are not used.
+2. **Clock**:
+   - Configure the XSPI kernel clock in RCC. `Config.ClockPrescaler` is a divider of that clock (for example
+     400 MHz / 2 = 200 MHz); `ExtMem_Init()` refuses a result above the maximum clock of the detected part.
+3. **VDDIO domain**:
+   - `ExtMem_Init()` enables the domain of the XSPIM port and sets its range from `Config.Force1V8`. The
+     board must supply that domain at the same voltage, matching the memory.
+4. **FMC memories**: generate the FMC pins in `HAL_SRAM_MspInit()` (the suite drives both parallel RAMs and parallel NOR through the HAL SRAM driver); the timings are
+   computed by `ExtMem_Init()` from `Config.FmcClockHz` and the device access times.
 ### 3. Include Paths Configuration in STM32CubeIDE
 
 In the STM32CubeIDE project properties:
@@ -97,61 +101,40 @@ In the STM32CubeIDE project properties:
 
 ### 4. MPU and D-Cache Configuration for Cortex-M55
 
-The ARM Cortex-M55 features 32 KB I-Cache and 32 KB D-Cache. To maximize throughput while avoiding cache incoherency during DMA transfers or register polling:
+The Cortex-M55 uses the ARMv8.1-M MPU (PMSAv8): regions are defined by a base and a limit address and
+point to memory attribute entries configured with `HAL_MPU_ConfigMemoryAttributes()`.
+[`Examples/extmem_mpu.c`](../Examples/extmem_mpu.c) contains a complete `ExtMem_MPU_Config()` that maps:
 
-```c
-void MPU_Config_ExtMem(void)
-{
-  MPU_Region_InitTypeDef MPU_InitStruct = {0};
+- an external Flash window as read-only, executable, write-back cacheable;
+- an external RAM window as read-write, non-executable, write-back cacheable.
 
-  /* Temporarily disable MPU */
-  HAL_MPU_Disable();
-
-  /* XSPI1 Region: Base 0x90000000, Size 64MB */
-  MPU_InitStruct.Enable           = MPU_REGION_ENABLE;
-  MPU_InitStruct.Number           = MPU_REGION_NUMBER1;
-  MPU_InitStruct.BaseAddress      = 0x90000000U;
-  MPU_InitStruct.Size             = MPU_REGION_SIZE_64MB;
-  MPU_InitStruct.SubRegionDisable = 0x00;
-  MPU_InitStruct.TypeExtField     = MPU_TEX_LEVEL0;
-  MPU_InitStruct.AccessPermission = MPU_REGION_FULL_ACCESS;
-  MPU_InitStruct.DisableExec      = MPU_INSTRUCTION_ACCESS_ENABLE;
-  MPU_InitStruct.IsShareable      = MPU_ACCESS_NOT_SHAREABLE;
-  MPU_InitStruct.IsCacheable      = MPU_ACCESS_CACHEABLE;
-  MPU_InitStruct.IsBufferable     = MPU_ACCESS_BUFFERABLE;
-
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
-
-  /* Enable MPU with default fault handling */
-  HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
-
-  /* Enable Instruction and Data Caches */
-  SCB_EnableICache();
-  SCB_EnableDCache();
-}
-```
-
----
+Base addresses and sizes in that file follow the STM32N6570-DK assignment (NOR on XSPI2 at `0x70000000`,
+PSRAM on XSPI1 at `0x90000000`); change them to match your board. The file is compiled against the
+STM32CubeN6 HAL in CI.
 
 ### 5. Linker Script (.ld) Configuration for XIP
 
-In your linker script (`STM32N657xx_FLASH.ld`), add the external memory regions inside the `MEMORY` block:
+The STM32N6 has no internal Flash: the boot ROM loads a first-stage bootloader into internal SRAM, which
+must initialise the external memory before any code or data placed there is used. Running application code
+from external Flash therefore depends on your boot flow (for example ST's FSBL templates); this suite only
+provides the memory initialisation and memory-mapped mode, and execute-in-place has not been demonstrated
+with it.
+
+A template for the `MEMORY` and `SECTIONS` additions (non-secure aliases, DK bus assignment; adjust
+addresses and sizes to your linker script and board):
 
 ```ld
 MEMORY
 {
-  ITCM_RAM   (rwx) : ORIGIN = 0x00000000, LENGTH = 64K
-  DTCM_RAM   (rw)  : ORIGIN = 0x20000000, LENGTH = 128K
-  AXI_SRAM   (rwx) : ORIGIN = 0x24000000, LENGTH = 1024K
-  /* External Flash on XSPI1 (Memory-Mapped) */
-  XSPI1_MEM  (rx)  : ORIGIN = 0x90000000, LENGTH = 64M
-  /* External PSRAM on XSPI2 (Memory-Mapped) */
-  XSPI2_RAM  (rwx) : ORIGIN = 0x70000000, LENGTH = 32M
+  /* External Flash on XSPI2 (memory-mapped) */
+  XSPI2_MEM  (rx)  : ORIGIN = 0x70000000, LENGTH = 128M
+  /* External RAM on XSPI1 (memory-mapped) */
+  XSPI1_RAM  (rw)  : ORIGIN = 0x90000000, LENGTH = 32M
 }
 
 SECTIONS
 {
-  /* Section for code and assets executed directly from External Flash (XIP) */
+  /* Code and constants placed in external Flash */
   .extmem_text :
   {
     . = ALIGN(4);
@@ -160,16 +143,16 @@ SECTIONS
     *(.extmem_rodata)
     *(.extmem_rodata*)
     . = ALIGN(4);
-  } > XSPI1_MEM
+  } > XSPI2_MEM
 
-  /* Section for large framebuffers, AI tensors, or heap in External PSRAM */
+  /* Large buffers (frame buffers, NPU tensors) in external RAM, not initialised at startup */
   .extmem_ram (NOLOAD) :
   {
     . = ALIGN(32);
     *(.extmem_ram)
     *(.extmem_ram*)
     . = ALIGN(32);
-  } > XSPI2_RAM
+  } > XSPI1_RAM
 }
 ```
 
@@ -187,52 +170,60 @@ __attribute__((section(".extmem_ram"))) uint8_t FrameBuffer[1920 * 1080 * 2];
 #include "main.h"
 #include "stm32n6_extmem.h"
 
-ExtMem_HandleTypeDef hExtFlash;
-ExtMem_HandleTypeDef hExtRam;
+void ExtMem_MPU_Config(void);   /* Examples/extmem_mpu.c */
+
+ExtMem_HandleTypeDef hExtFlash = {0};
+ExtMem_HandleTypeDef hExtRam   = {0};
 
 int main(void)
 {
   HAL_Init();
   SystemClock_Config();
-  MPU_Config_ExtMem();
+  ExtMem_MPU_Config();
 
-  /* 1. External Flash Initialization (e.g. Infineon S28HS, ISSI IS25LX, or Micron MT35XU on XSPI1) */
-  hExtFlash.Config.Bus            = EXTMEM_BUS_XSPI1;
+  /* 1. External Flash on XSPI2 (for example S28HS, IS25WX or MT35XU), 1.8 V */
+  hExtFlash.Config.Bus            = EXTMEM_BUS_XSPI2;
   hExtFlash.Config.ClockPrescaler = 2;    /* divider: 400 MHz XSPI kernel clock / 2 = 200 MHz */
-  hExtFlash.Config.Force1V8       = true; /* 1.8V */
+  hExtFlash.Config.Force1V8       = true;
   if (ExtMem_Init(&hExtFlash) != EXTMEM_OK)
   {
     Error_Handler();
   }
-
-  /* Enable Memory-Mapped mode for direct CPU execution (XIP) */
-  ExtMem_EnableMemoryMapped(&hExtFlash);
-
-  /* 2. External PSRAM Initialization (e.g. ISSI IS66WVO or Infineon HyperRAM on XSPI2) */
-  hExtRam.Config.Bus            = EXTMEM_BUS_XSPI2;
-  hExtRam.Config.ClockPrescaler = 2;    /* divider: 400 MHz XSPI kernel clock / 2 = 200 MHz */
-  hExtRam.Config.Force1V8       = true;
-  if (ExtMem_Init(&hExtRam) != EXTMEM_OK)
+  if (ExtMem_EnableMemoryMapped(&hExtFlash) != EXTMEM_OK)   /* reads through 0x70000000 */
   {
     Error_Handler();
   }
-  ExtMem_EnableMemoryMapped(&hExtRam);
 
-  /* Direct pointer access to external PSRAM at 0x70000000 */
-  volatile uint32_t *pPsram = (volatile uint32_t *)hExtRam.MemoryMappedBase;
-  pPsram[0] = 0xDEADBEEF;
+  /* 2. External RAM on XSPI1 (for example IS66WVO OctalRAM or a HyperRAM), 1.8 V */
+  hExtRam.Config.Bus            = EXTMEM_BUS_XSPI1;
+  hExtRam.Config.ClockPrescaler = 2;
+  hExtRam.Config.Force1V8       = true;
+  if (ExtMem_Init(&hExtRam) != EXTMEM_OK || ExtMem_EnableMemoryMapped(&hExtRam) != EXTMEM_OK)
+  {
+    Error_Handler();
+  }
+
+  /* Direct access to the RAM window at 0x90000000 */
+  volatile uint32_t *pRam = (volatile uint32_t *)hExtRam.MemoryMappedBase;
+  pRam[0] = 0xDEADBEEFU;
 
   while (1)
   {
-    /* Main application loop */
   }
 }
 ```
 
----
-
 ### 7. Troubleshooting & Best Practices
 
-- **Dummy Cycles Mismatch**: If reading in memory-mapped mode returns corrupted data or phase-shifted bytes, verify that the dummy cycles configured in `stm32n6_extmem_conf.h` or discovered via SFDP match the memory's volatile configuration register.
-- **Cache Invalidation**: Whenever performing DMA transfers from external memory into internal SRAM, invoke `SCB_InvalidateDCache_by_Addr()` on the target buffer to avoid stale cache hits.
-- **VDDIO Voltage Rails**: Ensure the hardware VDDIO supply rail matches the configuration register (`PWR_VDDIO_RANGE_1V8` for 1.8V vs `PWR_VDDIO_RANGE_3V3` for 3.3V). Running a 1.8V device at 3.3V can cause permanent damage.
+- **Wrong data at high clock**: the drivers program the latency and dummy cycles of each part for the
+  clock limit in the device table. If memory-mapped reads are wrong at full speed, first check signal
+  integrity and the XSPI delay-block / sample-shift settings (not tuned by the drivers), then retry at a
+  lower clock divider.
+- **DMA and cache**: `ExtMem_ReadDMA()` / `ExtMem_WriteDMA()` do not maintain the cache for your buffers.
+  Clean the source buffer (`SCB_CleanDCache_by_Addr()`) before a DMA write and invalidate the destination
+  (`SCB_InvalidateDCache_by_Addr()`) after a DMA read when the buffers are cacheable.
+- **Detection fails** (`EXTMEM_NOT_SUPPORTED`): HyperFlash is never auto-detected and needs
+  `Config.ForcedPartNumber` or `Config.ForcedDeviceType`; other parts must answer JEDEC ID, SFDP (quad NOR
+  vendors only) or the HyperBus ID0 register at the probing clock.
+- **VDDIO**: the board supply of the domain must match `Config.Force1V8`. Running a 1.8 V device at 3.3 V
+  can cause permanent damage.

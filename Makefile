@@ -107,7 +107,7 @@ target-check:
 	sed -e 's|/\*#define HAL_XSPI_MODULE_ENABLED *\*/|#define HAL_XSPI_MODULE_ENABLED|' \
 	    -e 's|/\*#define HAL_SRAM_MODULE_ENABLED *\*/|#define HAL_SRAM_MODULE_ENABLED|' \
 	    $(STM32N6_HAL_DIR)/Inc/stm32n6xx_hal_conf_template.h > $(TARGET_BUILD)/stm32n6xx_hal_conf.h
-	@for f in $(DRIVER_SRCS) Examples/extmem_demo.c Examples/extmem_benchmark.c; do \
+	@for f in $(DRIVER_SRCS) Examples/extmem_demo.c Examples/extmem_benchmark.c Examples/extmem_mpu.c; do \
 	  echo "  ARM_CC $$f"; \
 	  $(ARM_CC) $(TARGET_CFLAGS) -I $(TARGET_BUILD) -I $(STM32N6_HAL_DIR)/Inc -I $(STM32N6_DEV_DIR)/Include \
 	    -I $(CMSIS_CORE_DIR) $(DRIVER_INCLUDES) -c $$f -o $(TARGET_BUILD)/$$(basename $$f .c).o || exit 1; \

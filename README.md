@@ -49,7 +49,7 @@ A C driver suite for the **STM32N6** (Cortex-M55) that connects external Flash a
   HyperFlash is not probed (its identification goes through the CFI address space, which the probe does not implement) and must be forced. When nothing answers, `ExtMem_Init()` returns `EXTMEM_NOT_SUPPORTED` instead of guessing a device; there is no claim of universal compatibility.
 - **Controller setup**: XSPIM port routing, VDDIO domain, clock divider (probing at up to 50 MHz, then the configured clock, refused if above the part maximum), `DEVSIZE` from the detected capacity (RM0486), chip-select boundary on stacked SEMPER and IS66WVH64M8 parts, and the CS# refresh counter for self-refreshing RAMs.
 - **Protocol handling per family**: 8D-8D-8D entry and exit, latency and dummy-cycle programming, 3/4-byte addressing, quad enable, status and error-flag polling with timeouts taken from the datasheet maxima, per-die configuration and polling on stacked parts.
-- **Memory-mapped mode** (`ExtMem_EnableMemoryMapped()`): configures the XSPI read (and, for RAMs, write) commands so the device appears at `0x90000000` (XSPI1), `0x70000000` (XSPI2), `0x80000000` (XSPI3) or `0x60000000` (FMC). This is the read path needed for execute-in-place; the MPU regions, linker sections and boot flow that running code from external Flash requires are left to the application (see the [integration guide](Docs/STM32CubeIDE_Integration_Guide.md)) and executing code from external memory has not been demonstrated.
+- **Memory-mapped mode** (`ExtMem_EnableMemoryMapped()`): configures the XSPI read (and, for RAMs, write) commands so the device appears at `0x90000000` (XSPI1), `0x70000000` (XSPI2), `0x80000000` (XSPI3) or `0x60000000` (FMC). This is the read path needed for execute-in-place; the boot flow and linker sections that running code from external Flash requires are left to the application, and an example MPU configuration is provided in `Examples/extmem_mpu.c` (see the [integration guide](Docs/STM32CubeIDE_Integration_Guide.md)). Executing code from external memory has not been demonstrated.
 - **Cache maintenance**: when the D-cache is enabled, the manager cleans and invalidates the affected lines (`SCB_CleanInvalidateDCache_by_Addr`) for reads and RAM writes performed through the memory-mapped window. Cache coherence of DMA buffers remains the caller's responsibility.
 - **Error handling**: parameter and address-range checks against the detected capacity (`EXTMEM_INVALID_PARAM`), propagation of every HAL error, program/erase failure flags reported and cleared, polling timeouts (`EXTMEM_TIMEOUT` / `EXTMEM_ERROR`). There is no retry or recovery logic beyond that.
 - **DMA**: `ExtMem_ReadDMA()` / `ExtMem_WriteDMA()` use the XSPI DMA path for Infineon HyperRAM and ISSI OctalRAM and fall back to blocking transfers for the other types; the DMA channels must be linked to the XSPI handle by the application.
@@ -114,7 +114,8 @@ stm32n6-extmem-drivers/
 │           └── stm32n6_extmem_devices.c     # Device database (defined once)
 ├── Examples/
 │   ├── extmem_demo.c                # Identification, write/read-back and memory-mapped read-back
-│   └── extmem_benchmark.c           # Read/write throughput measurement (MB/s) for a board
+│   ├── extmem_benchmark.c           # Read/write throughput measurement (MB/s) for a board
+│   └── extmem_mpu.c                 # Example ARMv8.1-M MPU regions for the memory-mapped windows
 ├── Tests/
 │   ├── mock_hal.h / mock_hal.c      # STM32N6 HAL mock with command log, fault injection and device emulation
 │   ├── test_common.h / .c           # Protocol assertions (command phases, sequences, fault sweeps)
@@ -132,7 +133,7 @@ stm32n6-extmem-drivers/
 ├── Docs/
 │   ├── STM32CubeIDE_Integration_Guide.md # Step-by-step CubeIDE setup & Linker guide
 │   ├── Supported_Memories_Matrix.md      # Every part of the device table with its limits
-│   ├── Hardware_Design_and_Pinout.md     # STM32N6 pinout, PCB layout guidelines, VDDIO domains
+│   ├── Hardware_Design_and_Pinout.md     # VDDIO domains, XSPIM pin reference, layout notes
 │   ├── Static_Analysis.md                # Analysis tools, results and MISRA deviations
 │   └── Project_Context.md                # Architecture, conventions, status, datasheet sources
 ├── .github/
@@ -165,7 +166,7 @@ stm32n6-extmem-drivers/
 
 ## 💻 Code Examples
 
-The snippets below show the API; they have been compile-checked as part of `Examples/`, not run on hardware.
+The snippets below show the API; the same calls are used in `Examples/`, which compile in CI. None of it has been run on hardware.
 
 ### 1. Initialization with Auto-Discovery
 ```c
@@ -287,7 +288,7 @@ The CI workflow runs all five targets on every push and pull request to `main`.
 
 The driver code and the host tests are complete for the parts in the device table. The next steps need hardware:
 
-1. Bring-up on an STM32N6 board (for example STM32N6570-DK): identification, program/erase, memory-mapped read-back and CRC for each memory family available.
+1. Bring-up on an STM32N6 board fitted with supported memories: identification, program/erase, memory-mapped read-back and CRC for each memory family available. The STM32N6570-DK is not enough on its own: its memories (Macronix MX66UW1G45G, AP Memory APS256XX) are not covered by this suite.
 2. XSPI delay-block / sample-shift tuning for 166 to 200 MHz DTR operation.
 3. Measured throughput with `Examples/extmem_benchmark.c`.
 4. Execute-in-place demonstration (MPU, linker sections, boot sequence).
@@ -300,7 +301,7 @@ Issues and pull requests are welcome, especially hardware test reports: please s
 
 - [STM32CubeIDE Integration Guide](Docs/STM32CubeIDE_Integration_Guide.md)
 - [Supported Memories Matrix](Docs/Supported_Memories_Matrix.md)
-- [Hardware Design & High-Speed PCB Routing Guidelines](Docs/Hardware_Design_and_Pinout.md)
+- [Hardware Design Notes (VDDIO, XSPIM pins, layout)](Docs/Hardware_Design_and_Pinout.md)
 - [Static Analysis (tools, results, MISRA deviations)](Docs/Static_Analysis.md)
 - [Project Context (architecture, conventions, status, sources)](Docs/Project_Context.md)
 

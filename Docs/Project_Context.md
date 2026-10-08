@@ -66,18 +66,20 @@ Done:
       MT25Q, IS25LP, S25FL-L, HyperRAM, HyperFlash, OctalRAM, quad PSRAM, serial SRAM, FMC NOR/PSRAM)
 - [x] HAL mock aligned with the STM32CubeN6 headers, including HAL parameter and state checks
 - [x] 100% line and branch coverage, cross-compilation against the real HAL in CI
-- [x] Stacked-die support (MT25Q 1 Gb, MT35X 1/2 Gb, S28HS02GT through SFDP)
+- [x] Stacked-die support (MT25Q 1 Gb, MT35X 1/2 Gb, S28HS02GT / S28HL02GT per datasheet 002-23755)
+- [x] SEMPER Octal checked against datasheet 002-23755: repeated 8D command extension, per-die
+      registers, addressed die erase, WRDIS after each operation, erase timeouts, deep power down
 
-Open (need hardware or documents not publicly available):
+Open (need hardware):
 - [ ] Board validation of every memory family at its maximum clock (ID, program/erase, XIP, CRC)
-- [ ] S28HS02GT checked against its own datasheet (restricted access at Infineon)
 - [ ] IS66WVO parts above 8 MBytes on early STM32N6 silicon (erratum ES0620, Macronix RAM mode)
 - [ ] XSPI delay block / sample shifting tuning for 200 MHz DTR on a specific board
 
 ## 6. Reference documents used
 
 - ST: RM0486 (STM32N6 reference manual), ES0620 (STM32N6 errata), STM32N6570-DK BSP, STM32CubeN6 HAL
-- Infineon: SEMPER Octal 002-18216, SEMPER Quad 002-23660 / 002-12345, SEMPER Quad DDP (2 Gb),
+- Infineon: SEMPER Octal 002-18216, 2 Gb SEMPER Octal 002-23755 Rev. *M (S28HS02GT / S28HL02GT),
+  SEMPER Quad 002-23660 / 002-12345, SEMPER Quad DDP (2 Gb),
   S25FL128L/256L 002-00124, S27KL0642/S27KS0642 002-31332
 - ISSI: IS25WX064/032, IS25LP256D/IS25WP256D, IS66/67WVO8M8, IS66/67WVS16M8, IS66WVH16M8,
   IS62/65WVS0648/1288/2568/5128

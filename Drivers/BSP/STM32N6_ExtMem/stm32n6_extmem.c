@@ -440,17 +440,17 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
   /* Switch memory to its high performance mode */
   if (hextmem->Geometry.Type == EXTMEM_TYPE_NOR_OCTAL_SEMPER)
   {
-    /* Stacked dice: every die has its own registers, located through the SFDP SCCR tables */
+    /* Stacked dice: every die has its own registers at its base address + 0x800000
+     * (datasheet 002-23755, register address map "&&800000", matching the SFDP SCCR tables) */
     S28HS512T_DieLayout_t layout = { 1U, 0U, { S28HS_REG_VOLATILE_BASE, 0U, 0U, 0U } };
     if (dice > 1U)
     {
-      uint8_t sfdpDice = 0;
-      int32_t map = SFDP_ReadDieRegisterMap(&hextmem->hxspi, layout.VregBase, &sfdpDice);
-      if (map != EXTMEM_OK) return map;
-      /* The 2 Gb parts describe 4 dice in SFDP but have 2 (same correction as Linux spi-nor) */
-      if (sfdpDice < dice) return EXTMEM_NOT_SUPPORTED;
       layout.Dice    = (uint8_t)dice;
       layout.DieSize = hextmem->Geometry.TotalSizeBytes / dice;
+      for (uint32_t d = 0; d < dice; d++)
+      {
+        layout.VregBase[d] = (d * layout.DieSize) + S28HS_REG_VOLATILE_BASE;
+      }
     }
     if (S28HS512T_SetDieLayout(&hextmem->hxspi, &layout) != S28HS512T_OK) return EXTMEM_ERROR;
 
@@ -1224,6 +1224,12 @@ int32_t ExtMem_EnterDeepPowerDown(ExtMem_HandleTypeDef *hextmem)
   {
     return IS66WVO32M8_EnterDeepPowerDown(&hextmem->hxspi);
   }
+  if (hextmem->Geometry.Type == EXTMEM_TYPE_NOR_OCTAL_SEMPER)
+  {
+    /* Indirect commands only: memory-mapped reads would be issued to a device in DPD */
+    if (hextmem->State == EXTMEM_STATE_MEMORY_MAPPED) return EXTMEM_BUSY;
+    return S28HS512T_EnterDeepPowerDown(&hextmem->hxspi, hextmem->ActiveMode);
+  }
   return EXTMEM_NOT_SUPPORTED;
 }
 
@@ -1241,6 +1247,12 @@ int32_t ExtMem_LeaveDeepPowerDown(ExtMem_HandleTypeDef *hextmem)
   if (hextmem->Geometry.Type == EXTMEM_TYPE_PSRAM_OCTAL_ISSI)
   {
     return IS66WVO32M8_LeaveDeepPowerDown(&hextmem->hxspi);
+  }
+  if (hextmem->Geometry.Type == EXTMEM_TYPE_NOR_OCTAL_SEMPER)
+  {
+    /* Indirect commands only: memory-mapped reads would be issued to a device in DPD */
+    if (hextmem->State == EXTMEM_STATE_MEMORY_MAPPED) return EXTMEM_BUSY;
+    return S28HS512T_LeaveDeepPowerDown(&hextmem->hxspi, hextmem->ActiveMode);
   }
   return EXTMEM_NOT_SUPPORTED;
 }

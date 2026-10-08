@@ -98,7 +98,8 @@ int32_t S28HS512T_ReadID(XSPI_HandleTypeDef *Ctx, uint8_t *pID)
   return S28HS512T_OK;
 }
 
-int32_t S28HS512T_WriteEnable(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode)
+/* Instruction-only command (no address, no data) in the current interface mode */
+static int32_t S28HS_SimpleCmd(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t SpiOpcode, uint32_t DtrOpcode)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
@@ -114,17 +115,22 @@ int32_t S28HS512T_WriteEnable(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode)
     sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_8_LINES;
     sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_16_BITS;
     sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_ENABLE;
-    sCmd.Instruction        = S28HS_DTR_CMD_WRITE_ENABLE;
+    sCmd.Instruction        = DtrOpcode;
   }
   else
   {
     sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
     sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_8_BITS;
     sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
-    sCmd.Instruction        = S28HS_CMD_WRITE_ENABLE;
+    sCmd.Instruction        = SpiOpcode;
   }
 
   return (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? S28HS512T_OK : S28HS512T_ERROR;
+}
+
+int32_t S28HS512T_WriteEnable(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode)
+{
+  return S28HS_SimpleCmd(Ctx, Mode, S28HS_CMD_WRITE_ENABLE, S28HS_DTR_CMD_WRITE_ENABLE);
 }
 
 int32_t S28HS512T_ReadAnyReg(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t RegAddr, uint8_t *pValue)
@@ -351,24 +357,22 @@ static int32_t S28HS_PollDie(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32
   return S28HS512T_ERROR;
 }
 
+/* Waits for the program/erase at Address to finish. WRENB sets WRPGEN in every die but only the die
+ * that runs the operation clears it: on a stacked part WRDIS clears it in the others (002-23755, 5.7.1). */
+static int32_t S28HS_Complete(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t Vreg, uint32_t Timeout)
+{
+  int32_t ret = S28HS_PollDie(Ctx, Mode, Vreg, Timeout);
+  if (ret == S28HS512T_OK && S28HS_GetLayout(Ctx)->Dice > 1U)
+  {
+    ret = S28HS_SimpleCmd(Ctx, Mode, S28HS_CMD_WRITE_DISABLE, S28HS_DTR_CMD_WRITE_DISABLE);
+  }
+  return ret;
+}
+
 static int32_t S28HS512T_Enter4ByteAddressMode(XSPI_HandleTypeDef *Ctx)
 {
-  XSPI_RegularCmdTypeDef sCmd = {0};
-
-  if (S28HS512T_WriteEnable(Ctx, EXTMEM_MODE_SPI) != S28HS512T_OK) return S28HS512T_ERROR;
-
-  sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
-  sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
-  sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_8_BITS;
-  sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
-  sCmd.Instruction        = S28HS_CMD_ENTER_4BYTE_ADDR;
-  sCmd.AddressMode        = HAL_XSPI_ADDRESS_NONE;
-  sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
-  sCmd.DataMode           = HAL_XSPI_DATA_NONE;
-  sCmd.DummyCycles        = 0;
-  sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
-
-  return (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? S28HS512T_OK : S28HS512T_ERROR;
+  /* EN4BA needs no write enable and switches every die of a stacked part at once */
+  return S28HS_SimpleCmd(Ctx, EXTMEM_MODE_SPI, S28HS_CMD_ENTER_4BYTE_ADDR, 0U);
 }
 
 int32_t S28HS512T_EnterOctalDTRMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles)
@@ -406,29 +410,21 @@ int32_t S28HS512T_EnterOctalDTRMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles
     if (S28HS512T_WriteAnyReg(Ctx, EXTMEM_MODE_SPI, vreg + S28HS_REG_OFS_CFR5, S28HS_CFR5V_OCTAL_DTR) != S28HS512T_OK) return S28HS512T_ERROR;
   }
 
+  /* Every die is now in 8D-8D-8D: clear the WRPGEN still set in the dice not written last */
+  if (layout->Dice > 1U)
+  {
+    return S28HS_SimpleCmd(Ctx, EXTMEM_MODE_OCTAL_DTR, S28HS_CMD_WRITE_DISABLE, S28HS_DTR_CMD_WRITE_DISABLE);
+  }
   return S28HS512T_OK;
 }
 
 int32_t S28HS512T_ExitOctalDTRMode(XSPI_HandleTypeDef *Ctx)
 {
   /* An 8D software reset reloads every volatile register (interface, MEMLAT, VRGLAT, address length)
-   * from the non-volatile defaults, so the device is back in 1S-1S-1S with factory latencies. */
-  XSPI_RegularCmdTypeDef sCmd = {0};
-
-  sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
-  sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_8_LINES;
-  sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_16_BITS;
-  sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_ENABLE;
-  sCmd.Instruction        = S28HS_DTR_CMD_RESET_ENABLE;
-  sCmd.AddressMode        = HAL_XSPI_ADDRESS_NONE;
-  sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
-  sCmd.DataMode           = HAL_XSPI_DATA_NONE;
-  sCmd.DummyCycles        = 0;
-  sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
-
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S28HS512T_ERROR;
-  sCmd.Instruction = S28HS_DTR_CMD_RESET;
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S28HS512T_ERROR;
+   * from the non-volatile defaults, so the device is back in 1S-1S-1S with factory latencies.
+   * Reset enable and reset act on every die in parallel. */
+  if (S28HS_SimpleCmd(Ctx, EXTMEM_MODE_OCTAL_DTR, 0U, S28HS_DTR_CMD_RESET_ENABLE) != S28HS512T_OK) return S28HS512T_ERROR;
+  if (S28HS_SimpleCmd(Ctx, EXTMEM_MODE_OCTAL_DTR, 0U, S28HS_DTR_CMD_RESET) != S28HS512T_OK) return S28HS512T_ERROR;
 
   HAL_Delay(1); /* tSR = 83 us */
   return S28HS512T_OK;
@@ -530,9 +526,11 @@ int32_t S28HS512T_PageProgram(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint3
     return S28HS512T_ERROR;
   }
 
-  return S28HS_PollDie(Ctx, Mode, S28HS_VregForAddress(Ctx, Address), 5000);
+  return S28HS_Complete(Ctx, Mode, S28HS_VregForAddress(Ctx, Address), S28HS_TIMEOUT_PAGE_PROG_MS);
 }
 
+/* Only for the hybrid 4 KB parameter sectors (CFR3V[3] = 0): with the factory uniform architecture
+ * the device ignores ER004 without setting an error (002-23755, 5.9.1) */
 int32_t S28HS512T_EraseSector4K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t Address)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
@@ -571,7 +569,7 @@ int32_t S28HS512T_EraseSector4K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uin
     return S28HS512T_ERROR;
   }
 
-  return S28HS_PollDie(Ctx, Mode, S28HS_VregForAddress(Ctx, Address), 1000);
+  return S28HS_Complete(Ctx, Mode, S28HS_VregForAddress(Ctx, Address), S28HS_TIMEOUT_ERASE_4K_MS);
 }
 
 int32_t S28HS512T_EraseBlock256K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t Address)
@@ -612,10 +610,10 @@ int32_t S28HS512T_EraseBlock256K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, ui
     return S28HS512T_ERROR;
   }
 
-  return S28HS_PollDie(Ctx, Mode, S28HS_VregForAddress(Ctx, Address), 3000);
+  return S28HS_Complete(Ctx, Mode, S28HS_VregForAddress(Ctx, Address), S28HS_TIMEOUT_ERASE_256K_MS);
 }
 
-/* Bulk erase (single die) or DIE ERASE at DieAddress (stacked dice reject bulk erase) */
+/* Bulk erase (single die) or ERCHP_4_0 at DieAddress: stacked dice do not support 60h/C7h (002-23755, 3) */
 static int32_t S28HS_EraseUnit(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, bool Die, uint32_t DieAddress, uint32_t Vreg)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
@@ -661,7 +659,7 @@ static int32_t S28HS_EraseUnit(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, bool
     return S28HS512T_ERROR;
   }
 
-  return S28HS_PollDie(Ctx, Mode, Vreg, 300000); /* Bulk / die erase takes up to ~250 s */
+  return S28HS_Complete(Ctx, Mode, Vreg, S28HS_TIMEOUT_CHIP_ERASE_MS);
 }
 
 int32_t S28HS512T_ChipErase(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode)
@@ -711,25 +709,33 @@ int32_t S28HS512T_EnableMemoryMappedModeDTR(XSPI_HandleTypeDef *Ctx, uint8_t Dum
 
 int32_t S28HS512T_Reset(XSPI_HandleTypeDef *Ctx)
 {
-  XSPI_RegularCmdTypeDef sCmd = {0};
+  if (S28HS_SimpleCmd(Ctx, EXTMEM_MODE_SPI, S28HS_CMD_RESET_ENABLE, 0U) != S28HS512T_OK) return S28HS512T_ERROR;
+  if (S28HS_SimpleCmd(Ctx, EXTMEM_MODE_SPI, S28HS_CMD_RESET, 0U) != S28HS512T_OK) return S28HS512T_ERROR;
 
-  sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
-  sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
-  sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_8_BITS;
-  sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
-  sCmd.Instruction        = S28HS_CMD_RESET_ENABLE;
-  sCmd.AddressMode        = HAL_XSPI_ADDRESS_NONE;
-  sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
-  sCmd.DataMode           = HAL_XSPI_DATA_NONE;
-  sCmd.DummyCycles        = 0;
-  sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
+  HAL_Delay(1); /* tSR = 83 us */
+  return S28HS512T_OK;
+}
 
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S28HS512T_ERROR;
+int32_t S28HS512T_EnterDeepPowerDown(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode)
+{
+  /* ENDPD acts on every die; the configuration is kept, so the device leaves DPD in the same mode */
+  if (S28HS_SimpleCmd(Ctx, Mode, S28HS_CMD_ENTER_DEEP_POWER_DOWN, S28HS_DTR_CMD_ENTER_DEEP_POWER_DOWN) != S28HS512T_OK)
+  {
+    return S28HS512T_ERROR;
+  }
+  HAL_Delay(S28HS_DPD_ENTER_MS); /* tENTDPD */
+  return S28HS512T_OK;
+}
 
-  sCmd.Instruction = S28HS_CMD_RESET;
-  if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S28HS512T_ERROR;
-
-  HAL_Delay(1); /* Wait for reset recovery time */
+int32_t S28HS512T_LeaveDeepPowerDown(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode)
+{
+  /* A CS# pulse of at most tCSDPD = 3 us wakes the device: a one-instruction command provides it.
+   * The device ignores the instruction itself; WRDIS is harmless if it was already awake. */
+  if (S28HS_SimpleCmd(Ctx, Mode, S28HS_CMD_WRITE_DISABLE, S28HS_DTR_CMD_WRITE_DISABLE) != S28HS512T_OK)
+  {
+    return S28HS512T_ERROR;
+  }
+  HAL_Delay(S28HS_DPD_EXIT_MS); /* tEXTDPD */
   return S28HS512T_OK;
 }
 

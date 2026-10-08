@@ -188,7 +188,7 @@ static bool ExerciseDevice(const ExtMem_DeviceDescriptor_t *d)
     ASSERT_EQ(mem[0], 0xFF);
     if (d->Type == EXTMEM_TYPE_NOR_OCTAL_SEMPER)
     {
-      ASSERT_EQ(MockHAL_CountCommands(0x619E), (d->DieCount > 1U) ? d->DieCount : 0U);
+      ASSERT_EQ(MockHAL_CountCommands(0x6161), (d->DieCount > 1U) ? d->DieCount : 0U);
     }
     if (d->Type == EXTMEM_TYPE_NOR_QUAD_MICRON || d->Type == EXTMEM_TYPE_NOR_OCTAL_MICRON)
     {
@@ -266,6 +266,18 @@ static bool ExerciseDevice(const ExtMem_DeviceDescriptor_t *d)
     if (IsHyperRam(d->Type)) ASSERT_EQ(MockHAL_GetHyperReg(0x1000) & 0x8000, 0);
     else ASSERT_EQ(MockHAL_GetOctalRamCR() & 0x8000, 0);
     ASSERT_EQ(ExtMem_LeaveDeepPowerDown(&s_h), EXTMEM_OK);
+  }
+  else if (d->Type == EXTMEM_TYPE_NOR_OCTAL_SEMPER)
+  {
+    MockHAL_ClearLog();
+    ASSERT_EQ(ExtMem_EnterDeepPowerDown(&s_h), EXTMEM_OK);
+    ASSERT_CMD(Test_NthCommand(0), I8D(0xB9B9), NOADDR, NODATA);
+    ASSERT_EQ(ExtMem_LeaveDeepPowerDown(&s_h), EXTMEM_OK);
+    /* Not from memory-mapped mode: the controller would read a device in DPD */
+    ASSERT_EQ(ExtMem_EnableMemoryMapped(&s_h), EXTMEM_OK);
+    ASSERT_EQ(ExtMem_EnterDeepPowerDown(&s_h), EXTMEM_BUSY);
+    ASSERT_EQ(ExtMem_LeaveDeepPowerDown(&s_h), EXTMEM_BUSY);
+    ASSERT_EQ(ExtMem_DisableMemoryMapped(&s_h), EXTMEM_OK);
   }
   else
   {
@@ -544,22 +556,14 @@ bool test_extmem_manager_unified_autodetect(void)
   ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_OK);
   ASSERT_EQ(strcmp(s_h.Geometry.DeviceName, "S28HS512T"), 0);
 
-  /* Stacked-die SEMPER without the SFDP die map, or with fewer dice than the part, is refused */
+  /* Stacked-die SEMPER: the register map comes from the datasheet, SFDP is not needed */
   {
-    static uint8_t img[0x30 + 64];
-    memset(img, 0, sizeof(img));
-    memcpy(img, "SFDP", 4); img[4] = 6; img[5] = 1; img[7] = 0xFF;
-    img[8] = 0x87; img[11] = 1; img[12] = 0x30; img[15] = 0xFF;   /* SCCR only: one die */
-    uint32_t base0 = 0x00800000U;
-    memcpy(&img[0x30], &base0, 4);
     SetupAuto(0x34, 0x5B, 0x1C);
-    s_h.Config.ClockPrescaler = 2;
-    MockHAL_SetSfdpTable(img, sizeof(img));
-    ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_NOT_SUPPORTED);
-    SetupAuto(0x34, 0x5B, 0x1C);
+    s_h.Config.ClockPrescaler = 4;
     MockHAL_SetSfdpTable(s_BadSfdp, sizeof(s_BadSfdp));
-    ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_NOT_SUPPORTED);
-    (void)S28HS512T_SetDieLayout(&s_h.hxspi, NULL);
+    ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_OK);
+    ASSERT_EQ(MockHAL_GetAnyReg(0x08800006U), 0x43);
+    ASSERT_EQ(ExtMem_DeInit(&s_h), EXTMEM_OK);
     /* No free die-layout slot: init fails cleanly */
     XSPI_HandleTypeDef others[3] = {0};
     S28HS512T_DieLayout_t l2 = { 2U, 0x08000000U, { 0x00800000U, 0x08800000U, 0U, 0U } };

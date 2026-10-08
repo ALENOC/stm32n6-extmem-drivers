@@ -148,10 +148,11 @@ static void Mock_BuildDefaultSfdp(void)
   s_DefaultSfdp[0x14] = 0x70; s_DefaultSfdp[0x15] = 0x00; s_DefaultSfdp[0x16] = 0x00; s_DefaultSfdp[0x17] = 0xFF;
   uint32_t sccr[2] = { 0x00800000U, 0x00000000U };
   memcpy(&s_DefaultSfdp[0x70], sccr, sizeof(sccr));
-  /* SCCR multi-chip map (ID FF88h, 6 DWORDs at 0x78): like the 2 Gb SEMPER parts it describes 4 dice */
-  s_DefaultSfdp[0x18] = 0x88; s_DefaultSfdp[0x19] = 0x00; s_DefaultSfdp[0x1A] = 0x01; s_DefaultSfdp[0x1B] = 6;
+  /* SCCR multi-chip map (ID FF88h, 2 DWORDs at 0x78), as in the S28HS02GT datasheet 002-23755:
+   * die 2 volatile registers at 0x08800000, non-volatile registers at 0x08000000 */
+  s_DefaultSfdp[0x18] = 0x88; s_DefaultSfdp[0x19] = 0x00; s_DefaultSfdp[0x1A] = 0x01; s_DefaultSfdp[0x1B] = 2;
   s_DefaultSfdp[0x1C] = 0x78; s_DefaultSfdp[0x1D] = 0x00; s_DefaultSfdp[0x1E] = 0x00; s_DefaultSfdp[0x1F] = 0xFF;
-  uint32_t mc[6] = { 0x08800000U, 0x08000000U, 0x10800000U, 0x10000000U, 0x18800000U, 0x18000000U };
+  uint32_t mc[2] = { 0x08800000U, 0x08000000U };
   memcpy(&s_DefaultSfdp[0x78], mc, sizeof(mc));
 }
 

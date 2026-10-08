@@ -112,11 +112,9 @@ bool test_sfdp_parser(void)
   uint8_t dice = 0;
   MockHAL_Reset();
   ASSERT_EQ(SFDP_ReadDieRegisterMap(&h, vreg, &dice), EXTMEM_OK);
-  ASSERT_EQ(dice, 4);
+  ASSERT_EQ(dice, 2);
   ASSERT_EQ(vreg[0], 0x00800000U);
   ASSERT_EQ(vreg[1], 0x08800000U);
-  ASSERT_EQ(vreg[2], 0x10800000U);
-  ASSERT_EQ(vreg[3], 0x18800000U);
   ASSERT_EQ(SFDP_ReadDieRegisterMap(NULL, vreg, &dice), EXTMEM_INVALID_PARAM);
   ASSERT_EQ(SFDP_ReadDieRegisterMap(&h, NULL, &dice), EXTMEM_INVALID_PARAM);
   ASSERT_EQ(SFDP_ReadDieRegisterMap(&h, vreg, NULL), EXTMEM_INVALID_PARAM);

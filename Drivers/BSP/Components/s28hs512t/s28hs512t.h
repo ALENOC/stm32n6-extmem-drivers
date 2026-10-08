@@ -4,8 +4,9 @@
   * @author  STM32N6 External Memory Driver Suite Team
   * @brief   Driver header for Infineon SEMPER(TM) Octal NOR Flash
   *          Compatible with S28HS512T, S28HL512T, S28HS256T, S28HL256T,
-  *          S28HS01GT, S28HL01GT and the dual-die S28HS02GT (per-die registers
-  *          from the SFDP multi-chip tables, see S28HS512T_SetDieLayout).
+  *          S28HS01GT, S28HL01GT and the dual-die S28HS02GT / S28HL02GT
+  *          (datasheet 002-23755: per-die registers at die base + 0x800000,
+  *          see S28HS512T_SetDieLayout).
   ******************************************************************************
   * @attention
   *
@@ -106,21 +107,34 @@ extern "C" {
 #define S28HS_CMD_RESET                  0x99U
 #define S28HS_CMD_ENTER_DEEP_POWER_DOWN  0xB9U
 
-/* Commands (8D-8D-8D Octal DTR - 16-bit Opcode where 2nd byte is bitwise inverse) */
-#define S28HS_DTR_CMD_READ               0xEE11U
-#define S28HS_DTR_CMD_PAGE_PROG          0x12EDU
-#define S28HS_DTR_CMD_SECTOR_ERASE_4K    0x21DEU
-#define S28HS_DTR_CMD_BLOCK_ERASE_256K   0xDC23U
-#define S28HS_DTR_CMD_CHIP_ERASE         0x609FU
-#define S28HS_DTR_CMD_DIE_ERASE          0x619EU
-#define S28HS_DTR_CMD_WRITE_ENABLE       0x06F9U
-#define S28HS_DTR_CMD_WRITE_DISABLE      0x04FBU
-#define S28HS_DTR_CMD_READ_REG           0x659AU
-#define S28HS_DTR_CMD_WRITE_REG          0x718EU
-#define S28HS_DTR_CMD_READ_STATUS        0x05FAU
-#define S28HS_DTR_CMD_CLEAR_ERRORS       0x827DU
-#define S28HS_DTR_CMD_RESET_ENABLE       0x6699U
-#define S28HS_DTR_CMD_RESET              0x9966U
+/* Commands (8D-8D-8D Octal DTR): 16-bit instruction whose second byte repeats the opcode.
+ * Datasheet 002-23755 (2 Gb SEMPER Octal): SFDP BFPT DWORD-18 bits 30:29 = 00b "command extension
+ * is the same as the command", and the 8D transaction table sends the opcode on both CK edges. */
+#define S28HS_DTR_CMD_READ               0xEEEEU
+#define S28HS_DTR_CMD_PAGE_PROG          0x1212U
+#define S28HS_DTR_CMD_SECTOR_ERASE_4K    0x2121U
+#define S28HS_DTR_CMD_BLOCK_ERASE_256K   0xDCDCU
+#define S28HS_DTR_CMD_CHIP_ERASE         0x6060U
+#define S28HS_DTR_CMD_DIE_ERASE          0x6161U
+#define S28HS_DTR_CMD_WRITE_ENABLE       0x0606U
+#define S28HS_DTR_CMD_WRITE_DISABLE      0x0404U
+#define S28HS_DTR_CMD_READ_REG           0x6565U
+#define S28HS_DTR_CMD_WRITE_REG          0x7171U
+#define S28HS_DTR_CMD_READ_STATUS        0x0505U
+#define S28HS_DTR_CMD_CLEAR_ERRORS       0x8282U
+#define S28HS_DTR_CMD_RESET_ENABLE       0x6666U
+#define S28HS_DTR_CMD_RESET              0x9999U
+#define S28HS_DTR_CMD_ENTER_DEEP_POWER_DOWN 0xB9B9U
+
+/* Maximum embedded operation times (datasheet 002-23755, Table 86), used as polling timeouts */
+#define S28HS_TIMEOUT_PAGE_PROG_MS       10U         /* tPP  max 2.175 ms                       */
+#define S28HS_TIMEOUT_ERASE_4K_MS        400U        /* tSE  max 335 ms (4 KB sector)           */
+#define S28HS_TIMEOUT_ERASE_256K_MS      6000U       /* tSE  max 5869 ms (256 KB, endurance flex) */
+#define S28HS_TIMEOUT_CHIP_ERASE_MS      2800000U    /* tBE  max 2762 s                         */
+
+/* Deep power down timings (datasheet 002-23755, Table 86) */
+#define S28HS_DPD_ENTER_MS               1U          /* tENTDPD max 3 us                        */
+#define S28HS_DPD_EXIT_MS                1U          /* tEXTDPD max 430 us                      */
 
 /**
   * @}
@@ -159,7 +173,7 @@ int32_t S28HS512T_EraseBlock256K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, ui
 int32_t S28HS512T_ChipErase(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode);
 int32_t S28HS512T_EnableMemoryMappedModeDTR(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles);
 int32_t S28HS512T_EnterDeepPowerDown(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode);
-int32_t S28HS512T_LeaveDeepPowerDown(XSPI_HandleTypeDef *Ctx);
+int32_t S28HS512T_LeaveDeepPowerDown(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode);
 int32_t S28HS512T_Reset(XSPI_HandleTypeDef *Ctx);
 int32_t S28HS512T_GetInfo(S28HS512T_Info_t *pInfo);
 

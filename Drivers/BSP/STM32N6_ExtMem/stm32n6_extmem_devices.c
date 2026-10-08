@@ -96,6 +96,8 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .DefaultWriteDummyCycles = 0
   },
   {
+    /* Datasheet 002-23755: speed grade FP runs 166 MHz DDR, only GZ (models 25/35) reaches 200 MHz,
+     * and the JEDEC ID does not tell them apart */
     .PartNumber              = "S28HS02GT",
     .Type                    = EXTMEM_TYPE_NOR_OCTAL_SEMPER,
     .ManufacturerID          = 0x34,
@@ -106,7 +108,24 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .SectorSizeBytes         = 256 * 1024,
     .BlockSizeBytes          = 256 * 1024,
     .VoltageNominal          = 1.8f,
-    .MaxClockFreqMHz         = 200,
+    .MaxClockFreqMHz         = 166,
+    .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
+    .DefaultReadDummyCycles  = 24,
+    .DefaultWriteDummyCycles = 0,
+    .DieCount                = 2
+  },
+  {
+    .PartNumber              = "S28HL02GT",
+    .Type                    = EXTMEM_TYPE_NOR_OCTAL_SEMPER,
+    .ManufacturerID          = 0x34,
+    .MemoryTypeID            = 0x5A,
+    .DensityID               = 0x1C,
+    .CapacityBytes           = 256 * 1024 * 1024,
+    .PageSizeBytes           = 256,
+    .SectorSizeBytes         = 256 * 1024,
+    .BlockSizeBytes          = 256 * 1024,
+    .VoltageNominal          = 3.0f,
+    .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_OCTAL_DTR,
     .DefaultReadDummyCycles  = 24,
     .DefaultWriteDummyCycles = 0,

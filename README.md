@@ -31,7 +31,7 @@ Supports **XSPI1**, **XSPI2**, **XSPI3** (Single, Quad, Octal DTR up to 200 MHz,
 ## 🚀 Key Features
 
 - **Comprehensive Infineon Technologies Coverage**:
-  - **SEMPER™ Octal NOR Flash** (`S28HS512T`, `S28HL512T`, `S28HS256T`, `S28HL256T`, `S28HS01GT`, `S28HS02GT`): xSPI Profile 1.0 protocol (8D-8D-8D DDR up to 200 MHz / 400 MB/s).
+  - **SEMPER™ Octal NOR Flash** (`S28HS512T`, `S28HL512T`, `S28HS256T`, `S28HL256T`, `S28HS01GT`, `S28HS02GT`, `S28HL02GT`): xSPI Profile 1.0 protocol (8D-8D-8D DDR up to 200 MHz / 400 MB/s).
   - **HyperFlash™** (`S26KS512S`, `S26KL512S`, `S26KS256S`, `S26KL256S`, `S26KS128S`, `S26KL128S`): native Cypress HyperBus™ interface at 1.8V / 3.0V.
   - **HyperRAM™** (`S27KS0641`, `S27KL0641`, `S27KS128`, `S27KL128`, `S27KS256`, `S27KL256`, `S27KS512`, `S27HS/HL` 2.0 and 3.0 series).
   - **SEMPER™ / FL Quad SPI Flash** (`S25HL512T`, `S25HS512T`, `S25FL256L`, `S25FL128L`, `S25FL512S`).
@@ -248,7 +248,9 @@ The CI workflow runs all three targets on every push and pull request.
 ## ⚙️ Known Limitations
 
 - **Clocks**: `Config.ClockPrescaler` is the XSPI clock divider (memory clock = XSPI kernel clock / divider). Probing and mode switching run at up to `EXTMEM_INIT_MAX_CLOCK_HZ` (50 MHz); `ExtMem_Init()` refuses a configured clock above the part maximum.
-- **S28HS02GT (dual die)**: the per-die register bases come from the SFDP SCCR / SCCR multi-chip tables, following the Linux spi-nor driver. The 2 Gb octal datasheet is not public, so this support is based on the public quad SEMPER DDP documentation.
+- **SEMPER Octal 8D-8D-8D commands** repeat the opcode in the second instruction byte (for example `EEh EEh` for the read), as stated by the SFDP and the transaction tables of the SEMPER Octal datasheets.
+- **S28HS02GT / S28HL02GT (dual die)**: implemented from datasheet 002-23755. Each die has its own registers at its base address + 0x800000, status is polled on the die that runs the operation, chip erase is one addressed erase (61h) per die, and a write disable follows every program or erase so no die keeps WRPGEN set. Only the GZ speed grade (models 25/35) of the S28HS02GT runs 200 MHz DDR: the JEDEC ID does not identify the grade, so the database limits the part to 166 MHz.
+- **SEMPER erase**: the factory sector map is uniform 256 KB; the 4 KB erase is only executed by parts configured for hybrid sectors.
 - **S25Hx-T Quad I/O reads** use the factory memory latency (8 cycles plus 2 mode cycles), valid up to 118 MHz.
 - **S25FL-L** shares the S25Hx-T driver: failure flags are read from SR2 and cleared with CLSR. A plain timeout on an S25FL-L whose SR1 protection bits (SEC / TBPROT) are set is reported as an error instead of a timeout.
 - **ISSI quad NOR**: the volatile Read Register is set to 11 dummy cycles (1-4-4 up to 139 MHz). Parts without a Read Register keep the factory 6 cycles (81 MHz).

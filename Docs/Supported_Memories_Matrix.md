@@ -10,7 +10,8 @@ The following matrix lists all Flash and PSRAM parts from **Infineon Technologie
 | **Infineon** | `S28HS256T` (256Mb) | SEMPER™ Octal NOR Flash | Octal SPI (8D-8D-8D, DQS) | 1.8V | 200 MHz | `s28hs512t` |
 | **Infineon** | `S28HL256T` (256Mb) | SEMPER™ Octal NOR Flash | Octal SPI (8D-8D-8D, DQS) | 3.0V | 133 MHz | `s28hs512t` |
 | **Infineon** | `S28HS01GT` (1Gb) | SEMPER™ Octal NOR Flash | Octal SPI (8D-8D-8D, DQS) | 1.8V | 200 MHz | `s28hs512t` |
-| **Infineon** | `S28HS02GT` (2Gb, 2 dice) | SEMPER™ Octal NOR Flash | Octal SPI (8D-8D-8D, DQS) | 1.8V | 200 MHz | `s28hs512t` |
+| **Infineon** | `S28HS02GT` (2Gb, 2 dice) | SEMPER™ Octal NOR Flash | Octal SPI (8D-8D-8D, DQS) | 1.8V | 166 MHz (200 MHz GZ grade) | `s28hs512t` |
+| **Infineon** | `S28HL02GT` (2Gb, 2 dice) | SEMPER™ Octal NOR Flash | Octal SPI (8D-8D-8D, DQS) | 3.0V | 133 MHz | `s28hs512t` |
 | **Infineon** | `S26KS512S` (512Mb) | HyperFlash™ NOR | HyperBus™ (8-bit DDR, RWDS) | 1.8V | 166 MHz | `s26ks512s` |
 | **Infineon** | `S26KL512S` (512Mb) | HyperFlash™ NOR | HyperBus™ (8-bit DDR, RWDS) | 3.0V | 100 MHz | `s26ks512s` |
 | **Infineon** | `S26KS256S` (256Mb) | HyperFlash™ NOR | HyperBus™ (8-bit DDR, RWDS) | 1.8V | 166 MHz | `s26ks512s` |

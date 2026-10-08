@@ -24,18 +24,18 @@ static bool s28hs_octal_entry(void)
 
   ASSERT_EQ(S28HS512T_EnterOctalDTRMode(&h, 24), S28HS512T_OK);
 
-  /* WREN, EN4B, RDAR CFR2V, WREN, WRAR CFR2V, RDAR CFR3V, WREN, WRAR CFR3V, WREN, WRAR CFR5V */
-  ASSERT_SEQUENCE(0, 0x06, 0xB7, 0x65, 0x06, 0x71, 0x65, 0x06, 0x71, 0x06, 0x71);
-  ASSERT_EQ(Test_CommandCount(), 10);
-  ASSERT_CMD(Test_NthCommand(1), I1S(0xB7), NOADDR, NODATA, DUMMY(0));
+  /* EN4B (no write enable needed), RDAR CFR2V, WREN, WRAR CFR2V, RDAR CFR3V, WREN, WRAR CFR3V, WREN, WRAR CFR5V */
+  ASSERT_SEQUENCE(0, 0xB7, 0x65, 0x06, 0x71, 0x65, 0x06, 0x71, 0x06, 0x71);
+  ASSERT_EQ(Test_CommandCount(), 9);
+  ASSERT_CMD(Test_NthCommand(0), I1S(0xB7), NOADDR, NODATA, DUMMY(0));
   /* SPI volatile register reads: no latency with the factory VRGLAT = 00 */
-  ASSERT_CMD(Test_NthCommand(2), I1S(0x65), A1S(HAL_XSPI_ADDRESS_32_BITS, S28HS_REG_CFR2_V), D1S(1), DUMMY(0), NODQS);
-  ASSERT_CMD(Test_NthCommand(4), I1S(0x71), A1S(HAL_XSPI_ADDRESS_32_BITS, S28HS_REG_CFR2_V), D1S(1), DUMMY(0));
-  ASSERT_CMD(Test_NthCommand(5), I1S(0x65), A1S(HAL_XSPI_ADDRESS_32_BITS, S28HS_REG_CFR3_V), D1S(1), DUMMY(0));
-  ASSERT_CMD(Test_NthCommand(7), I1S(0x71), A1S(HAL_XSPI_ADDRESS_32_BITS, S28HS_REG_CFR3_V), D1S(1), DUMMY(0));
-  ASSERT_CMD(Test_NthCommand(9), I1S(0x71), A1S(HAL_XSPI_ADDRESS_32_BITS, S28HS_REG_CFR5_V), D1S(1), DUMMY(0));
+  ASSERT_CMD(Test_NthCommand(1), I1S(0x65), A1S(HAL_XSPI_ADDRESS_32_BITS, S28HS_REG_CFR2_V), D1S(1), DUMMY(0), NODQS);
+  ASSERT_CMD(Test_NthCommand(3), I1S(0x71), A1S(HAL_XSPI_ADDRESS_32_BITS, S28HS_REG_CFR2_V), D1S(1), DUMMY(0));
+  ASSERT_CMD(Test_NthCommand(4), I1S(0x65), A1S(HAL_XSPI_ADDRESS_32_BITS, S28HS_REG_CFR3_V), D1S(1), DUMMY(0));
+  ASSERT_CMD(Test_NthCommand(6), I1S(0x71), A1S(HAL_XSPI_ADDRESS_32_BITS, S28HS_REG_CFR3_V), D1S(1), DUMMY(0));
+  ASSERT_CMD(Test_NthCommand(8), I1S(0x71), A1S(HAL_XSPI_ADDRESS_32_BITS, S28HS_REG_CFR5_V), D1S(1), DUMMY(0));
 
-  /* Register contents per datasheet 002-18216: CFR2V = ADRBYT | MEMLAT 1011b (24 cycles in 8D),
+  /* Register contents per datasheets 002-18216 / 002-23755: CFR2V = ADRBYT | MEMLAT 1011b (24 cycles in 8D),
    * CFR3V VRGLAT = 11b (6 cycles, 200 MHz DDR), CFR5V = 0x43 (OPI + DDR + bit 6) */
   ASSERT_TRUE(MockHAL_Is4ByteMode());
   ASSERT_EQ(MockHAL_GetAnyReg(0x00800003), 0x8B);
@@ -48,8 +48,8 @@ static bool s28hs_octal_entry(void)
   MockHAL_ClearLog();
   ASSERT_EQ(S28HS512T_ExitOctalDTRMode(&h), S28HS512T_OK);
   ASSERT_EQ(Test_CommandCount(), 2);
-  ASSERT_CMD(Test_NthCommand(0), I8D(0x6699), NOADDR, NODATA);
-  ASSERT_CMD(Test_NthCommand(1), I8D(0x9966), NOADDR, NODATA);
+  ASSERT_CMD(Test_NthCommand(0), I8D(0x6666), NOADDR, NODATA);
+  ASSERT_CMD(Test_NthCommand(1), I8D(0x9999), NOADDR, NODATA);
   ASSERT_EQ(MockHAL_GetAnyReg(0x00800006), 0x40);
   ASSERT_EQ(MockHAL_GetAnyReg(0x00800003), 0x08);
   ASSERT_TRUE(!MockHAL_Is4ByteMode());
@@ -67,10 +67,10 @@ static bool s28hs_dtr_operations(void)
   Test_Pattern(tx, sizeof(tx), 0x5A);
 
   ASSERT_EQ(S28HS512T_PageProgram(&h, EXTMEM_MODE_OCTAL_DTR, 0x00002000, tx, sizeof(tx)), S28HS512T_OK);
-  ASSERT_CMD(Test_NthCommand(0), I8D(0x06F9), NOADDR, NODATA);
-  ASSERT_CMD(Test_NthCommand(1), I8D(0x12ED), A8D(0x00002000), D8D(256), DUMMY(0), WITHDQS);
+  ASSERT_CMD(Test_NthCommand(0), I8D(0x0606), NOADDR, NODATA);
+  ASSERT_CMD(Test_NthCommand(1), I8D(0x1212), A8D(0x00002000), D8D(256), DUMMY(0), WITHDQS);
   /* Status poll: RDAR SR1V (volatile) with 4-byte address, VRGLAT 11 latency (6), 2 bytes */
-  ASSERT_CMD(Test_NthCommand(2), I8D(0x659A), A8D(S28HS_REG_STATUS1_V), D8D(2), DUMMY(6), WITHDQS);
+  ASSERT_CMD(Test_NthCommand(2), I8D(0x6565), A8D(S28HS_REG_STATUS1_V), D8D(2), DUMMY(6), WITHDQS);
   const MockEvent_t *poll = MockHAL_FindEvent(MOCK_EV_AUTOPOLL, 0);
   ASSERT_NOT_NULL(poll);
   ASSERT_EQ(poll->Poll.MatchMask, 0x01);
@@ -78,32 +78,32 @@ static bool s28hs_dtr_operations(void)
 
   MockHAL_ClearLog();
   ASSERT_EQ(S28HS512T_Read(&h, EXTMEM_MODE_OCTAL_DTR, 0x00002000, rx, sizeof(rx), 24), S28HS512T_OK);
-  ASSERT_CMD(Test_NthCommand(0), I8D(0xEE11), A8D(0x00002000), D8D(256), DUMMY(24), WITHDQS);
+  ASSERT_CMD(Test_NthCommand(0), I8D(0xEEEE), A8D(0x00002000), D8D(256), DUMMY(24), WITHDQS);
   ASSERT_EQ(memcmp(tx, rx, sizeof(tx)), 0);
 
   MockHAL_ClearLog();
   ASSERT_EQ(S28HS512T_EraseSector4K(&h, EXTMEM_MODE_OCTAL_DTR, 0x00002000), S28HS512T_OK);
-  ASSERT_CMD(Test_NthCommand(1), I8D(0x21DE), A8D(0x00002000), NODATA);
+  ASSERT_CMD(Test_NthCommand(1), I8D(0x2121), A8D(0x00002000), NODATA);
   ASSERT_EQ(MockHAL_GetMemoryBuffer()[0x2000], 0xFF);
 
   MockHAL_SetBlockEraseSize(256U * 1024U);
   MockHAL_ClearLog();
   ASSERT_EQ(S28HS512T_EraseBlock256K(&h, EXTMEM_MODE_OCTAL_DTR, 0x00000000), S28HS512T_OK);
-  ASSERT_CMD(Test_NthCommand(1), I8D(0xDC23), A8D(0x00000000), NODATA);
+  ASSERT_CMD(Test_NthCommand(1), I8D(0xDCDC), A8D(0x00000000), NODATA);
 
   MockHAL_ClearLog();
   ASSERT_EQ(S28HS512T_ChipErase(&h, EXTMEM_MODE_OCTAL_DTR), S28HS512T_OK);
-  ASSERT_CMD(Test_NthCommand(1), I8D(0x609F), NOADDR, NODATA);
+  ASSERT_CMD(Test_NthCommand(1), I8D(0x6060), NOADDR, NODATA);
 
   MockHAL_ClearLog();
   ASSERT_EQ(S28HS512T_EnableMemoryMappedModeDTR(&h, 24), S28HS512T_OK);
-  ASSERT_CMD(Test_NthCommand(0), I8D(0xEE11), .AddressMode = HAL_XSPI_ADDRESS_8_LINES, D8D(TEST_ANY), DUMMY(24), WITHDQS, OPREAD);
+  ASSERT_CMD(Test_NthCommand(0), I8D(0xEEEE), .AddressMode = HAL_XSPI_ADDRESS_8_LINES, D8D(TEST_ANY), DUMMY(24), WITHDQS, OPREAD);
   ASSERT_NOT_NULL(MockHAL_FindEvent(MOCK_EV_MEMMAPPED, 0));
 
   uint8_t reg = 0;
   MockHAL_ClearLog();
   ASSERT_EQ(S28HS512T_ReadAnyReg(&h, EXTMEM_MODE_OCTAL_DTR, S28HS_REG_CFR2_V, &reg), S28HS512T_OK);
-  ASSERT_CMD(Test_NthCommand(0), I8D(0x659A), A8D(S28HS_REG_CFR2_V), D8D(2), DUMMY(6));
+  ASSERT_CMD(Test_NthCommand(0), I8D(0x6565), A8D(S28HS_REG_CFR2_V), D8D(2), DUMMY(6));
   ASSERT_EQ(reg, 0x08);
   ASSERT_EQ(S28HS512T_WriteEnable(&h, EXTMEM_MODE_OCTAL_DTR), S28HS512T_OK);
   ASSERT_EQ(S28HS512T_WriteAnyReg(&h, EXTMEM_MODE_OCTAL_DTR, S28HS_REG_CFR2_V, 0x8B), S28HS512T_OK);
@@ -169,10 +169,26 @@ static bool s28hs_spi_operations(void)
     FLASH_SETUP(0x34, 0x5B, 0x1A);
     MockHAL_SetSemperFailure(true);
     ASSERT_EQ(S28HS512T_PageProgram(&h, m, 0x100, tx, 8), S28HS512T_ERROR);
-    ASSERT_EQ(MockHAL_CountCommands(dtr ? 0x827D : 0x82), 1);
+    ASSERT_EQ(MockHAL_CountCommands(dtr ? 0x8282 : 0x82), 1);
     ASSERT_EQ(MockHAL_GetStatusRegister() & 0x61, 0);
     MockHAL_SetSemperFailure(false);
     FAULT_SWEEP_EXPECT(FLASH_SETUP(0x34, 0x5B, 0x1A); MockHAL_SetSemperFailure(true), S28HS512T_EraseSector4K(&h, m, 0), S28HS512T_ERROR);
+  }
+
+  /* Deep power down: ENDPD, then any short command (CS# pulse) wakes the device after tEXTDPD */
+  for (int dtr = 0; dtr < 2; dtr++)
+  {
+    ExtMem_Mode_t m = dtr ? EXTMEM_MODE_OCTAL_DTR : EXTMEM_MODE_SPI;
+    FLASH_SETUP(0x34, 0x5B, 0x1A);
+    ASSERT_EQ(S28HS512T_EnterDeepPowerDown(&h, m), S28HS512T_OK);
+    if (dtr) ASSERT_CMD(Test_NthCommand(0), I8D(0xB9B9), NOADDR, NODATA);
+    else     ASSERT_CMD(Test_NthCommand(0), I1S(0xB9), NOADDR, NODATA);
+    ASSERT_EQ(S28HS512T_LeaveDeepPowerDown(&h, m), S28HS512T_OK);
+    if (dtr) ASSERT_CMD(Test_NthCommand(1), I8D(0x0404), NOADDR, NODATA);
+    else     ASSERT_CMD(Test_NthCommand(1), I1S(0x04), NOADDR, NODATA);
+    ASSERT_EQ(Test_CommandCount(), 2);
+    FAULT_SWEEP(FLASH_SETUP(0x34, 0x5B, 0x1A), S28HS512T_EnterDeepPowerDown(&h, m));
+    FAULT_SWEEP(FLASH_SETUP(0x34, 0x5B, 0x1A), S28HS512T_LeaveDeepPowerDown(&h, m));
   }
 
   S28HS512T_Info_t info;
@@ -212,7 +228,9 @@ static bool s28hs_multi_die(void)
   /* Octal entry configures every die, die 0 last */
   FLASH_SETUP(0x34, 0x5B, 0x1C);
   ASSERT_EQ(S28HS512T_EnterOctalDTRMode(&h, 24), S28HS512T_OK);
-  ASSERT_CMD(Test_NthCommand(2), I1S(0x65), A1S(HAL_XSPI_ADDRESS_32_BITS, 0x08800003U), D1S(1));
+  ASSERT_CMD(Test_NthCommand(1), I1S(0x65), A1S(HAL_XSPI_ADDRESS_32_BITS, 0x08800003U), D1S(1));
+  /* WRENB set WRPGEN in both dice: one 8D WRDIS once every die is in 8D-8D-8D (002-23755, 5.7.1) */
+  ASSERT_CMD(Test_NthCommand(Test_CommandCount() - 1U), I8D(0x0404), NOADDR, NODATA);
   ASSERT_EQ(MockHAL_GetAnyReg(0x08800003U), 0x8B);
   ASSERT_EQ(MockHAL_GetAnyReg(0x08800004U), 0xC0);
   ASSERT_EQ(MockHAL_GetAnyReg(0x08800006U), 0x43);
@@ -222,7 +240,9 @@ static bool s28hs_multi_die(void)
   /* Program in die 1 polls STR1V of die 1 */
   MockHAL_ClearLog();
   ASSERT_EQ(S28HS512T_PageProgram(&h, EXTMEM_MODE_OCTAL_DTR, 0x08000100U, tx, sizeof(tx)), S28HS512T_OK);
-  ASSERT_CMD(Test_NthCommand(2), I8D(0x659A), A8D(0x08800000U), D8D(2), DUMMY(6));
+  ASSERT_CMD(Test_NthCommand(2), I8D(0x6565), A8D(0x08800000U), D8D(2), DUMMY(6));
+  ASSERT_CMD(Test_NthCommand(3), I8D(0x0404), NOADDR, NODATA);
+  ASSERT_EQ(Test_CommandCount(), 4);
   MockHAL_ClearLog();
   ASSERT_EQ(S28HS512T_EraseSector4K(&h, EXTMEM_MODE_SPI, 0x09000000U), S28HS512T_OK);
   ASSERT_CMD(Test_NthCommand(2), I1S(0x65), A1S(HAL_XSPI_ADDRESS_32_BITS, 0x08800000U), D1S(1), DUMMY(0));
@@ -237,12 +257,13 @@ static bool s28hs_multi_die(void)
   /* Chip erase = one DIE ERASE per die at the die base, each polled on its own die */
   MockHAL_ClearLog();
   ASSERT_EQ(S28HS512T_ChipErase(&h, EXTMEM_MODE_OCTAL_DTR), S28HS512T_OK);
-  ASSERT_CMD(MockHAL_FindCommand(0x619E, 0), I8D(0x619E), A8D(0x00000000U), NODATA);
-  ASSERT_CMD(MockHAL_FindCommand(0x619E, 1), I8D(0x619E), A8D(0x08000000U), NODATA);
-  ASSERT_EQ(MockHAL_CountCommands(0x609F), 0);
+  ASSERT_CMD(MockHAL_FindCommand(0x6161, 0), I8D(0x6161), A8D(0x00000000U), NODATA);
+  ASSERT_CMD(MockHAL_FindCommand(0x6161, 1), I8D(0x6161), A8D(0x08000000U), NODATA);
+  ASSERT_EQ(MockHAL_CountCommands(0x6060), 0);
   MockHAL_ClearLog();
   ASSERT_EQ(S28HS512T_ChipErase(&h, EXTMEM_MODE_SPI), S28HS512T_OK);
   ASSERT_CMD(MockHAL_FindCommand(0x61, 1), I1S(0x61), A1S(HAL_XSPI_ADDRESS_32_BITS, 0x08000000U), NODATA);
+  ASSERT_EQ(MockHAL_CountCommands(0x04), 2);
 
   FAULT_SWEEP(FLASH_SETUP(0x34, 0x5B, 0x1C), S28HS512T_EnterOctalDTRMode(&h, 24));
   FAULT_SWEEP(FLASH_SETUP(0x34, 0x5B, 0x1C), S28HS512T_ChipErase(&h, EXTMEM_MODE_OCTAL_DTR));

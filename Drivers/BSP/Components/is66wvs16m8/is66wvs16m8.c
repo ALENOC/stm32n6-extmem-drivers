@@ -17,7 +17,11 @@ int32_t IS66WVS16M8_ReadID(XSPI_HandleTypeDef *Ctx, uint8_t *pID)
   sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_8_BITS;
   sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
   sCmd.Instruction        = IS66WVS_CMD_READ_ID;
-  sCmd.AddressMode        = HAL_XSPI_ADDRESS_NONE;
+  /* SPI Read ID: 24 don't-care address bits, then MF ID, KGD and EID without wait cycles */
+  sCmd.AddressMode        = HAL_XSPI_ADDRESS_1_LINE;
+  sCmd.AddressWidth       = HAL_XSPI_ADDRESS_24_BITS;
+  sCmd.AddressDTRMode     = HAL_XSPI_ADDRESS_DTR_DISABLE;
+  sCmd.Address            = 0;
   sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
   sCmd.DataMode           = HAL_XSPI_DATA_1_LINE;
   sCmd.DataDTRMode        = HAL_XSPI_DATA_DTR_DISABLE;
@@ -87,7 +91,7 @@ int32_t IS66WVS16M8_ExitQuadMode(XSPI_HandleTypeDef *Ctx)
   return (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS66WVS_OK : IS66WVS_ERROR;
 }
 
-int32_t IS66WVS16M8_ReadQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size, uint8_t DummyCycles)
+static int32_t IS66WVS16M8_ReadQuad_Chunk(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size, uint8_t DummyCycles)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
@@ -111,7 +115,7 @@ int32_t IS66WVS16M8_ReadQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t 
   return (HAL_XSPI_Receive(Ctx, pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS66WVS_OK : IS66WVS_ERROR;
 }
 
-int32_t IS66WVS16M8_WriteQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *pData, uint32_t Size)
+static int32_t IS66WVS16M8_WriteQuad_Chunk(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *pData, uint32_t Size)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
@@ -189,5 +193,37 @@ int32_t IS66WVS16M8_Reset(XSPI_HandleTypeDef *Ctx)
   if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return IS66WVS_ERROR;
 
   HAL_Delay(1);
+  return IS66WVS_OK;
+}
+
+int32_t IS66WVS16M8_ReadQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size, uint8_t DummyCycles)
+{
+  /* Every read and write wraps inside a 1 KB page: split at page boundaries */
+  while (Size > 0U)
+  {
+    uint32_t chunk = IS66WVS_PAGE_SIZE - (Address % IS66WVS_PAGE_SIZE);
+    if (chunk > Size) chunk = Size;
+    int32_t ret = IS66WVS16M8_ReadQuad_Chunk(Ctx, Address, pData, chunk, DummyCycles);
+    if (ret != IS66WVS_OK) return ret;
+    Address += chunk;
+    pData += chunk;
+    Size -= chunk;
+  }
+  return IS66WVS_OK;
+}
+
+int32_t IS66WVS16M8_WriteQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *pData, uint32_t Size)
+{
+  /* Every read and write wraps inside a 1 KB page: split at page boundaries */
+  while (Size > 0U)
+  {
+    uint32_t chunk = IS66WVS_PAGE_SIZE - (Address % IS66WVS_PAGE_SIZE);
+    if (chunk > Size) chunk = Size;
+    int32_t ret = IS66WVS16M8_WriteQuad_Chunk(Ctx, Address, pData, chunk);
+    if (ret != IS66WVS_OK) return ret;
+    Address += chunk;
+    pData += chunk;
+    Size -= chunk;
+  }
   return IS66WVS_OK;
 }

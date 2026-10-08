@@ -31,6 +31,8 @@ extern "C" {
 #define IS62WVS_SRAM_SIZE_4MBIT          (512U * 1024U)        /* 4 Mbits  = 512 KBytes  */
 
 /* Return Codes --------------------------------------------------------------*/
+#define IS62WVS_DIE_SIZE                 (256U * 1024U)  /* 2 Mbit die (IS62WVS5128 = 2 dice) */
+
 #define IS62WVS_OK                       (0)
 #define IS62WVS_ERROR                    (-1)
 #define IS62WVS_TIMEOUT                  (-3)

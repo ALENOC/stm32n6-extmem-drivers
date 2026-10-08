@@ -34,6 +34,7 @@ extern "C" {
 #define IS66WVS_TIMEOUT                  (-3)
 
 /* ISSI Vendor Identification */
+#define IS66WVS_PAGE_SIZE                1024U  /* Reads and writes wrap inside a 1 KB page */
 #define IS66WVS_MANUFACTURER_ID          0x9DU
 #define IS66WVS_KGD                      0x5DU
 

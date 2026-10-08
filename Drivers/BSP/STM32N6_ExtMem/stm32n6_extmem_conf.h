@@ -45,15 +45,31 @@ extern "C" {
 #endif
 
 /**
-  * @brief Default Clock Prescaler
-  *        Prescaler = (XSPI_CLK_FREQ / Target_Memory_Clock)
-  *        e.g., if XSPI kernel clock is 400 MHz:
-  *        Prescaler = 2 -> 200 MHz
-  *        Prescaler = 3 -> 133 MHz
-  *        Prescaler = 4 -> 100 MHz
+  * @brief XSPI clock divider applied to the XSPI kernel clock (ExtMem_Config_t.ClockPrescaler = 0 selects it).
+  *        The memory clock is Fkernel / divider, e.g. with a 400 MHz XSPI kernel clock:
+  *        Divider = 2 -> 200 MHz
+  *        Divider = 3 -> 133 MHz
+  *        Divider = 4 -> 100 MHz
+  *        The driver programs DCR2.PRESCALER = divider - 1 (RM0486: Fclk = Fkernel / (PRESCALER + 1)).
   */
 #ifndef EXTMEM_DEFAULT_CLOCK_PRESCALER
 #define EXTMEM_DEFAULT_CLOCK_PRESCALER       2
+#endif
+
+/**
+  * @brief Longest time CS# may stay LOW on PSRAM / HyperRAM / OctalRAM (tCSM / tCEM), in ns.
+  *        1 us covers every supported part up to 105/125 degC (4 us is allowed up to 85 degC).
+  *        The XSPI refresh counter releases CS# before this limit so the memory can refresh.
+  */
+#ifndef EXTMEM_PSRAM_MAX_CS_LOW_NS
+#define EXTMEM_PSRAM_MAX_CS_LOW_NS           1000U
+#endif
+
+/**
+  * @brief XSPI bus clock assumed for the refresh counter when the RCC cannot report the kernel clock.
+  */
+#ifndef EXTMEM_XSPI_FALLBACK_BUS_CLOCK_HZ
+#define EXTMEM_XSPI_FALLBACK_BUS_CLOCK_HZ    200000000U
 #endif
 
 /**

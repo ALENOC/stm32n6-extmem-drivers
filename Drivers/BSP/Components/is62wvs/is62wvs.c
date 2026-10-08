@@ -62,7 +62,8 @@ int32_t IS62WVS_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_t 
   Ctx->Init.ClockPrescaler          = ClockPrescaler;
   Ctx->Init.SampleShifting          = HAL_XSPI_SAMPLE_SHIFT_NONE;
   Ctx->Init.DelayHoldQuarterCycle   = HAL_XSPI_DHQC_ENABLE;
-  Ctx->Init.ChipSelectBoundary      = HAL_XSPI_BONDARYOF_NONE;
+  /* Memory-mapped bursts must restart at the 2 Mbit die boundary of the 4 Mbit part */
+  Ctx->Init.ChipSelectBoundary      = HAL_XSPI_BONDARYOF_2MB; /* 2 Mbits = 256 KBytes */
   Ctx->Init.FreeRunningClock        = HAL_XSPI_FREERUNCLK_DISABLE;
   Ctx->Init.WrapSize                = HAL_XSPI_WRAP_NOT_SUPPORTED;
 
@@ -110,7 +111,7 @@ int32_t IS62WVS_ExitQuadMode(XSPI_HandleTypeDef *Ctx)
   return (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS62WVS_OK : IS62WVS_ERROR;
 }
 
-int32_t IS62WVS_Read(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size)
+static int32_t IS62WVS_Read_Chunk(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
@@ -134,7 +135,7 @@ int32_t IS62WVS_Read(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, 
   return (HAL_XSPI_Receive(Ctx, pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS62WVS_OK : IS62WVS_ERROR;
 }
 
-int32_t IS62WVS_Write(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *pData, uint32_t Size)
+static int32_t IS62WVS_Write_Chunk(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *pData, uint32_t Size)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
@@ -158,7 +159,7 @@ int32_t IS62WVS_Write(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *
   return (HAL_XSPI_Transmit(Ctx, (const uint8_t *)pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS62WVS_OK : IS62WVS_ERROR;
 }
 
-int32_t IS62WVS_ReadQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size, uint8_t DummyCycles)
+static int32_t IS62WVS_ReadQuad_Chunk(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size, uint8_t DummyCycles)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
@@ -182,7 +183,7 @@ int32_t IS62WVS_ReadQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pDa
   return (HAL_XSPI_Receive(Ctx, pData, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? IS62WVS_OK : IS62WVS_ERROR;
 }
 
-int32_t IS62WVS_WriteQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *pData, uint32_t Size)
+static int32_t IS62WVS_WriteQuad_Chunk(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *pData, uint32_t Size)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
@@ -245,4 +246,68 @@ int32_t IS62WVS_Reset(XSPI_HandleTypeDef *Ctx)
   int32_t ret = IS62WVS_ExitQuadMode(Ctx);
   HAL_Delay(1);
   return ret;
+}
+
+int32_t IS62WVS_Read(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size)
+{
+  /* The 4 Mbit part stacks two 2 Mbit dice: sequential access cannot cross 0x40000 */
+  while (Size > 0U)
+  {
+    uint32_t chunk = IS62WVS_DIE_SIZE - (Address % IS62WVS_DIE_SIZE);
+    if (chunk > Size) chunk = Size;
+    int32_t ret = IS62WVS_Read_Chunk(Ctx, Address, pData, chunk);
+    if (ret != IS62WVS_OK) return ret;
+    Address += chunk;
+    pData += chunk;
+    Size -= chunk;
+  }
+  return IS62WVS_OK;
+}
+
+int32_t IS62WVS_Write(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *pData, uint32_t Size)
+{
+  /* The 4 Mbit part stacks two 2 Mbit dice: sequential access cannot cross 0x40000 */
+  while (Size > 0U)
+  {
+    uint32_t chunk = IS62WVS_DIE_SIZE - (Address % IS62WVS_DIE_SIZE);
+    if (chunk > Size) chunk = Size;
+    int32_t ret = IS62WVS_Write_Chunk(Ctx, Address, pData, chunk);
+    if (ret != IS62WVS_OK) return ret;
+    Address += chunk;
+    pData += chunk;
+    Size -= chunk;
+  }
+  return IS62WVS_OK;
+}
+
+int32_t IS62WVS_ReadQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, uint8_t *pData, uint32_t Size, uint8_t DummyCycles)
+{
+  /* The 4 Mbit part stacks two 2 Mbit dice: sequential access cannot cross 0x40000 */
+  while (Size > 0U)
+  {
+    uint32_t chunk = IS62WVS_DIE_SIZE - (Address % IS62WVS_DIE_SIZE);
+    if (chunk > Size) chunk = Size;
+    int32_t ret = IS62WVS_ReadQuad_Chunk(Ctx, Address, pData, chunk, DummyCycles);
+    if (ret != IS62WVS_OK) return ret;
+    Address += chunk;
+    pData += chunk;
+    Size -= chunk;
+  }
+  return IS62WVS_OK;
+}
+
+int32_t IS62WVS_WriteQuad(XSPI_HandleTypeDef *Ctx, uint32_t Address, const uint8_t *pData, uint32_t Size)
+{
+  /* The 4 Mbit part stacks two 2 Mbit dice: sequential access cannot cross 0x40000 */
+  while (Size > 0U)
+  {
+    uint32_t chunk = IS62WVS_DIE_SIZE - (Address % IS62WVS_DIE_SIZE);
+    if (chunk > Size) chunk = Size;
+    int32_t ret = IS62WVS_WriteQuad_Chunk(Ctx, Address, pData, chunk);
+    if (ret != IS62WVS_OK) return ret;
+    Address += chunk;
+    pData += chunk;
+    Size -= chunk;
+  }
+  return IS62WVS_OK;
 }

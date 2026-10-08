@@ -47,7 +47,7 @@ extern "C" {
 /* Configuration Structure ---------------------------------------------------*/
 typedef struct {
   ExtMem_Bus_t            Bus;                 /*!< Target Bus: XSPI1, XSPI2, XSPI3, or FMC   */
-  uint32_t                ClockPrescaler;      /*!< Clock prescaler (2 for 200MHz, 3 for 133) */
+  uint32_t                ClockPrescaler;      /*!< XSPI clock divider: Fkernel / divider (0: default)  */
   bool                    Force1V8;            /*!< Force 1.8V VDDIO domain configuration     */
   ExtMem_Type_t           ForcedDeviceType;    /*!< Optional: EXTMEM_TYPE_UNKNOWN for auto   */
   ExtMem_Mode_t           DesiredMode;         /*!< Desired protocol mode (e.g. OCTAL_DTR)    */
@@ -73,6 +73,7 @@ typedef struct {
   /* Runtime Info */
   uint8_t                 RawID[8];            /*!< Raw device ID read during probe           */
   uint8_t                 DummyCycles;         /*!< Active read dummy cycles                  */
+  uint32_t                BusClockHz;          /*!< XSPI memory clock (kernel / divider)      */
 } ExtMem_HandleTypeDef;
 
 /* High-Level API Functions --------------------------------------------------*/

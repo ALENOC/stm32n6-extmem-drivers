@@ -188,6 +188,25 @@ static void ExtMem_ApplyDescriptor(ExtMem_HandleTypeDef *hextmem, const ExtMem_D
   hextmem->Geometry.IsNonVolatile   = !ExtMem_TypeIsVolatile(dev->Type);
 }
 
+/* XSPI kernel clock of the instance, from the RCC */
+static uint32_t ExtMem_XspiKernelClock(const void *instance)
+{
+  if (instance == XSPI1) return HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_XSPI1);
+#if defined(XSPI2)
+  if (instance == XSPI2) return HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_XSPI2);
+#endif
+  return HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_XSPI3);
+}
+
+/* XSPI DCR4.REFRESH: CS# is released every REFRESH + 1 clocks. Keep 4 clocks of margin as the
+ * STM32N6570-DK BSP does, and assume the fastest bus when the RCC does not report a clock. */
+static uint32_t ExtMem_RefreshCycles(uint32_t busClockHz)
+{
+  uint64_t clk = (busClockHz > 0U) ? busClockHz : EXTMEM_XSPI_FALLBACK_BUS_CLOCK_HZ;
+  uint64_t cycles = (clk * EXTMEM_PSRAM_MAX_CS_LOW_NS) / 1000000000ULL;
+  return (cycles > 8U) ? (uint32_t)(cycles - 4U) : 4U;
+}
+
 /* Read latency from the matched database entry, or the protocol default for SFDP / generic parts */
 static uint8_t ExtMem_ReadDummy(const ExtMem_HandleTypeDef *hextmem, uint8_t fallback)
 {
@@ -328,8 +347,14 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
   /* Power domain and clocks */
   ExtMem_EnablePowerAndClocks(&hextmem->hxspi, hextmem->Config.Force1V8, targetPort);
 
-  /* Set Clock Prescaler */
-  uint32_t prescaler = (hextmem->Config.ClockPrescaler > 0) ? hextmem->Config.ClockPrescaler : EXTMEM_DEFAULT_CLOCK_PRESCALER;
+  /* Clock divider: DCR2.PRESCALER holds divider - 1 (Fclk = Fkernel / (PRESCALER + 1)) */
+  uint32_t divider = (hextmem->Config.ClockPrescaler > 0U) ? hextmem->Config.ClockPrescaler : EXTMEM_DEFAULT_CLOCK_PRESCALER;
+  if (divider > 256U)
+  {
+    return EXTMEM_INVALID_PARAM;
+  }
+  uint32_t prescaler = divider - 1U;
+  hextmem->BusClockHz = ExtMem_XspiKernelClock(hextmem->hxspi.Instance) / divider;
 
   /* Basic XSPI Init in Single SPI mode */
   hextmem->hxspi.Init.FifoThresholdByte       = 4;
@@ -345,6 +370,8 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
   hextmem->hxspi.Init.ChipSelectBoundary      = HAL_XSPI_BONDARYOF_NONE;
   hextmem->hxspi.Init.FreeRunningClock        = HAL_XSPI_FREERUNCLK_DISABLE;
   hextmem->hxspi.Init.WrapSize                = HAL_XSPI_WRAP_NOT_SUPPORTED;
+  hextmem->hxspi.Init.MaxTran                 = 0;
+  hextmem->hxspi.Init.Refresh                 = 0;
 
   if (HAL_XSPI_Init(&hextmem->hxspi) != HAL_OK)
   {
@@ -369,6 +396,13 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
   if (HAL_XSPI_Init(&hextmem->hxspi) != HAL_OK)
   {
     return EXTMEM_ERROR;
+  }
+
+  /* Self-refreshing RAMs need CS# released before tCSM: the drivers keep this setting */
+  if (hextmem->Geometry.Type == EXTMEM_TYPE_PSRAM_OCTAL_ISSI || hextmem->Geometry.Type == EXTMEM_TYPE_PSRAM_QUAD_ISSI ||
+      hextmem->Geometry.Type == EXTMEM_TYPE_HYPERRAM_INFINEON || hextmem->Geometry.Type == EXTMEM_TYPE_HYPERRAM_ISSI)
+  {
+    hextmem->hxspi.Init.Refresh = ExtMem_RefreshCycles(hextmem->BusClockHz);
   }
 
   /* Commands stay in 1S-1S-1S until a high performance mode is confirmed below */
@@ -407,7 +441,7 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
   }
   else if (hextmem->Geometry.Type == EXTMEM_TYPE_PSRAM_OCTAL_ISSI)
   {
-    hextmem->DummyCycles = ExtMem_ReadDummy(hextmem, 5);
+    hextmem->DummyCycles = IS66WVO_DUMMY_CYCLES;
     if (IS66WVO32M8_Init(&hextmem->hxspi, prescaler, memSize) != IS66WVO_OK) return EXTMEM_ERROR;
     hextmem->ActiveMode = EXTMEM_MODE_OCTAL_DTR;
   }
@@ -1130,6 +1164,10 @@ int32_t ExtMem_EnterDeepPowerDown(ExtMem_HandleTypeDef *hextmem)
   {
     return IS66WVH16M8_EnterDeepPowerDown(&hextmem->hxspi);
   }
+  if (hextmem->Geometry.Type == EXTMEM_TYPE_PSRAM_OCTAL_ISSI)
+  {
+    return IS66WVO32M8_EnterDeepPowerDown(&hextmem->hxspi);
+  }
   return EXTMEM_NOT_SUPPORTED;
 }
 
@@ -1143,6 +1181,10 @@ int32_t ExtMem_LeaveDeepPowerDown(ExtMem_HandleTypeDef *hextmem)
   if (hextmem->Geometry.Type == EXTMEM_TYPE_HYPERRAM_ISSI)
   {
     return IS66WVH16M8_LeaveDeepPowerDown(&hextmem->hxspi);
+  }
+  if (hextmem->Geometry.Type == EXTMEM_TYPE_PSRAM_OCTAL_ISSI)
+  {
+    return IS66WVO32M8_LeaveDeepPowerDown(&hextmem->hxspi);
   }
   return EXTMEM_NOT_SUPPORTED;
 }
@@ -1197,8 +1239,6 @@ int32_t ExtMem_Reset(ExtMem_HandleTypeDef *hextmem)
     case EXTMEM_TYPE_HYPERFLASH_ISSI:
       return S26KS512S_Reset(&hextmem->hxspi);
 
-    case EXTMEM_TYPE_PSRAM_OCTAL_ISSI:
-      return IS66WVO32M8_Reset(&hextmem->hxspi);
 
     case EXTMEM_TYPE_PSRAM_QUAD_ISSI:
       return IS66WVS16M8_Reset(&hextmem->hxspi);
@@ -1210,7 +1250,7 @@ int32_t ExtMem_Reset(ExtMem_HandleTypeDef *hextmem)
       return IS62WVS_EnterQuadMode(&hextmem->hxspi);
 
     default:
-      /* HyperRAM has no software reset command (hardware RESET# only) */
+      /* HyperRAM and OctalRAM have no software reset command (hardware RESET# only) */
       return EXTMEM_NOT_SUPPORTED;
   }
 }

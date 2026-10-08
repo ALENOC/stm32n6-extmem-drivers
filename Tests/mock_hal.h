@@ -374,6 +374,7 @@ HAL_StatusTypeDef HAL_XSPI_Receive_DMA(XSPI_HandleTypeDef *hxspi, uint8_t *pData
 HAL_StatusTypeDef HAL_XSPI_AutoPolling(XSPI_HandleTypeDef *hxspi, const XSPI_AutoPollingTypeDef *pCfg, uint32_t Timeout);
 HAL_StatusTypeDef HAL_XSPI_MemoryMapped(XSPI_HandleTypeDef *hxspi, const XSPI_MemoryMappedTypeDef *pCfg);
 HAL_StatusTypeDef HAL_XSPI_Abort(XSPI_HandleTypeDef *hxspi);
+HAL_StatusTypeDef HAL_XSPI_SetClockPrescaler(XSPI_HandleTypeDef *hxspi, uint32_t Prescaler);
 HAL_StatusTypeDef HAL_XSPI_HyperbusCfg(XSPI_HandleTypeDef *hxspi, const XSPI_HyperbusCfgTypeDef *pCfg, uint32_t Timeout);
 HAL_StatusTypeDef HAL_XSPI_HyperbusCmd(XSPI_HandleTypeDef *hxspi, const XSPI_HyperbusCmdTypeDef *pCmd, uint32_t Timeout);
 
@@ -382,6 +383,11 @@ HAL_StatusTypeDef HAL_SRAM_DeInit(SRAM_HandleTypeDef *hsram);
 
 uint32_t HAL_GetTick(void);
 uint32_t HAL_RCC_GetHCLKFreq(void);
+uint32_t HAL_RCCEx_GetPeriphCLKFreq(uint64_t PeriphClk);
+
+#define RCC_PERIPHCLK_XSPI1              (0x0040000000000000UL)
+#define RCC_PERIPHCLK_XSPI2              (0x0080000000000000UL)
+#define RCC_PERIPHCLK_XSPI3              (0x0100000000000000UL)
 void HAL_Delay(uint32_t Delay);
 
 void HAL_PWREx_EnableVddIO2(void);
@@ -425,7 +431,8 @@ typedef enum {
   MOCK_EV_FMC_WRITE16,
   MOCK_EV_FMC_READ16,
   MOCK_EV_PWR_VDDIO,
-  MOCK_EV_CACHE_MAINT
+  MOCK_EV_CACHE_MAINT,
+  MOCK_EV_SET_PRESCALER
 } MockEventType_t;
 
 #define MOCK_EVENT_DATA_BYTES 8U
@@ -453,12 +460,15 @@ void MockHAL_Reset(void);
 /* Emulated serial device identity and behaviour */
 void MockHAL_SetEmulatedChip(uint8_t mfg, uint8_t memType, uint8_t density);
 void MockHAL_SetHyperBusID(uint16_t id0, uint16_t id1);
+void MockHAL_SetHyperCR0(uint16_t cr0);                      /*!< HyperRAM CR0 (sets the device latency)  */
 void MockHAL_SetFlashSemantics(bool norFlash);              /*!< true: program ANDs bits, erase needed  */
 void MockHAL_SetBlockEraseSize(uint32_t bytes);              /*!< Size erased by D8h/DCh (default 64 KB) */
 void MockHAL_SetHyperFlashMode(bool enable);                 /*!< Decode HyperFlash command cycles       */
 void MockHAL_SetSfdpTable(const uint8_t *pTable, uint32_t size); /*!< NULL restores the default table   */
 void MockHAL_SetStatusRegister(uint8_t sr1);
 void MockHAL_SetSemperFailure(bool fail);
+void MockHAL_SetFlLFailure(bool fail);                       /*!< Next program/erase fails: SR2 P_ERR, busy until CLSR */
+uint8_t MockHAL_GetStatusRegister2(void);
 void MockHAL_SetIssiReadRegister(bool supported);            /*!< ISSI SRPV/RDRP Read Register present    */
 uint8_t MockHAL_GetIssiReadParams(void);                    /*!< Next program/erase fails: PRGERR + busy until CLPEF */
 void MockHAL_SetFlagStatusRegister(uint8_t fsr);
@@ -467,6 +477,10 @@ void MockHAL_SetHyperFlashStatus(uint16_t status);           /*!< Value returned
 void MockHAL_SetFmcNorStuck(bool busy, bool dq5);            /*!< FMC NOR never completes / reports DQ5  */
 void MockHAL_SetFmcNorBusyReads(uint32_t reads);             /*!< FMC NOR completes after N status reads */
 void MockHAL_SetHclkFreq(uint32_t hz);                       /*!< Value returned by HAL_RCC_GetHCLKFreq   */
+void MockHAL_SetXspiKernelClock(uint32_t hz);                /*!< Value returned for RCC_PERIPHCLK_XSPIx  */
+void MockHAL_SetOctalRamId(uint16_t id);                     /*!< ISSI OctalRAM ID register              */
+void MockHAL_SetOctalRamCrLocked(bool locked);               /*!< OctalRAM ignores CR writes             */
+uint16_t MockHAL_GetOctalRamCR(void);                        /*!< ISSI OctalRAM configuration register   */
 
 /* Emulated register views */
 uint8_t  MockHAL_GetStatusRegister(void);

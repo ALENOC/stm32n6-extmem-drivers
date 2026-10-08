@@ -51,6 +51,8 @@ extern "C" {
 #define S25HL_CMD_READ_CONFIG1           0x35U
 #define S25HL_CMD_WRITE_STATUS1          0x01U
 #define S25HL_CMD_CLEAR_ERRORS           0x82U /* CLPEF: clear program / erase failure flags (SEMPER) */
+#define S25FL_CMD_CLEAR_STATUS           0x30U /* CLSR: clear failure flags and WIP (S25FL-L only)    */
+#define S25HL_CMD_READ_STATUS2           0x07U /* RDSR2 */
 #define S25HL_CMD_RESET_ENABLE           0x66U
 #define S25HL_CMD_RESET                  0x99U
 
@@ -59,6 +61,8 @@ extern "C" {
 #define S25HL_SR1_WEL                    (1U << 1)
 #define S25HL_SR1_ERS_ERR                (1U << 5) /* SEMPER STR1V[5] ERSERR */
 #define S25HL_SR1_PRG_ERR                (1U << 6) /* SEMPER STR1V[6] PRGERR */
+#define S25FL_SR2_PRG_ERR                (1U << 5) /* S25FL-L SR2V[5] P_ERR  */
+#define S25FL_SR2_ERS_ERR                (1U << 6) /* S25FL-L SR2V[6] E_ERR  */
 #define S25HL_CR1_QUAD_ENABLE            (1U << 1) /* Bit 1 of Configuration Register 1 is QUAD bit */
 
 /* Quad I/O read: 2 continuous-read mode cycles follow the address and are NOT part of the latency

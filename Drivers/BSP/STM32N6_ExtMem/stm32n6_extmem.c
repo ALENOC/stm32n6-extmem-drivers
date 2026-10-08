@@ -9,6 +9,9 @@
 #include "stm32n6_extmem.h"
 #include <string.h>
 
+/* Any 32-bit kernel clock divided down to the probing limit must fit the 8-bit prescaler */
+_Static_assert(EXTMEM_INIT_MAX_CLOCK_HZ >= (0xFFFFFFFFU / 256U) + 1U, "EXTMEM_INIT_MAX_CLOCK_HZ too low for the XSPI prescaler");
+
 /* CPU accesses to the memory-mapped window. Host unit tests route them to the emulated array. */
 static void ExtMem_MappedRead(uint32_t base, uint32_t offset, uint8_t *pData, uint32_t size)
 {
@@ -354,7 +357,18 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
     return EXTMEM_INVALID_PARAM;
   }
   uint32_t prescaler = divider - 1U;
-  hextmem->BusClockHz = ExtMem_XspiKernelClock(hextmem->hxspi.Instance) / divider;
+  uint32_t kernelHz = ExtMem_XspiKernelClock(hextmem->hxspi.Instance);
+  hextmem->BusClockHz = kernelHz / divider;
+
+  /* Probing and mode switching run in 1S-1S-1S, slower than the final protocol on most parts:
+   * keep the bus at or below EXTMEM_INIT_MAX_CLOCK_HZ until the memory is configured */
+  uint32_t initPrescaler = prescaler;
+  if (kernelHz > 0U)
+  {
+    /* At most 4294967295 / EXTMEM_INIT_MAX_CLOCK_HZ: always a valid divider (checked below) */
+    uint32_t initDivider = (kernelHz + EXTMEM_INIT_MAX_CLOCK_HZ - 1U) / EXTMEM_INIT_MAX_CLOCK_HZ;
+    if (initDivider > divider) initPrescaler = initDivider - 1U;
+  }
 
   /* Basic XSPI Init in Single SPI mode */
   hextmem->hxspi.Init.FifoThresholdByte       = 4;
@@ -364,7 +378,7 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
   hextmem->hxspi.Init.MemorySelect            = HAL_XSPI_CSSEL_NCS1;
   hextmem->hxspi.Init.ChipSelectHighTimeCycle = 4;
   hextmem->hxspi.Init.ClockMode               = HAL_XSPI_CLOCK_MODE_0;
-  hextmem->hxspi.Init.ClockPrescaler          = prescaler;
+  hextmem->hxspi.Init.ClockPrescaler          = initPrescaler;
   hextmem->hxspi.Init.SampleShifting          = HAL_XSPI_SAMPLE_SHIFT_NONE;
   hextmem->hxspi.Init.DelayHoldQuarterCycle   = HAL_XSPI_DHQC_ENABLE;
   hextmem->hxspi.Init.ChipSelectBoundary      = HAL_XSPI_BONDARYOF_NONE;
@@ -393,9 +407,22 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
   /* Update XSPI DEVSIZE to match the detected capacity per RM0486 (detection never reports 0 bytes) */
   uint32_t memSize = ExtMem_CalculateMemorySize(hextmem->Geometry.TotalSizeBytes);
   hextmem->hxspi.Init.MemorySize = memSize;
+
+  /* Stacked-die octal NOR: bursts restart at each die (CSBOUND code n = 2^n bytes) */
+  uint32_t dice = (hextmem->pDevice != NULL && hextmem->pDevice->DieCount > 1U) ? hextmem->pDevice->DieCount : 1U;
+  if (dice > 1U && hextmem->Geometry.Type == EXTMEM_TYPE_NOR_OCTAL_SEMPER)
+  {
+    hextmem->hxspi.Init.ChipSelectBoundary = ExtMem_CalculateMemorySize(hextmem->Geometry.TotalSizeBytes / dice) + 1U;
+  }
   if (HAL_XSPI_Init(&hextmem->hxspi) != HAL_OK)
   {
     return EXTMEM_ERROR;
+  }
+
+  /* The configured clock must not exceed what the detected part supports */
+  if (hextmem->pDevice != NULL && hextmem->BusClockHz > (hextmem->pDevice->MaxClockFreqMHz * 1000000U))
+  {
+    return EXTMEM_INVALID_PARAM;
   }
 
   /* Self-refreshing RAMs need CS# released before tCSM: the drivers keep this setting */
@@ -413,6 +440,20 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
   /* Switch memory to its high performance mode */
   if (hextmem->Geometry.Type == EXTMEM_TYPE_NOR_OCTAL_SEMPER)
   {
+    /* Stacked dice: every die has its own registers, located through the SFDP SCCR tables */
+    S28HS512T_DieLayout_t layout = { 1U, 0U, { S28HS_REG_VOLATILE_BASE, 0U, 0U, 0U } };
+    if (dice > 1U)
+    {
+      uint8_t sfdpDice = 0;
+      int32_t map = SFDP_ReadDieRegisterMap(&hextmem->hxspi, layout.VregBase, &sfdpDice);
+      if (map != EXTMEM_OK) return map;
+      /* The 2 Gb parts describe 4 dice in SFDP but have 2 (same correction as Linux spi-nor) */
+      if (sfdpDice < dice) return EXTMEM_NOT_SUPPORTED;
+      layout.Dice    = (uint8_t)dice;
+      layout.DieSize = hextmem->Geometry.TotalSizeBytes / dice;
+    }
+    if (S28HS512T_SetDieLayout(&hextmem->hxspi, &layout) != S28HS512T_OK) return EXTMEM_ERROR;
+
     /* SEMPER latency is programmed as MEMLAT = 0xB, which always means 24 cycles */
     hextmem->DummyCycles = S28HS_OCTAL_DTR_READ_DUMMY;
     if (S28HS512T_EnterOctalDTRMode(&hextmem->hxspi, hextmem->DummyCycles) != S28HS512T_OK)
@@ -501,6 +542,12 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
     if (IS62WVS_WriteModeRegister(&hextmem->hxspi, IS62WVS_MODE_SEQUENTIAL) != IS62WVS_OK) return EXTMEM_ERROR;
     if (IS62WVS_EnterQuadMode(&hextmem->hxspi) != IS62WVS_OK) return EXTMEM_ERROR;
     hextmem->ActiveMode = EXTMEM_MODE_QUAD_4_4_4; /* SQI: instruction, address and data on 4 lines */
+  }
+
+  /* Memory configured: switch to the requested clock (drivers that re-initialize the XSPI already use it) */
+  if (hextmem->hxspi.Init.ClockPrescaler != prescaler)
+  {
+    if (HAL_XSPI_SetClockPrescaler(&hextmem->hxspi, prescaler) != HAL_OK) return EXTMEM_ERROR;
   }
 
   hextmem->State = EXTMEM_STATE_INDIRECT;
@@ -603,30 +650,39 @@ int32_t ExtMem_AutoDetect(ExtMem_HandleTypeDef *hextmem)
 
   /* 3. Try HyperBus Register Space Probe (HyperRAM). HyperFlash has no register space and
    *    must be selected with Config.ForcedDeviceType or Config.ForcedPartNumber. */
-  XSPI_HyperbusCfgTypeDef sHyperCfg = {
-    .RWRecoveryTimeCycle = 4,
-    .AccessTimeCycle     = 6,
-    .WriteZeroLatency    = HAL_XSPI_LATENCY_ON_WRITE,
-    .LatencyMode         = HAL_XSPI_VARIABLE_LATENCY
-  };
+  /* The power-on latency is 7 clocks on 200 MHz parts and 6 clocks on 166 MHz parts: the ID0 read
+   * only returns valid data when the controller latency matches, so both are tried. */
+  static const uint32_t probeLatency[2] = { 7U, 6U };
+  uint16_t hyperId0 = 0;
+  uint32_t capacity = 0;
 
   hextmem->hxspi.Init.MemoryType = HAL_XSPI_MEMTYPE_HYPERBUS;
   if (HAL_XSPI_Init(&hextmem->hxspi) != HAL_OK) return EXTMEM_ERROR;
-  if (HAL_XSPI_HyperbusCfg(&hextmem->hxspi, &sHyperCfg, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return EXTMEM_ERROR;
 
-  uint16_t hyperId0 = 0;
-  uint32_t capacity = 0;
-  if (S27KS0641_ReadRegister(&hextmem->hxspi, S27KS_REG_ID0, &hyperId0) != S27KS_OK)
+  for (uint32_t i = 0; (i < 2U) && (capacity == 0U); i++)
   {
-    return EXTMEM_ERROR;
-  }
-  if (hyperId0 != 0x0000 && hyperId0 != 0xFFFF)
-  {
-    /* ID0[12:8] = row address bits - 1, ID0[7:4] = column address bits - 1, 16-bit words */
-    uint32_t rowBits  = ((uint32_t)(hyperId0 >> 8) & 0x1FU) + 1U;
-    uint32_t colBits  = ((uint32_t)(hyperId0 >> 4) & 0x0FU) + 1U;
-    uint32_t idBytes  = (rowBits + colBits + 1U < 32U) ? (1UL << (rowBits + colBits + 1U)) : 0U;
-    capacity = (hextmem->Config.ForcedCapacityBytes > 0) ? hextmem->Config.ForcedCapacityBytes : idBytes;
+    XSPI_HyperbusCfgTypeDef sHyperCfg = {
+      .RWRecoveryTimeCycle = 4,
+      .AccessTimeCycle     = probeLatency[i],
+      .WriteZeroLatency    = HAL_XSPI_LATENCY_ON_WRITE,
+      .LatencyMode         = HAL_XSPI_VARIABLE_LATENCY
+    };
+    if (HAL_XSPI_HyperbusCfg(&hextmem->hxspi, &sHyperCfg, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return EXTMEM_ERROR;
+    if (S27KS0641_ReadRegister(&hextmem->hxspi, S27KS_REG_ID0, &hyperId0) != S27KS_OK) return EXTMEM_ERROR;
+
+    /* A valid ID0 names Cypress/Infineon (0001b) or ISSI (0011b) and a decodable geometry */
+    uint8_t idMfg = (uint8_t)(hyperId0 & 0x0FU);
+    if (idMfg == EXTMEM_HYPERRAM_MFG_CYPRESS || idMfg == EXTMEM_HYPERRAM_MFG_ISSI)
+    {
+      /* ID0[12:8] = row address bits - 1, ID0[7:4] = column address bits - 1, 16-bit words */
+      uint32_t rowBits = ((uint32_t)(hyperId0 >> 8) & 0x1FU) + 1U;
+      uint32_t colBits = ((uint32_t)(hyperId0 >> 4) & 0x0FU) + 1U;
+      uint32_t idBytes = (rowBits + colBits + 1U < 32U) ? (1UL << (rowBits + colBits + 1U)) : 0U;
+      if (idBytes > 0U)
+      {
+        capacity = (hextmem->Config.ForcedCapacityBytes > 0) ? hextmem->Config.ForcedCapacityBytes : idBytes;
+      }
+    }
   }
 
   if (capacity > 0U)
@@ -1266,6 +1322,7 @@ int32_t ExtMem_DeInit(ExtMem_HandleTypeDef *hextmem)
   }
   if (!ExtMem_IsFmcBus(hextmem->Config.Bus))
   {
+    (void)S28HS512T_SetDieLayout(&hextmem->hxspi, NULL); /* Releases a stacked-die registration */
     if (HAL_XSPI_DeInit(&hextmem->hxspi) != HAL_OK) ret = EXTMEM_ERROR;
   }
   else

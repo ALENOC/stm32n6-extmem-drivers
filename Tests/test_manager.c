@@ -34,6 +34,12 @@ static bool IsHyperRam(ExtMem_Type_t t)
   return (t == EXTMEM_TYPE_HYPERRAM_INFINEON) || (t == EXTMEM_TYPE_HYPERRAM_ISSI);
 }
 
+/* Self-refreshing XSPI RAMs: deep power down, no software reset, CS# refresh counter */
+static bool IsSelfRefreshRam(ExtMem_Type_t t)
+{
+  return IsHyperRam(t) || (t == EXTMEM_TYPE_PSRAM_OCTAL_ISSI);
+}
+
 static ExtMem_Mode_t ExpectedMode(ExtMem_Type_t t)
 {
   if (IsOctalNor(t) || t == EXTMEM_TYPE_PSRAM_OCTAL_ISSI) return EXTMEM_MODE_OCTAL_DTR;
@@ -68,6 +74,8 @@ static void SetupDevice(const ExtMem_DeviceDescriptor_t *d)
   s_h.Config.Bus              = IsFmcType(d->Type) ? EXTMEM_BUS_FMC_SRAM_BANK1_1 : EXTMEM_BUS_XSPI1;
   s_h.Config.ForcedPartNumber = d->PartNumber;
   s_h.Config.ForcedDeviceType = (d->Type == EXTMEM_TYPE_NOR_PARALLEL_FMC) ? EXTMEM_TYPE_NOR_PARALLEL_FMC : EXTMEM_TYPE_UNKNOWN;
+  /* Fastest divider of the 400 MHz kernel clock the part supports */
+  s_h.Config.ClockPrescaler   = (400U + d->MaxClockFreqMHz - 1U) / d->MaxClockFreqMHz;
 }
 
 #define SETUP_INIT(d) do { SetupDevice(d); (void)ExtMem_Init(&s_h); MockHAL_ClearLog(); } while (0)
@@ -107,6 +115,9 @@ static bool ExerciseDevice(const ExtMem_DeviceDescriptor_t *d)
   {
     ASSERT_EQ(MockHAL_GetAnyReg(0x00800006), 0x43);
     ASSERT_EQ(s_h.DummyCycles, 24);
+    /* Stacked dice: second die configured too, bursts bounded by the 1 Gbit die */
+    ASSERT_EQ(MockHAL_GetAnyReg(0x08800006), (d->DieCount > 1U) ? 0x43 : 0x40);
+    ASSERT_EQ(s_h.hxspi.Init.ChipSelectBoundary, (d->DieCount > 1U) ? HAL_XSPI_BONDARYOF_1GB : HAL_XSPI_BONDARYOF_NONE);
   }
   if (d->Type == EXTMEM_TYPE_NOR_OCTAL_ISSI || d->Type == EXTMEM_TYPE_NOR_OCTAL_MICRON)
   {
@@ -125,6 +136,13 @@ static bool ExerciseDevice(const ExtMem_DeviceDescriptor_t *d)
   if (d->Type == EXTMEM_TYPE_NOR_QUAD_INFINEON)
   {
     ASSERT_EQ(s_h.DummyCycles, S25HL_DEFAULT_READ_LATENCY);
+  }
+  if (!IsFmcType(d->Type))
+  {
+    /* CS# refresh counter only on self-refreshing RAMs: 1 us at the configured bus clock, minus 4 clocks */
+    bool needsRefresh = IsSelfRefreshRam(d->Type) || d->Type == EXTMEM_TYPE_PSRAM_QUAD_ISSI;
+    uint32_t expect = needsRefresh ? (s_h.BusClockHz / 1000000U) - 4U : 0U;
+    ASSERT_EQ(s_h.hxspi.Init.Refresh, expect);
   }
   if (d->Type == EXTMEM_TYPE_SRAM_SERIAL_ISSI)
   {
@@ -168,6 +186,10 @@ static bool ExerciseDevice(const ExtMem_DeviceDescriptor_t *d)
     MockHAL_ClearLog();
     ASSERT_EQ(ExtMem_EraseChip(&s_h), EXTMEM_OK);
     ASSERT_EQ(mem[0], 0xFF);
+    if (d->Type == EXTMEM_TYPE_NOR_OCTAL_SEMPER)
+    {
+      ASSERT_EQ(MockHAL_CountCommands(0x619E), (d->DieCount > 1U) ? d->DieCount : 0U);
+    }
     if (d->Type == EXTMEM_TYPE_NOR_QUAD_MICRON || d->Type == EXTMEM_TYPE_NOR_OCTAL_MICRON)
     {
       uint32_t dice = (d->DieCount > 1U) ? d->DieCount : 0U;
@@ -237,11 +259,12 @@ static bool ExerciseDevice(const ExtMem_DeviceDescriptor_t *d)
   ASSERT_EQ(MockHAL_FindEvent(MOCK_EV_ABORT, 0) != NULL, !IsFmcType(d->Type));
   ASSERT_EQ(ExtMem_DisableMemoryMapped(&s_h), EXTMEM_OK);
 
-  /* Power down is a HyperRAM feature */
-  if (IsHyperRam(d->Type))
+  /* Power down is a HyperRAM / OctalRAM feature */
+  if (IsSelfRefreshRam(d->Type))
   {
     ASSERT_EQ(ExtMem_EnterDeepPowerDown(&s_h), EXTMEM_OK);
-    ASSERT_EQ(MockHAL_GetHyperReg(0x1000) & 0x8000, 0);
+    if (IsHyperRam(d->Type)) ASSERT_EQ(MockHAL_GetHyperReg(0x1000) & 0x8000, 0);
+    else ASSERT_EQ(MockHAL_GetOctalRamCR() & 0x8000, 0);
     ASSERT_EQ(ExtMem_LeaveDeepPowerDown(&s_h), EXTMEM_OK);
   }
   else
@@ -254,7 +277,7 @@ static bool ExerciseDevice(const ExtMem_DeviceDescriptor_t *d)
   if (!IsFmcType(d->Type)) ASSERT_EQ(ExtMem_EnableMemoryMapped(&s_h), EXTMEM_OK);
   MockHAL_ClearLog();
   int32_t rst = ExtMem_Reset(&s_h);
-  ASSERT_EQ(rst, IsHyperRam(d->Type) ? EXTMEM_NOT_SUPPORTED : EXTMEM_OK);
+  ASSERT_EQ(rst, IsSelfRefreshRam(d->Type) ? EXTMEM_NOT_SUPPORTED : EXTMEM_OK);
   if (IsOctalNor(d->Type))
   {
     ASSERT_EQ(s_h.ActiveMode, EXTMEM_MODE_SPI);
@@ -299,7 +322,7 @@ static bool ExerciseDevice(const ExtMem_DeviceDescriptor_t *d)
   }
   FAULT_SWEEP(SETUP_INIT(d); (void)ExtMem_EnableMemoryMapped(&s_h), ExtMem_DisableMemoryMapped(&s_h));
   FAULT_SWEEP(SETUP_INIT(d); (void)ExtMem_EnableMemoryMapped(&s_h), ExtMem_DeInit(&s_h));
-  if (!IsHyperRam(d->Type))
+  if (!IsSelfRefreshRam(d->Type))
   {
     FAULT_SWEEP(SETUP_INIT(d); (void)ExtMem_EnableMemoryMapped(&s_h), ExtMem_Reset(&s_h));
   }
@@ -339,6 +362,7 @@ static void SetupAuto(uint8_t m, uint8_t t, uint8_t d)
   MockHAL_SetEmulatedChip(m, t, d);
   memset(&s_h, 0, sizeof(s_h));
   s_h.Config.Bus = EXTMEM_BUS_XSPI1;
+  s_h.Config.ClockPrescaler = 4; /* 100 MHz: within every part found by auto-detection */
 }
 
 static const uint8_t s_BadSfdp[16] = { 'N', 'O', 'P', 'E' };
@@ -449,6 +473,43 @@ bool test_extmem_manager_unified_autodetect(void)
     ASSERT_EQ(s_h.ActiveMode, EXTMEM_MODE_HYPERBUS);
     ASSERT_TRUE(ExtMem_IsRAM(&s_h));
   }
+  /* Power-on latency 7 (200 MHz parts) is found on the first try, 6 (166 MHz parts) on the second */
+  for (int lat7 = 0; lat7 < 2; lat7++)
+  {
+    SetupAuto(0xFF, 0xFF, 0xFF);
+    MockHAL_SetSfdpTable(s_BadSfdp, sizeof(s_BadSfdp));
+    MockHAL_SetHyperCR0(lat7 ? 0x8F2F : 0x8F1F);
+    ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_OK);
+    ASSERT_EQ(s_h.Geometry.Type, EXTMEM_TYPE_HYPERRAM_INFINEON);
+    ASSERT_EQ(MockHAL_FindEvent(MOCK_EV_HYPER_CFG, 0)->HCfg.AccessTimeCycle, 7);
+    if (!lat7) ASSERT_EQ(MockHAL_FindEvent(MOCK_EV_HYPER_CFG, 1)->HCfg.AccessTimeCycle, 6);
+    /* After init the driver runs both sides at 7 clocks */
+    ASSERT_EQ(MockHAL_GetHyperReg(0x1000), 0x8F27);
+  }
+  /* Neither latency gives a valid ID: nothing detected */
+  SetupAuto(0xFF, 0xFF, 0xFF);
+  MockHAL_SetSfdpTable(s_BadSfdp, sizeof(s_BadSfdp));
+  MockHAL_SetHyperCR0(0x8F5F);
+  ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_NOT_SUPPORTED);
+  /* Refresh counter: 1 us at 200 MHz minus 4 clocks of margin */
+  SetupAuto(0xFF, 0xFF, 0xFF);
+  MockHAL_SetSfdpTable(s_BadSfdp, sizeof(s_BadSfdp));
+  ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_OK);
+  ASSERT_EQ(s_h.hxspi.Init.Refresh, 96);
+  /* Unknown kernel clock: fallback bus clock */
+  SetupAuto(0xFF, 0xFF, 0xFF);
+  MockHAL_SetSfdpTable(s_BadSfdp, sizeof(s_BadSfdp));
+  MockHAL_SetXspiKernelClock(0);
+  ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_OK);
+  ASSERT_EQ(s_h.BusClockHz, 0);
+  ASSERT_EQ(s_h.hxspi.Init.Refresh, 196);
+  /* Very slow bus: minimum refresh period */
+  SetupAuto(0xFF, 0xFF, 0xFF);
+  MockHAL_SetSfdpTable(s_BadSfdp, sizeof(s_BadSfdp));
+  MockHAL_SetXspiKernelClock(4000000U);
+  ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_OK);
+  ASSERT_EQ(s_h.hxspi.Init.Refresh, 4);
+
   /* Forced capacity overrides the ID0 geometry */
   SetupAuto(0xFF, 0xFF, 0xFF);
   MockHAL_SetSfdpTable(s_BadSfdp, sizeof(s_BadSfdp));
@@ -482,6 +543,31 @@ bool test_extmem_manager_unified_autodetect(void)
   s_h.Config.ForcedDeviceType = (ExtMem_Type_t)0x7F;
   ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_OK);
   ASSERT_EQ(strcmp(s_h.Geometry.DeviceName, "S28HS512T"), 0);
+
+  /* Stacked-die SEMPER without the SFDP die map, or with fewer dice than the part, is refused */
+  {
+    static uint8_t img[0x30 + 64];
+    memset(img, 0, sizeof(img));
+    memcpy(img, "SFDP", 4); img[4] = 6; img[5] = 1; img[7] = 0xFF;
+    img[8] = 0x87; img[11] = 1; img[12] = 0x30; img[15] = 0xFF;   /* SCCR only: one die */
+    uint32_t base0 = 0x00800000U;
+    memcpy(&img[0x30], &base0, 4);
+    SetupAuto(0x34, 0x5B, 0x1C);
+    s_h.Config.ClockPrescaler = 2;
+    MockHAL_SetSfdpTable(img, sizeof(img));
+    ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_NOT_SUPPORTED);
+    SetupAuto(0x34, 0x5B, 0x1C);
+    MockHAL_SetSfdpTable(s_BadSfdp, sizeof(s_BadSfdp));
+    ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_NOT_SUPPORTED);
+    (void)S28HS512T_SetDieLayout(&s_h.hxspi, NULL);
+    /* No free die-layout slot: init fails cleanly */
+    XSPI_HandleTypeDef others[3] = {0};
+    S28HS512T_DieLayout_t l2 = { 2U, 0x08000000U, { 0x00800000U, 0x08800000U, 0U, 0U } };
+    for (int i = 0; i < 3; i++) ASSERT_EQ(S28HS512T_SetDieLayout(&others[i], &l2), S28HS512T_OK);
+    SetupAuto(0x34, 0x5B, 0x1C);
+    ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_ERROR);
+    for (int i = 0; i < 3; i++) ASSERT_EQ(S28HS512T_SetDieLayout(&others[i], NULL), S28HS512T_OK);
+  }
 
   FAULT_SWEEP(SetupAuto(0x9D, 0x77, 0x30), ExtMem_Init(&s_h));
   FAULT_SWEEP_EXPECT(SetupAuto(0xEF, 0x40, 0x18); MockHAL_SetHyperBusID(0xFFFF, 0xFFFF), ExtMem_Init(&s_h), EXTMEM_NOT_SUPPORTED);
@@ -521,14 +607,49 @@ bool test_multi_density_shared_drivers(void)
   }
   /* Default prescaler and explicit prescaler */
   SetupAuto(0x34, 0x5B, 0x1A);
+  s_h.Config.ClockPrescaler = 0;
   ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_OK);
-  ASSERT_EQ(s_h.hxspi.Init.ClockPrescaler, EXTMEM_DEFAULT_CLOCK_PRESCALER);
+  /* Probing runs at 400 / 8 = 50 MHz, the configured clock is applied once the memory is set up */
+  ASSERT_EQ(MockHAL_FindEvent(MOCK_EV_XSPI_INIT, 0)->Init.ClockPrescaler, 7);
+  ASSERT_EQ(MockHAL_FindEvent(MOCK_EV_SET_PRESCALER, 0)->Value, EXTMEM_DEFAULT_CLOCK_PRESCALER - 1U);
+  /* A slower configured clock than the probing limit is used from the start */
+  SetupAuto(0x34, 0x5B, 0x1A);
+  s_h.Config.ClockPrescaler = 10;
+  ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_OK);
+  ASSERT_EQ(MockHAL_FindEvent(MOCK_EV_XSPI_INIT, 0)->Init.ClockPrescaler, 9);
+  ASSERT_TRUE(MockHAL_FindEvent(MOCK_EV_SET_PRESCALER, 0) == NULL);
+  /* Kernel clock so fast that even the largest divider exceeds the probing limit */
+  SetupAuto(0x34, 0x5B, 0x1A);
+  MockHAL_SetXspiKernelClock(4000000000U);
+  s_h.Config.ClockPrescaler = 256;
+  ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_OK);
+  ASSERT_EQ(MockHAL_FindEvent(MOCK_EV_XSPI_INIT, 0)->Init.ClockPrescaler, 255);
+  /* Clock above the part maximum is refused */
+  SetupAuto(0x00, 0x00, 0x00);
+  s_h.Config.ForcedPartNumber = "IS62WVS5128";
+  s_h.Config.ClockPrescaler = 2;
+  ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_INVALID_PARAM);
+  SetupAuto(0x00, 0x00, 0x00);
+  s_h.Config.ForcedPartNumber = "IS62WVS5128";
+  s_h.Config.ClockPrescaler = 20;
+  ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_OK);
+  SetupAuto(0x34, 0x5B, 0x1A);
+  s_h.Config.ClockPrescaler = 0;
+  ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_OK);
+  /* DCR2.PRESCALER = divider - 1: the default divider 2 gives 200 MHz from a 400 MHz kernel clock */
+  ASSERT_EQ(s_h.hxspi.Init.ClockPrescaler, EXTMEM_DEFAULT_CLOCK_PRESCALER - 1U);
+  ASSERT_EQ(s_h.BusClockHz, 200000000U);
   SetupAuto(0x34, 0x5B, 0x1A);
   s_h.Config.ClockPrescaler = 5;
   ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_OK);
-  ASSERT_EQ(s_h.hxspi.Init.ClockPrescaler, 5);
+  ASSERT_EQ(s_h.hxspi.Init.ClockPrescaler, 4);
+  ASSERT_EQ(s_h.BusClockHz, 80000000U);
+
   /* Placeholder DEVSIZE before detection: 64 MBytes */
   ASSERT_EQ(MockHAL_FindEvent(MOCK_EV_XSPI_INIT, 0)->Init.MemorySize, HAL_XSPI_SIZE_512MB);
+  SetupAuto(0x34, 0x5B, 0x1A);
+  s_h.Config.ClockPrescaler = 257;
+  ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_INVALID_PARAM);
 
   /* Invalid bus */
   SetupAuto(0x34, 0x5B, 0x1A);

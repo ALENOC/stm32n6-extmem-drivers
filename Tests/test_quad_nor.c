@@ -93,6 +93,24 @@ bool test_infineon_s25hl512t_quad_flash(void)
   ASSERT_EQ(MockHAL_GetStatusRegister() & 0x61, 0);
   FAULT_SWEEP_EXPECT(FLASH_SETUP(0x34, 0x2A, 0x1A); MockHAL_SetSemperFailure(true), S25HL512T_EraseSector4K(&h, 0), S25HL512T_ERROR);
 
+  /* S25FL-L failure: SR2 P_ERR, WIP stays set until CLSR (0x30); SEMPER CLPEF is not sent */
+  FLASH_SETUP(0x01, 0x60, 0x19);
+  MockHAL_SetFlLFailure(true);
+  MockHAL_ClearLog();
+  ASSERT_EQ(S25HL512T_PageProgramQuad(&h, 0, tx, 8), S25HL512T_ERROR);
+  ASSERT_EQ(MockHAL_CountCommands(0x07), 1);
+  ASSERT_EQ(MockHAL_CountCommands(0x30), 1);
+  ASSERT_EQ(MockHAL_CountCommands(0x82), 0);
+  ASSERT_EQ(MockHAL_GetStatusRegister2() & 0x60, 0);
+  ASSERT_EQ(MockHAL_GetStatusRegister() & 0x01, 0);
+  FAULT_SWEEP_EXPECT(FLASH_SETUP(0x01, 0x60, 0x19); MockHAL_SetFlLFailure(true), S25HL512T_EraseSector4K(&h, 0), S25HL512T_ERROR);
+  /* S25FL-L protection bits in SR1[6:5] are not mistaken for errors on a plain timeout */
+  FLASH_SETUP(0x01, 0x60, 0x19);
+  MockHAL_SetPollTimeout(true);
+  MockHAL_SetStatusRegister(0x00);
+  ASSERT_EQ(S25HL512T_AutoPollingMemReady(&h, 1), S25HL512T_TIMEOUT);
+  MockHAL_SetPollTimeout(false);
+
   FAULT_SWEEP(FLASH_SETUP(0x34, 0x2A, 0x1A), S25HL512T_ReadID(&h, id));
   FAULT_SWEEP(FLASH_SETUP(0x34, 0x2A, 0x1A), S25HL512T_EnableQuadMode(&h));
   FAULT_SWEEP(FLASH_SETUP(0x34, 0x2A, 0x1A), S25HL512T_PageProgramQuad(&h, 0, tx, 16));

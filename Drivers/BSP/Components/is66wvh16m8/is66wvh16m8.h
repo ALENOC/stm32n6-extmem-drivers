@@ -43,7 +43,7 @@ extern "C" {
 #define IS66WVH_CR0_LATENCY_MASK         (0xFU << 4)
 #define IS66WVH_CR0_LATENCY_5_CYCLES     (0x0U << 4)      /* Up to 133 MHz */
 #define IS66WVH_CR0_LATENCY_6_CYCLES     (0x1U << 4)      /* Up to 166 MHz (default) */
-#define IS66WVH_CR0_LATENCY_7_CYCLES     (0x2U << 4)      /* Up to 200 MHz */
+#define IS66WVH_CR0_LATENCY_7_CYCLES     (0x2U << 4)      /* Up to 200 MHz (default on 200 MHz parts) */
 #define IS66WVH_CR0_LATENCY_3_CYCLES     (0xEU << 4)      /* Up to 85 MHz  */
 #define IS66WVH_CR0_LATENCY_4_CYCLES     (0xFU << 4)      /* Up to 104 MHz */
 #define IS66WVH_CR0_FIXED_LATENCY        (1U << 3)        /* 1 = fixed 2x latency, 0 = variable */
@@ -54,9 +54,13 @@ extern "C" {
 #define IS66WVH_CR0_BURST_16B            (0x2U << 0)
 #define IS66WVH_CR0_BURST_32B            (0x3U << 0)
 
-/* Initial configuration: normal operation, 6 clock variable latency, legacy 32 byte wrap */
+/* Initial latency used by the driver: 7 clocks is valid at every frequency up to 200 MHz
+ * (CR0[7:4] = 0010b on Infineon S27KS/S27KL and ISSI IS66WVH/IS67WVH) */
+#define IS66WVH_LATENCY_CLOCKS           7U
+
+/* Initial configuration: normal operation, 7 clock variable latency, legacy 32 byte wrap */
 #define IS66WVH_CR0_INIT_VALUE           (IS66WVH_CR0_DPD_NORMAL | IS66WVH_CR0_DRIVE_STRENGTH_DEF | IS66WVH_CR0_RESERVED_ONES | \
-                                          IS66WVH_CR0_LATENCY_6_CYCLES | IS66WVH_CR0_VARIABLE_LATENCY | \
+                                          IS66WVH_CR0_LATENCY_7_CYCLES | IS66WVH_CR0_VARIABLE_LATENCY | \
                                           IS66WVH_CR0_LEGACY_WRAP | IS66WVH_CR0_BURST_32B)
 
 /* Wake-up time after deep power down exit (tEXTDPD, 150 us max) */

@@ -10,6 +10,7 @@ The following matrix lists all Flash and PSRAM parts from **Infineon Technologie
 | **Infineon** | `S28HS256T` (256Mb) | SEMPER™ Octal NOR Flash | Octal SPI (8D-8D-8D, DQS) | 1.8V | 200 MHz | `s28hs512t` |
 | **Infineon** | `S28HL256T` (256Mb) | SEMPER™ Octal NOR Flash | Octal SPI (8D-8D-8D, DQS) | 3.0V | 133 MHz | `s28hs512t` |
 | **Infineon** | `S28HS01GT` (1Gb) | SEMPER™ Octal NOR Flash | Octal SPI (8D-8D-8D, DQS) | 1.8V | 200 MHz | `s28hs512t` |
+| **Infineon** | `S28HS02GT` (2Gb, 2 dice) | SEMPER™ Octal NOR Flash | Octal SPI (8D-8D-8D, DQS) | 1.8V | 200 MHz | `s28hs512t` |
 | **Infineon** | `S26KS512S` (512Mb) | HyperFlash™ NOR | HyperBus™ (8-bit DDR, RWDS) | 1.8V | 166 MHz | `s26ks512s` |
 | **Infineon** | `S26KL512S` (512Mb) | HyperFlash™ NOR | HyperBus™ (8-bit DDR, RWDS) | 3.0V | 100 MHz | `s26ks512s` |
 | **Infineon** | `S26KS256S` (256Mb) | HyperFlash™ NOR | HyperBus™ (8-bit DDR, RWDS) | 1.8V | 166 MHz | `s26ks512s` |
@@ -19,8 +20,8 @@ The following matrix lists all Flash and PSRAM parts from **Infineon Technologie
 | **Infineon** | `S27KS128` (128Mb) | HyperRAM™ 2.0 | HyperBus™ (8-bit DDR, RWDS) | 1.8V | 166 MHz | `s27ks0641` |
 | **Infineon** | `S27KS256` (256Mb) | HyperRAM™ 2.0 | HyperBus™ (8-bit DDR, RWDS) | 1.8V | 200 MHz | `s27ks0641` |
 | **Infineon** | `S27HS064/128/256` | HyperRAM™ 3.0 | HyperBus™ (8-bit DDR, RWDS) | 1.8V | 200 MHz | `s27ks0641` |
-| **Infineon** | `S25HS512T` (512Mb) | SEMPER™ Quad Flash | Quad SPI (1-4-4, 4-4-4) | 1.8V | 133 MHz | `s25hl512t` |
-| **Infineon** | `S25HL512T` (512Mb) | SEMPER™ Quad Flash | Quad SPI (1-4-4, 4-4-4) | 3.0V | 133 MHz | `s25hl512t` |
+| **Infineon** | `S25HS512T` (512Mb) | SEMPER™ Quad Flash | Quad SPI (1-4-4, 4-4-4) | 1.8V | 118 MHz | `s25hl512t` |
+| **Infineon** | `S25HL512T` (512Mb) | SEMPER™ Quad Flash | Quad SPI (1-4-4, 4-4-4) | 3.0V | 118 MHz | `s25hl512t` |
 | **Infineon** | `S25FL256L/128L` | FL-L Quad Flash | Quad SPI (1-4-4, 4-4-4) | 3.0V | 108 MHz | `s25hl512t` |
 | **Infineon** | `CY62167EV30` (16Mb) | MoBL Asynch SRAM | 16-bit Parallel Asynchronous FMC | 3.0V | 55 ns | `is66wv_fmc` |
 | **Infineon** | `CY62157EV30` (8Mb) | MoBL Asynch SRAM | 16-bit Parallel Asynchronous FMC | 3.0V | 55 ns | `is66wv_fmc` |
@@ -61,25 +62,25 @@ The following matrix lists all Flash and PSRAM parts from **Infineon Technologie
 | **ISSI** | `IS29GL128` (128Mb) | Parallel NOR Flash | 16-bit Parallel Asynchronous FMC | 3.0V | 90 ns (Page 25ns) | `is29gl_fmc` |
 | **ISSI** | `IS29GL064` (64Mb) | Parallel NOR Flash | 16-bit Parallel Asynchronous FMC | 3.0V | 70 ns (Page 25ns) | `is29gl_fmc` |
 | **ISSI** | `IS29GL032` (32Mb) | Parallel NOR Flash | 16-bit Parallel Asynchronous FMC | 3.0V | 70 ns (Page 25ns) | `is29gl_fmc` |
-| **ISSI** | `IS66WVO8M8` (64Mb) | Octal PSRAM DDR | Octal SPI DDR / xSPI Profile 2.0 | 1.8V | 200 MHz | `is66wvo32m8` |
-| **ISSI** | `IS66WVO16M8` (128Mb)| Octal PSRAM DDR | Octal SPI DDR / xSPI Profile 2.0 | 1.8V | 200 MHz | `is66wvo32m8` |
-| **ISSI** | `IS66WVO32M8` (256Mb)| Octal PSRAM DDR | Octal SPI DDR / xSPI Profile 2.0 | 1.8V | 200 MHz | `is66wvo32m8` |
-| **ISSI** | `IS66WVO64M8` (512Mb)| Octal PSRAM DDR | Octal SPI DDR / xSPI Profile 2.0 | 1.8V | 200 MHz | `is66wvo32m8` |
-| **ISSI** | `IS67WVO...` (Auto) | Octal PSRAM DDR | Octal SPI DDR (Automotive Grade) | 1.8V | 200 MHz | `is66wvo32m8` |
+| **ISSI** | `IS66WVO8M8` (64Mb) | OctalRAM DDR | 8D-8D-8D OPI (XSPI Macronix RAM mode) | 1.8V | 200 MHz | `is66wvo32m8` |
+| **ISSI** | `IS66WVO16M8` (128Mb)| OctalRAM DDR | 8D-8D-8D OPI (XSPI Macronix RAM mode) | 1.8V | 200 MHz | `is66wvo32m8` |
+| **ISSI** | `IS66WVO32M8` (256Mb)| OctalRAM DDR | 8D-8D-8D OPI (XSPI Macronix RAM mode) | 1.8V | 200 MHz | `is66wvo32m8` |
+| **ISSI** | `IS66WVO64M8` (512Mb)| OctalRAM DDR | 8D-8D-8D OPI (XSPI Macronix RAM mode) | 1.8V | 200 MHz | `is66wvo32m8` |
+| **ISSI** | `IS67WVO...` (Auto) | OctalRAM DDR | 8D-8D-8D OPI (Automotive Grade) | 1.8V | 200 MHz | `is66wvo32m8` |
 | **ISSI** | `IS66WVH8M8` (64Mb) | HyperRAM™ PSRAM | HyperBus™ (8-bit DDR, RWDS) | 1.8V | 166 MHz | `is66wvh16m8` |
 | **ISSI** | `IS66WVH16M8` (128Mb)| HyperRAM™ PSRAM | HyperBus™ (8-bit DDR, RWDS) | 1.8V | 166 MHz | `is66wvh16m8` |
 | **ISSI** | `IS66WVH32M8` (256Mb)| HyperRAM™ PSRAM | HyperBus™ (8-bit DDR, RWDS) | 1.8V | 166 MHz | `is66wvh16m8` |
-| **ISSI** | `IS66WVS1M8` (8Mb) | Quad SPI PSRAM | Quad SPI / QPI PSRAM | 1.8V/3.0V | 133 MHz | `is66wvs16m8` |
-| **ISSI** | `IS66WVS2M8` (16Mb) | Quad SPI PSRAM | Quad SPI / QPI PSRAM | 1.8V/3.0V | 133 MHz | `is66wvs16m8` |
-| **ISSI** | `IS66WVS4M8` (32Mb) | Quad SPI PSRAM | Quad SPI / QPI PSRAM | 1.8V/3.0V | 133 MHz | `is66wvs16m8` |
-| **ISSI** | `IS66WVS8M8` (64Mb) | Quad SPI PSRAM | Quad SPI / QPI PSRAM | 1.8V/3.0V | 133 MHz | `is66wvs16m8` |
-| **ISSI** | `IS66WVS16M8` (128Mb)| Quad SPI PSRAM | Quad SPI / QPI PSRAM | 1.8V/3.0V | 133 MHz | `is66wvs16m8` |
+| **ISSI** | `IS66WVS1M8` (8Mb) | Quad SPI PSRAM | Quad SPI / QPI PSRAM | 1.8V/3.0V | 104 MHz | `is66wvs16m8` |
+| **ISSI** | `IS66WVS2M8` (16Mb) | Quad SPI PSRAM | Quad SPI / QPI PSRAM | 1.8V/3.0V | 104 MHz | `is66wvs16m8` |
+| **ISSI** | `IS66WVS4M8` (32Mb) | Quad SPI PSRAM | Quad SPI / QPI PSRAM | 1.8V/3.0V | 104 MHz | `is66wvs16m8` |
+| **ISSI** | `IS66WVS8M8` (64Mb) | Quad SPI PSRAM | Quad SPI / QPI PSRAM | 1.8V/3.0V | 104 MHz | `is66wvs16m8` |
+| **ISSI** | `IS66WVS16M8` (128Mb)| Quad SPI PSRAM | Quad SPI / QPI PSRAM | 1.8V/3.0V | 104 MHz | `is66wvs16m8` |
 | **ISSI** | `IS67WVS...` (Auto) | Quad SPI PSRAM | Quad SPI / QPI (Automotive Grade) | 1.8V/3.0V | 104 MHz | `is66wvs16m8` |
-| **ISSI** | `IS62WVS5128` (4Mb) | Serial Static RAM | SPI / SDI / SQI Serial SRAM | 1.8V/3.0V/3.3V | 45 MHz | `is62wvs` |
-| **ISSI** | `IS62WVS2568` (2Mb) | Serial Static RAM | SPI / SDI / SQI Serial SRAM | 1.8V/3.0V/3.3V | 45 MHz | `is62wvs` |
-| **ISSI** | `IS62WVS1288` (1Mb) | Serial Static RAM | SPI / SDI / SQI Serial SRAM | 1.8V/3.0V/3.3V | 45 MHz | `is62wvs` |
-| **ISSI** | `IS62WVS0648` (512Kb)| Serial Static RAM | SPI / SDI / SQI Serial SRAM | 1.8V/3.0V/3.3V | 45 MHz | `is62wvs` |
-| **ISSI** | `IS65WVS...` (Auto) | Serial Static RAM | SPI / SDI / SQI (Automotive Grade) | 1.8V/3.0V | 30 MHz | `is62wvs` |
+| **ISSI** | `IS62WVS5128` (4Mb) | Serial Static RAM | SPI / SDI / SQI Serial SRAM | 1.8V/3.0V/3.3V | 20 MHz | `is62wvs` |
+| **ISSI** | `IS62WVS2568` (2Mb) | Serial Static RAM | SPI / SDI / SQI Serial SRAM | 1.8V/3.0V/3.3V | 20 MHz | `is62wvs` |
+| **ISSI** | `IS62WVS1288` (1Mb) | Serial Static RAM | SPI / SDI / SQI Serial SRAM | 1.8V/3.0V/3.3V | 20 MHz | `is62wvs` |
+| **ISSI** | `IS62WVS0648` (512Kb)| Serial Static RAM | SPI / SDI / SQI Serial SRAM | 1.8V/3.0V/3.3V | 20 MHz | `is62wvs` |
+| **ISSI** | `IS65WVS...` (Auto) | Serial Static RAM | SPI / SDI / SQI (Automotive Grade) | 1.8V/3.0V | 16 MHz | `is62wvs` |
 | **ISSI** | `IS66WV51216` (8Mb) | Parallel PSRAM | 16-bit Parallel Asynchronous FMC | 3.0V | 55 ns | `is66wv_fmc` |
 | **ISSI** | `IS66WV102416` (16Mb)| Parallel PSRAM | 16-bit Parallel Asynchronous FMC | 3.0V | 55 ns | `is66wv_fmc` |
 | **ISSI** | `IS66WV204816` (32Mb)| Parallel PSRAM | 16-bit Parallel Asynchronous FMC | 3.0V | 55 ns | `is66wv_fmc` |

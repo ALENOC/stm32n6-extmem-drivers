@@ -4,8 +4,8 @@
   * @author  STM32N6 External Memory Driver Suite Team
   * @brief   Driver header for Infineon SEMPER(TM) Octal NOR Flash
   *          Compatible with S28HS512T, S28HL512T, S28HS256T, S28HL256T,
-  *          S28HS01GT, S28HL01GT (single die). The dual-die S28Hx02GT needs
-  *          per-die register access and is not supported by this driver.
+  *          S28HS01GT, S28HL01GT and the dual-die S28HS02GT (per-die registers
+  *          from the SFDP multi-chip tables, see S28HS512T_SetDieLayout).
   ******************************************************************************
   * @attention
   *
@@ -40,6 +40,15 @@ extern "C" {
 /* Device Identification */
 #define S28HS_MANUFACTURER_ID            0x34U
 #define S28HS_DEVICE_ID_512MB            0x5BU
+
+/* Volatile register map: base 0x00800000 on a single die; each die of a stacked part has its own
+ * base, given by the SFDP SCCR / SCCR multi-chip tables (S28HS512T_SetDieLayout) */
+#define S28HS_REG_VOLATILE_BASE          0x00800000U
+#define S28HS_REG_OFS_STATUS1            0x0U
+#define S28HS_REG_OFS_CFR2               0x3U
+#define S28HS_REG_OFS_CFR3               0x4U
+#define S28HS_REG_OFS_CFR5               0x6U
+#define S28HS_MAX_DICE                   4U
 
 /* Registers Addresses (Volatile, single die: base 0x00800000) */
 #define S28HS_REG_STATUS1_V              0x00800000U /* Status Register 1 Volatile        */
@@ -85,6 +94,7 @@ extern "C" {
 #define S28HS_CMD_SECTOR_ERASE_4K_4B     0x21U
 #define S28HS_CMD_BLOCK_ERASE_256K_4B    0xDCU
 #define S28HS_CMD_CHIP_ERASE             0x60U
+#define S28HS_CMD_DIE_ERASE              0x61U /* Erase one die of a stacked-die part */
 #define S28HS_CMD_WRITE_ENABLE           0x06U
 #define S28HS_CMD_WRITE_DISABLE          0x04U
 #define S28HS_CMD_READ_STATUS1           0x05U
@@ -102,6 +112,7 @@ extern "C" {
 #define S28HS_DTR_CMD_SECTOR_ERASE_4K    0x21DEU
 #define S28HS_DTR_CMD_BLOCK_ERASE_256K   0xDC23U
 #define S28HS_DTR_CMD_CHIP_ERASE         0x609FU
+#define S28HS_DTR_CMD_DIE_ERASE          0x619EU
 #define S28HS_DTR_CMD_WRITE_ENABLE       0x06F9U
 #define S28HS_DTR_CMD_WRITE_DISABLE      0x04FBU
 #define S28HS_DTR_CMD_READ_REG           0x659AU
@@ -125,7 +136,15 @@ typedef struct {
   uint8_t  DeviceID;
 } S28HS512T_Info_t;
 
+/* Stacked-die layout */
+typedef struct {
+  uint8_t  Dice;                          /*!< Number of dice (1 for monolithic parts)       */
+  uint32_t DieSize;                       /*!< Bytes per die                                 */
+  uint32_t VregBase[S28HS_MAX_DICE];      /*!< Volatile register base address of each die    */
+} S28HS512T_DieLayout_t;
+
 /* Exported Functions --------------------------------------------------------*/
+int32_t S28HS512T_SetDieLayout(XSPI_HandleTypeDef *Ctx, const S28HS512T_DieLayout_t *pLayout);
 int32_t S28HS512T_ReadID(XSPI_HandleTypeDef *Ctx, uint8_t *pID);
 int32_t S28HS512T_WriteEnable(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode);
 int32_t S28HS512T_AutoPollingMemReady(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t Timeout);

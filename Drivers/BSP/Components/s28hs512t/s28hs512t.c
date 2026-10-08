@@ -7,6 +7,66 @@
   */
 
 #include "s28hs512t.h"
+#include <string.h>
+
+/* Stacked-die layout per XSPI handle (single die at the default register base when not registered) */
+#define S28HS_MAX_LAYOUTS 3U
+static struct {
+  XSPI_HandleTypeDef     *Ctx;
+  S28HS512T_DieLayout_t   Layout;
+} s_DieLayouts[S28HS_MAX_LAYOUTS];
+
+static const S28HS512T_DieLayout_t s_SingleDie = { 1U, 0U, { S28HS_REG_VOLATILE_BASE, 0U, 0U, 0U } };
+
+int32_t S28HS512T_SetDieLayout(XSPI_HandleTypeDef *Ctx, const S28HS512T_DieLayout_t *pLayout)
+{
+  uint32_t freeSlot = S28HS_MAX_LAYOUTS;
+
+  if (pLayout != NULL && (pLayout->Dice == 0U || pLayout->Dice > S28HS_MAX_DICE || (pLayout->Dice > 1U && pLayout->DieSize == 0U)))
+  {
+    return S28HS512T_ERROR;
+  }
+  for (uint32_t i = 0; i < S28HS_MAX_LAYOUTS; i++)
+  {
+    if (s_DieLayouts[i].Ctx == Ctx)
+    {
+      s_DieLayouts[i].Ctx = NULL;
+    }
+    if (s_DieLayouts[i].Ctx == NULL && freeSlot == S28HS_MAX_LAYOUTS)
+    {
+      freeSlot = i;
+    }
+  }
+  if (pLayout == NULL || pLayout->Dice == 1U)
+  {
+    return S28HS512T_OK;
+  }
+  if (freeSlot == S28HS_MAX_LAYOUTS)
+  {
+    return S28HS512T_ERROR;
+  }
+  s_DieLayouts[freeSlot].Ctx    = Ctx;
+  s_DieLayouts[freeSlot].Layout = *pLayout;
+  return S28HS512T_OK;
+}
+
+static const S28HS512T_DieLayout_t *S28HS_GetLayout(const XSPI_HandleTypeDef *Ctx)
+{
+  for (uint32_t i = 0; i < S28HS_MAX_LAYOUTS; i++)
+  {
+    if (s_DieLayouts[i].Ctx == Ctx) return &s_DieLayouts[i].Layout;
+  }
+  return &s_SingleDie;
+}
+
+/* Volatile register base of the die that holds Address */
+static uint32_t S28HS_VregForAddress(const XSPI_HandleTypeDef *Ctx, uint32_t Address)
+{
+  const S28HS512T_DieLayout_t *l = S28HS_GetLayout(Ctx);
+  uint32_t die = (l->Dice > 1U) ? (Address / l->DieSize) : 0U;
+  if (die >= l->Dice) die = l->Dice - 1U;
+  return l->VregBase[die];
+}
 
 int32_t S28HS512T_ReadID(XSPI_HandleTypeDef *Ctx, uint8_t *pID)
 {
@@ -169,7 +229,15 @@ int32_t S28HS512T_WriteAnyReg(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint3
   return (HAL_XSPI_Transmit(Ctx, buf, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) == HAL_OK) ? S28HS512T_OK : S28HS512T_ERROR;
 }
 
+static int32_t S28HS_PollDie(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t Vreg, uint32_t Timeout);
+
 int32_t S28HS512T_AutoPollingMemReady(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t Timeout)
+{
+  return S28HS_PollDie(Ctx, Mode, S28HS_GetLayout(Ctx)->VregBase[0], Timeout);
+}
+
+/* Waits for RDYBSY = 0 in STR1V of the die whose registers start at Vreg */
+static int32_t S28HS_PollDie(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t Vreg, uint32_t Timeout)
 {
   XSPI_RegularCmdTypeDef  sCmd = {0};
   XSPI_AutoPollingTypeDef sCfg = {0};
@@ -187,14 +255,14 @@ int32_t S28HS512T_AutoPollingMemReady(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mod
     sCmd.AddressMode        = HAL_XSPI_ADDRESS_8_LINES;
     sCmd.AddressWidth       = HAL_XSPI_ADDRESS_32_BITS;
     sCmd.AddressDTRMode     = HAL_XSPI_ADDRESS_DTR_ENABLE;
-    sCmd.Address            = S28HS_REG_STATUS1_V;
+    sCmd.Address            = Vreg + S28HS_REG_OFS_STATUS1;
     sCmd.DataMode           = HAL_XSPI_DATA_8_LINES;
     sCmd.DataDTRMode        = HAL_XSPI_DATA_DTR_ENABLE;
     sCmd.DataLength         = 2;
     sCmd.DummyCycles        = S28HS_OCTAL_DTR_REG_DUMMY;
     sCmd.DQSMode            = HAL_XSPI_DQS_ENABLE;
   }
-  else
+  else if (Vreg == S28HS_REG_VOLATILE_BASE)
   {
     /* RDSR1 reads the volatile status register without address or latency */
     sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
@@ -202,6 +270,22 @@ int32_t S28HS512T_AutoPollingMemReady(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mod
     sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
     sCmd.Instruction        = S28HS_CMD_READ_STATUS1;
     sCmd.AddressMode        = HAL_XSPI_ADDRESS_NONE;
+    sCmd.DataMode           = HAL_XSPI_DATA_1_LINE;
+    sCmd.DataDTRMode        = HAL_XSPI_DATA_DTR_DISABLE;
+    sCmd.DummyCycles        = 0;
+    sCmd.DQSMode            = HAL_XSPI_DQS_DISABLE;
+  }
+  else
+  {
+    /* On a stacked-die part RDSR1 only reads die 0: read STR1V of the target die instead */
+    sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
+    sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_8_BITS;
+    sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
+    sCmd.Instruction        = S28HS_CMD_READ_REG;
+    sCmd.AddressMode        = HAL_XSPI_ADDRESS_1_LINE;
+    sCmd.AddressWidth       = HAL_XSPI_ADDRESS_32_BITS;
+    sCmd.AddressDTRMode     = HAL_XSPI_ADDRESS_DTR_DISABLE;
+    sCmd.Address            = Vreg + S28HS_REG_OFS_STATUS1;
     sCmd.DataMode           = HAL_XSPI_DATA_1_LINE;
     sCmd.DataDTRMode        = HAL_XSPI_DATA_DTR_DISABLE;
     sCmd.DummyCycles        = 0;
@@ -229,7 +313,7 @@ int32_t S28HS512T_AutoPollingMemReady(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mod
   uint8_t sr1 = 0;
   if (Mode == EXTMEM_MODE_OCTAL_DTR)
   {
-    if (S28HS512T_ReadAnyReg(Ctx, Mode, S28HS_REG_STATUS1_V, &sr1) != S28HS512T_OK) return S28HS512T_ERROR;
+    if (S28HS512T_ReadAnyReg(Ctx, Mode, Vreg + S28HS_REG_OFS_STATUS1, &sr1) != S28HS512T_OK) return S28HS512T_ERROR;
   }
   else
   {
@@ -289,7 +373,7 @@ static int32_t S28HS512T_Enter4ByteAddressMode(XSPI_HandleTypeDef *Ctx)
 
 int32_t S28HS512T_EnterOctalDTRMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles)
 {
-  uint8_t cfr2 = 0;
+  const S28HS512T_DieLayout_t *layout = S28HS_GetLayout(Ctx);
 
   /* Memory latency is fixed at MEMLAT = 0xB (24 cycles), valid for every clock up to 200 MHz */
   (void)DummyCycles;
@@ -297,23 +381,30 @@ int32_t S28HS512T_EnterOctalDTRMode(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles
   /* 1. Factory default is 3-byte addressing: switch to 4-byte before any 32-bit register access */
   if (S28HS512T_Enter4ByteAddressMode(Ctx) != S28HS512T_OK) return S28HS512T_ERROR;
 
-  /* 2. Program memory array read latency in CFR2V[3:0], keep 4-byte addressing */
-  if (S28HS512T_ReadAnyReg(Ctx, EXTMEM_MODE_SPI, S28HS_REG_CFR2_V, &cfr2) != S28HS512T_OK) return S28HS512T_ERROR;
-  cfr2 = (uint8_t)((cfr2 & ~S28HS_CFR2V_MEMLAT_MASK) | S28HS_CFR2V_MEMLAT_24_CYCLES | S28HS_CFR2V_ADRBYT_4BYTE);
-  if (S28HS512T_WriteEnable(Ctx, EXTMEM_MODE_SPI) != S28HS512T_OK) return S28HS512T_ERROR;
-  if (S28HS512T_WriteAnyReg(Ctx, EXTMEM_MODE_SPI, S28HS_REG_CFR2_V, cfr2) != S28HS512T_OK) return S28HS512T_ERROR;
+  /* Each die of a stacked part has its own volatile registers: configure them all (die 0 last,
+   * so the register accesses of the other dice are still sent in 1S-1S-1S) */
+  for (uint32_t n = layout->Dice; n > 0U; n--)
+  {
+    uint32_t vreg = layout->VregBase[n - 1U];
+    uint8_t cfr2 = 0, cfr3 = 0;
 
-  /* 3. Volatile register read latency for 8D-8D-8D at full speed: VRGLAT = 11 (6 cycles) in CFR3V[7:6].
-   *    The factory value (3 cycles) is only valid up to 25 MHz in DDR. */
-  uint8_t cfr3 = 0;
-  if (S28HS512T_ReadAnyReg(Ctx, EXTMEM_MODE_SPI, S28HS_REG_CFR3_V, &cfr3) != S28HS512T_OK) return S28HS512T_ERROR;
-  cfr3 = (uint8_t)((cfr3 & ~S28HS_CFR3V_VRGLAT_MASK) | S28HS_CFR3V_VRGLAT_CODE_11);
-  if (S28HS512T_WriteEnable(Ctx, EXTMEM_MODE_SPI) != S28HS512T_OK) return S28HS512T_ERROR;
-  if (S28HS512T_WriteAnyReg(Ctx, EXTMEM_MODE_SPI, S28HS_REG_CFR3_V, cfr3) != S28HS512T_OK) return S28HS512T_ERROR;
+    /* 2. Memory array read latency in CFR2V[3:0], keep 4-byte addressing */
+    if (S28HS512T_ReadAnyReg(Ctx, EXTMEM_MODE_SPI, vreg + S28HS_REG_OFS_CFR2, &cfr2) != S28HS512T_OK) return S28HS512T_ERROR;
+    cfr2 = (uint8_t)((cfr2 & ~S28HS_CFR2V_MEMLAT_MASK) | S28HS_CFR2V_MEMLAT_24_CYCLES | S28HS_CFR2V_ADRBYT_4BYTE);
+    if (S28HS512T_WriteEnable(Ctx, EXTMEM_MODE_SPI) != S28HS512T_OK) return S28HS512T_ERROR;
+    if (S28HS512T_WriteAnyReg(Ctx, EXTMEM_MODE_SPI, vreg + S28HS_REG_OFS_CFR2, cfr2) != S28HS512T_OK) return S28HS512T_ERROR;
 
-  /* 4. Switch the interface to 8D-8D-8D through CFR5V */
-  if (S28HS512T_WriteEnable(Ctx, EXTMEM_MODE_SPI) != S28HS512T_OK) return S28HS512T_ERROR;
-  if (S28HS512T_WriteAnyReg(Ctx, EXTMEM_MODE_SPI, S28HS_REG_CFR5_V, S28HS_CFR5V_OCTAL_DTR) != S28HS512T_OK) return S28HS512T_ERROR;
+    /* 3. Volatile register read latency for 8D-8D-8D at full speed: VRGLAT = 11 (6 cycles) in CFR3V[7:6].
+     *    The factory value (3 cycles) is only valid up to 25 MHz in DDR. */
+    if (S28HS512T_ReadAnyReg(Ctx, EXTMEM_MODE_SPI, vreg + S28HS_REG_OFS_CFR3, &cfr3) != S28HS512T_OK) return S28HS512T_ERROR;
+    cfr3 = (uint8_t)((cfr3 & ~S28HS_CFR3V_VRGLAT_MASK) | S28HS_CFR3V_VRGLAT_CODE_11);
+    if (S28HS512T_WriteEnable(Ctx, EXTMEM_MODE_SPI) != S28HS512T_OK) return S28HS512T_ERROR;
+    if (S28HS512T_WriteAnyReg(Ctx, EXTMEM_MODE_SPI, vreg + S28HS_REG_OFS_CFR3, cfr3) != S28HS512T_OK) return S28HS512T_ERROR;
+
+    /* 4. Switch the interface of this die to 8D-8D-8D through CFR5V */
+    if (S28HS512T_WriteEnable(Ctx, EXTMEM_MODE_SPI) != S28HS512T_OK) return S28HS512T_ERROR;
+    if (S28HS512T_WriteAnyReg(Ctx, EXTMEM_MODE_SPI, vreg + S28HS_REG_OFS_CFR5, S28HS_CFR5V_OCTAL_DTR) != S28HS512T_OK) return S28HS512T_ERROR;
+  }
 
   return S28HS512T_OK;
 }
@@ -439,7 +530,7 @@ int32_t S28HS512T_PageProgram(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint3
     return S28HS512T_ERROR;
   }
 
-  return S28HS512T_AutoPollingMemReady(Ctx, Mode, 5000);
+  return S28HS_PollDie(Ctx, Mode, S28HS_VregForAddress(Ctx, Address), 5000);
 }
 
 int32_t S28HS512T_EraseSector4K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t Address)
@@ -480,7 +571,7 @@ int32_t S28HS512T_EraseSector4K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uin
     return S28HS512T_ERROR;
   }
 
-  return S28HS512T_AutoPollingMemReady(Ctx, Mode, 1000);
+  return S28HS_PollDie(Ctx, Mode, S28HS_VregForAddress(Ctx, Address), 1000);
 }
 
 int32_t S28HS512T_EraseBlock256K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, uint32_t Address)
@@ -521,10 +612,11 @@ int32_t S28HS512T_EraseBlock256K(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, ui
     return S28HS512T_ERROR;
   }
 
-  return S28HS512T_AutoPollingMemReady(Ctx, Mode, 3000);
+  return S28HS_PollDie(Ctx, Mode, S28HS_VregForAddress(Ctx, Address), 3000);
 }
 
-int32_t S28HS512T_ChipErase(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode)
+/* Bulk erase (single die) or DIE ERASE at DieAddress (stacked dice reject bulk erase) */
+static int32_t S28HS_EraseUnit(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode, bool Die, uint32_t DieAddress, uint32_t Vreg)
 {
   XSPI_RegularCmdTypeDef sCmd = {0};
 
@@ -532,6 +624,8 @@ int32_t S28HS512T_ChipErase(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode)
 
   sCmd.OperationType      = HAL_XSPI_OPTYPE_COMMON_CFG;
   sCmd.AddressMode        = HAL_XSPI_ADDRESS_NONE;
+  sCmd.AddressWidth       = HAL_XSPI_ADDRESS_32_BITS;
+  sCmd.Address            = DieAddress;
   sCmd.AlternateBytesMode = HAL_XSPI_ALT_BYTES_NONE;
   sCmd.DataMode           = HAL_XSPI_DATA_NONE;
   sCmd.DummyCycles        = 0;
@@ -542,14 +636,24 @@ int32_t S28HS512T_ChipErase(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode)
     sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_8_LINES;
     sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_16_BITS;
     sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_ENABLE;
-    sCmd.Instruction        = S28HS_DTR_CMD_CHIP_ERASE;
+    sCmd.Instruction        = Die ? S28HS_DTR_CMD_DIE_ERASE : S28HS_DTR_CMD_CHIP_ERASE;
+    if (Die)
+    {
+      sCmd.AddressMode    = HAL_XSPI_ADDRESS_8_LINES;
+      sCmd.AddressDTRMode = HAL_XSPI_ADDRESS_DTR_ENABLE;
+    }
   }
   else
   {
     sCmd.InstructionMode    = HAL_XSPI_INSTRUCTION_1_LINE;
     sCmd.InstructionWidth   = HAL_XSPI_INSTRUCTION_8_BITS;
     sCmd.InstructionDTRMode = HAL_XSPI_INSTRUCTION_DTR_DISABLE;
-    sCmd.Instruction        = S28HS_CMD_CHIP_ERASE;
+    sCmd.Instruction        = Die ? S28HS_CMD_DIE_ERASE : S28HS_CMD_CHIP_ERASE;
+    if (Die)
+    {
+      sCmd.AddressMode    = HAL_XSPI_ADDRESS_1_LINE;
+      sCmd.AddressDTRMode = HAL_XSPI_ADDRESS_DTR_DISABLE;
+    }
   }
 
   if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
@@ -557,7 +661,23 @@ int32_t S28HS512T_ChipErase(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode)
     return S28HS512T_ERROR;
   }
 
-  return S28HS512T_AutoPollingMemReady(Ctx, Mode, 300000); /* Bulk erase takes up to ~250s */
+  return S28HS_PollDie(Ctx, Mode, Vreg, 300000); /* Bulk / die erase takes up to ~250 s */
+}
+
+int32_t S28HS512T_ChipErase(XSPI_HandleTypeDef *Ctx, ExtMem_Mode_t Mode)
+{
+  const S28HS512T_DieLayout_t *layout = S28HS_GetLayout(Ctx);
+
+  if (layout->Dice == 1U)
+  {
+    return S28HS_EraseUnit(Ctx, Mode, false, 0U, layout->VregBase[0]);
+  }
+  for (uint32_t die = 0; die < layout->Dice; die++)
+  {
+    int32_t ret = S28HS_EraseUnit(Ctx, Mode, true, die * layout->DieSize, layout->VregBase[die]);
+    if (ret != S28HS512T_OK) return ret;
+  }
+  return S28HS512T_OK;
 }
 
 int32_t S28HS512T_EnableMemoryMappedModeDTR(XSPI_HandleTypeDef *Ctx, uint8_t DummyCycles)

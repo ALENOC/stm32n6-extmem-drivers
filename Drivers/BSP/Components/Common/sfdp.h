@@ -66,6 +66,11 @@ typedef struct {
   uint8_t  DummyCyclesOctalDTR;
 } SFDP_FlashParams_t;
 
+#define SFDP_PARAM_ID_BFPT            0xFF00U
+#define SFDP_PARAM_ID_SCCR            0xFF87U /* Status, Control and Configuration Register map        */
+#define SFDP_PARAM_ID_SCCR_MC         0xFF88U /* SCCR map offsets for multi-chip (stacked die) devices */
+#define SFDP_MAX_DICE                 4U
+
 /* Function Prototypes -------------------------------------------------------*/
 /**
   * @brief  Reads and decodes the JEDEC Basic Flash Parameter Table.
@@ -73,6 +78,15 @@ typedef struct {
   *         EXTMEM_ERROR when the XSPI transfer failed, EXTMEM_INVALID_PARAM for NULL arguments.
   */
 int32_t SFDP_ReadAndParse(XSPI_HandleTypeDef *hxspi, SFDP_FlashParams_t *pParams);
+
+/**
+  * @brief  Reads the volatile register base address of every die of a stacked-die flash from the
+  *         SCCR (die 0) and SCCR multi-chip (other dice) parameter tables, as JESD216 defines them.
+  * @param  pVregBase  Array of SFDP_MAX_DICE entries filled with the per-die base addresses.
+  * @param  pDice      Number of dice described (1 when the device has no multi-chip table).
+  * @retval EXTMEM_OK, EXTMEM_NOT_SUPPORTED when the tables are missing, EXTMEM_ERROR on transfer errors.
+  */
+int32_t SFDP_ReadDieRegisterMap(XSPI_HandleTypeDef *hxspi, uint32_t *pVregBase, uint8_t *pDice);
 
 #ifdef __cplusplus
 }

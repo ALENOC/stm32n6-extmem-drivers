@@ -58,6 +58,7 @@ static uint8_t  s_SR1;
 static uint8_t  s_CR1;
 static uint8_t  s_FSR;
 static uint8_t  s_AnyRegV[MOCK_ANYREG_SIZE];   /* 0x00800000 + n */
+static uint8_t  s_AnyRegV1[MOCK_ANYREG_SIZE];  /* 0x08800000 + n (second die) */
 static uint8_t  s_AnyRegN[MOCK_ANYREG_SIZE];   /* 0x00000000 + n */
 static uint8_t  s_VCR[16];
 static uint8_t  s_MR[16];
@@ -68,6 +69,8 @@ static bool     s_NorFlash;
 static uint32_t s_BlockEraseSize;
 static bool     s_PollTimeout;
 static bool     s_SemperFail;
+static bool     s_FlLFail;
+static uint8_t  s_SR2;
 static bool     s_IssiRdReg;
 static uint8_t  s_IssiReadParams;
 static const uint8_t *s_SfdpTable;
@@ -79,12 +82,20 @@ static uint16_t s_HyperID1;
 static uint16_t s_HyperCR0;
 static uint16_t s_HyperCR1;
 static bool     s_HyperFlash;
+static uint32_t s_HostAccessTime;
 static uint32_t s_HfState;
 static bool     s_HfStatusPending;
 static bool     s_HfCfi;
 static uint16_t s_HfStatus;
 
 static uint32_t s_HclkHz = 200000000U;
+static uint32_t s_XspiKernelHz = 400000000U;
+
+/* ISSI OctalRAM (XSPI Macronix RAM mode) */
+static uint16_t s_OctalId;
+static uint16_t s_OctalCR;
+static bool     s_OctalCrLocked;
+static uint32_t s_CmdMemType;
 
 /* Memory-mapped RAM fault */
 static uint32_t s_StuckOffset;
@@ -105,13 +116,13 @@ static bool                    s_IsHyperbus;
 static void Mock_LoadSemperDefaults(void);
 
 /* Default SFDP image: header, JEDEC parameter header and a 16 DWORD BFPT at 0x30 */
-static uint8_t s_DefaultSfdp[0x30 + 64];
+static uint8_t s_DefaultSfdp[0x90];
 
 static void Mock_BuildDefaultSfdp(void)
 {
   memset(s_DefaultSfdp, 0, sizeof(s_DefaultSfdp));
   s_DefaultSfdp[0] = 'S'; s_DefaultSfdp[1] = 'F'; s_DefaultSfdp[2] = 'D'; s_DefaultSfdp[3] = 'P';
-  s_DefaultSfdp[4] = 0x06; s_DefaultSfdp[5] = 0x01; s_DefaultSfdp[6] = 0x00; s_DefaultSfdp[7] = 0xFF;
+  s_DefaultSfdp[4] = 0x06; s_DefaultSfdp[5] = 0x01; s_DefaultSfdp[6] = 0x02; s_DefaultSfdp[7] = 0xFF; /* 3 headers */
   /* Parameter header: ID LSB 0x00, rev 1.6, 16 DWORDs, pointer 0x000030, ID MSB 0xFF */
   s_DefaultSfdp[8]  = 0x00; s_DefaultSfdp[9]  = 0x06; s_DefaultSfdp[10] = 0x01; s_DefaultSfdp[11] = 16;
   s_DefaultSfdp[12] = 0x30; s_DefaultSfdp[13] = 0x00; s_DefaultSfdp[14] = 0x00; s_DefaultSfdp[15] = 0xFF;
@@ -131,6 +142,17 @@ static void Mock_BuildDefaultSfdp(void)
   /* DWORD11: page size 2^8 */
   bfpt[10] = (8U << 4);
   memcpy(&s_DefaultSfdp[0x30], bfpt, sizeof(bfpt));
+
+  /* SCCR map (ID FF87h, 2 DWORDs at 0x70): DWORD 1 = volatile register base of die 0 */
+  s_DefaultSfdp[0x10] = 0x87; s_DefaultSfdp[0x11] = 0x00; s_DefaultSfdp[0x12] = 0x01; s_DefaultSfdp[0x13] = 2;
+  s_DefaultSfdp[0x14] = 0x70; s_DefaultSfdp[0x15] = 0x00; s_DefaultSfdp[0x16] = 0x00; s_DefaultSfdp[0x17] = 0xFF;
+  uint32_t sccr[2] = { 0x00800000U, 0x00000000U };
+  memcpy(&s_DefaultSfdp[0x70], sccr, sizeof(sccr));
+  /* SCCR multi-chip map (ID FF88h, 6 DWORDs at 0x78): like the 2 Gb SEMPER parts it describes 4 dice */
+  s_DefaultSfdp[0x18] = 0x88; s_DefaultSfdp[0x19] = 0x00; s_DefaultSfdp[0x1A] = 0x01; s_DefaultSfdp[0x1B] = 6;
+  s_DefaultSfdp[0x1C] = 0x78; s_DefaultSfdp[0x1D] = 0x00; s_DefaultSfdp[0x1E] = 0x00; s_DefaultSfdp[0x1F] = 0xFF;
+  uint32_t mc[6] = { 0x08800000U, 0x08000000U, 0x10800000U, 0x10000000U, 0x18800000U, 0x18000000U };
+  memcpy(&s_DefaultSfdp[0x78], mc, sizeof(mc));
 }
 
 /* ===================================================================== */
@@ -210,6 +232,7 @@ static bool Mock_IsMicron(void)
 static uint8_t *Mock_AnyRegSlot(uint32_t addr)
 {
   if (addr >= 0x00800000U && addr < (0x00800000U + MOCK_ANYREG_SIZE)) return &s_AnyRegV[addr - 0x00800000U];
+  if (addr >= 0x08800000U && addr < (0x08800000U + MOCK_ANYREG_SIZE)) return &s_AnyRegV1[addr - 0x08800000U];
   if (addr < MOCK_ANYREG_SIZE) return &s_AnyRegN[addr];
   return NULL;
 }
@@ -242,6 +265,8 @@ void MockHAL_Reset(void)
   s_BlockEraseSize = 64U * 1024U;
   s_PollTimeout   = false;
   s_SemperFail    = false;
+  s_FlLFail       = false;
+  s_SR2           = 0x00;
   s_IssiRdReg     = true;
   s_IssiReadParams = 0x00;
   Mock_BuildDefaultSfdp();
@@ -252,11 +277,17 @@ void MockHAL_Reset(void)
   s_HyperCR0      = 0x8F1F; /* Datasheet power-on default */
   s_HyperCR1      = 0xFFC1;
   s_HyperFlash    = false;
+  s_HostAccessTime = 6;
   s_HfState       = 0;
   s_HfStatusPending = false;
   s_HfCfi         = false;
   s_HfStatus      = 0x0080;
   s_HclkHz        = 200000000U;
+  s_XspiKernelHz  = 400000000U;
+  s_OctalId       = 0x0C93; /* 64 Mbit: 13 row bits, 10 column bits, ISSI */
+  s_OctalCR       = 0xF052; /* 1.8 V power-on default: LC 8, variable latency */
+  s_CmdMemType    = HAL_XSPI_MEMTYPE_MICRON;
+  s_OctalCrLocked = false;
   s_StuckOffset   = 0;
   s_StuckMask     = 0;
   s_NorState      = 0;
@@ -283,11 +314,29 @@ void MockHAL_SetHyperBusID(uint16_t id0, uint16_t id1)
   s_HyperID1 = id1;
 }
 
+void MockHAL_SetHyperCR0(uint16_t cr0) { s_HyperCR0 = cr0; }
+
+/* HyperRAM initial latency selected by CR0[7:4] */
+static uint32_t Mock_HyperRamLatency(void)
+{
+  switch ((s_HyperCR0 >> 4) & 0xFU)
+  {
+    case 0x0: return 5;
+    case 0x1: return 6;
+    case 0x2: return 7;
+    case 0xE: return 3;
+    case 0xF: return 4;
+    default:  return 0;
+  }
+}
+
 void MockHAL_SetFlashSemantics(bool norFlash)    { s_NorFlash = norFlash; }
 void MockHAL_SetBlockEraseSize(uint32_t bytes)   { s_BlockEraseSize = bytes; }
 void MockHAL_SetHyperFlashMode(bool enable)      { s_HyperFlash = enable; }
 void MockHAL_SetStatusRegister(uint8_t sr1)      { s_SR1 = sr1; }
 void MockHAL_SetSemperFailure(bool fail)         { s_SemperFail = fail; }
+void MockHAL_SetFlLFailure(bool fail)            { s_FlLFail = fail; }
+uint8_t MockHAL_GetStatusRegister2(void)         { return s_SR2; }
 void MockHAL_SetIssiReadRegister(bool supported) { s_IssiRdReg = supported; }
 uint8_t MockHAL_GetIssiReadParams(void)          { return s_IssiReadParams; }
 void MockHAL_SetFlagStatusRegister(uint8_t fsr)  { s_FSR = fsr; }
@@ -474,6 +523,10 @@ static void Mock_EraseOrProgramDone(void)
   {
     s_SR1 |= 0x40U; /* PRGERR: SEMPER stays busy until CLPEF */
   }
+  if (s_FlLFail)
+  {
+    s_SR2 |= 0x20U; /* P_ERR: S25FL-L stays busy until CLSR */
+  }
 }
 
 static void Mock_LoadSemperDefaults(void)
@@ -481,6 +534,7 @@ static void Mock_LoadSemperDefaults(void)
   memset(s_AnyRegV, 0, sizeof(s_AnyRegV));
   s_AnyRegV[3] = 0x08; /* CFR2V: 3-byte addressing, MEMLAT = 8 */
   s_AnyRegV[6] = 0x40; /* CFR5V: SPI, bit 6 set */
+  memcpy(s_AnyRegV1, s_AnyRegV, sizeof(s_AnyRegV1));
 }
 
 HAL_StatusTypeDef HAL_XSPI_Command(XSPI_HandleTypeDef *hxspi, const XSPI_RegularCmdTypeDef *pCmd, uint32_t Timeout)
@@ -501,6 +555,18 @@ HAL_StatusTypeDef HAL_XSPI_Command(XSPI_HandleTypeDef *hxspi, const XSPI_Regular
 
   s_IsHyperbus = false;
   s_LastCmd = *pCmd;
+  s_CmdMemType = hxspi->Init.MemoryType;
+
+  /* ISSI OctalRAM: 16-bit instruction (command byte + 00h), 32-bit row/column address */
+  if (s_CmdMemType == HAL_XSPI_MEMTYPE_MACRONIX_RAM)
+  {
+    if (pCmd->InstructionWidth != HAL_XSPI_INSTRUCTION_16_BITS || (pCmd->Instruction & 0xFFU) != 0U ||
+        pCmd->AddressWidth != HAL_XSPI_ADDRESS_32_BITS || pCmd->AddressDTRMode != HAL_XSPI_ADDRESS_DTR_ENABLE)
+    {
+      Mock_Violation("OctalRAM command / address format");
+    }
+    return HAL_OK;
+  }
 
   /* Memory-mapped configuration only latches the command */
   if (pCmd->OperationType != HAL_XSPI_OPTYPE_COMMON_CFG)
@@ -543,6 +609,13 @@ HAL_StatusTypeDef HAL_XSPI_Command(XSPI_HandleTypeDef *hxspi, const XSPI_Regular
       }
       s_ResetEnabled = false;
       break;
+    case 0x30: /* CLSR (S25FL-L): clear P_ERR / E_ERR, WIP and WEL */
+      if (s_FlLFail || (s_SR2 & 0x60U) != 0U)
+      {
+        s_SR2 &= (uint8_t)~0x60U;
+        s_SR1 &= (uint8_t)~0x03U;
+      }
+      break;
     case 0x82: /* CLPEF: clear program / erase failure flags, ends the busy state */
       s_SR1 &= (uint8_t)~0x61U;
       break;
@@ -567,6 +640,7 @@ HAL_StatusTypeDef HAL_XSPI_Command(XSPI_HandleTypeDef *hxspi, const XSPI_Regular
         Mock_EraseOrProgramDone();
       }
       break;
+    case 0x61: /* SEMPER die erase */
     case 0xC4: /* Die erase */
       if (hasAddr && !hasData && (!s_NorFlash || wel))
       {
@@ -657,6 +731,21 @@ HAL_StatusTypeDef HAL_XSPI_Transmit(XSPI_HandleTypeDef *hxspi, const uint8_t *pD
   uint32_t addr = s_LastCmd.Address;
   bool     wel  = ((s_SR1 & 0x02U) != 0U);
 
+  if (s_CmdMemType == HAL_XSPI_MEMTYPE_MACRONIX_RAM)
+  {
+    if (op == 0x40U || op == 0x60U) /* Register write: CR only */
+    {
+      if (addr == 0x00040000U && !s_OctalCrLocked) s_OctalCR = (uint16_t)(pData[0] | ((uint16_t)pData[1] << 8));
+    }
+    else if (op == 0x20U || op == 0x00U) /* Memory write */
+    {
+      if ((addr & 1U) != 0U || (len & 1U) != 0U) Mock_Violation("OctalRAM unaligned write");
+      if (((addr % 1024U) + len) > 1024U) Mock_Violation("OctalRAM burst crosses a row");
+      Mock_Store(addr, pData, len, false);
+    }
+    return HAL_OK;
+  }
+
   switch (op)
   {
     case 0x71: /* Write Any Register (SEMPER) */
@@ -734,7 +823,12 @@ HAL_StatusTypeDef HAL_XSPI_Receive(XSPI_HandleTypeDef *hxspi, uint8_t *pData, ui
     uint32_t len  = s_LastHyperCmd.DataLength;
     uint32_t addr = s_LastHyperCmd.Address;
 
-    if (s_LastHyperCmd.AddressSpace == HAL_XSPI_REGISTER_ADDRESS_SPACE)
+    if (!s_HyperFlash && s_HostAccessTime != Mock_HyperRamLatency())
+    {
+      /* Controller latency differs from the HyperRAM latency: data is sampled at the wrong time */
+      memset(pData, 0xFF, len);
+    }
+    else if (s_LastHyperCmd.AddressSpace == HAL_XSPI_REGISTER_ADDRESS_SPACE)
     {
       uint16_t val = MockHAL_GetHyperReg(addr);
       pData[0] = (uint8_t)(val >> 8);
@@ -766,6 +860,23 @@ HAL_StatusTypeDef HAL_XSPI_Receive(XSPI_HandleTypeDef *hxspi, uint8_t *pData, ui
   uint32_t addr = s_LastCmd.Address;
 
   memset(pData, 0, len);
+  if (s_CmdMemType == HAL_XSPI_MEMTYPE_MACRONIX_RAM)
+  {
+    if (op == 0xC0U || op == 0xE0U) /* Register read */
+    {
+      uint16_t v = (addr == 0x00040000U) ? s_OctalCR : s_OctalId;
+      pData[0] = (uint8_t)(v & 0xFFU);
+      if (len > 1U) pData[1] = (uint8_t)(v >> 8);
+    }
+    else
+    {
+      if ((addr & 1U) != 0U || (len & 1U) != 0U) Mock_Violation("OctalRAM unaligned read");
+      if (((addr % 1024U) + len) > 1024U) Mock_Violation("OctalRAM burst crosses a row");
+      Mock_Load(addr, pData, len);
+    }
+    Mock_CopyToEvent(ev, pData, len);
+    return HAL_OK;
+  }
   switch (op)
   {
     case 0x9F: /* Read JEDEC ID */
@@ -783,6 +894,9 @@ HAL_StatusTypeDef HAL_XSPI_Receive(XSPI_HandleTypeDef *hxspi, uint8_t *pData, ui
       pData[0] = s_NorFlash ? s_SR1 : s_SramMode;
       if (len > 1U) pData[1] = pData[0];
       break;
+    case 0x07: /* Read Status Register 2 */
+      pData[0] = s_SR2;
+      break;
     case 0x70: /* Read Flag Status Register */
       pData[0] = s_FSR;
       if (len > 1U) pData[1] = s_FSR;
@@ -793,7 +907,7 @@ HAL_StatusTypeDef HAL_XSPI_Receive(XSPI_HandleTypeDef *hxspi, uint8_t *pData, ui
     case 0x65: /* Read Any Register */
     {
       const uint8_t *slot = Mock_AnyRegSlot(addr);
-      pData[0] = (addr == 0x00800000U) ? s_SR1 : ((slot != NULL) ? *slot : 0U);
+      pData[0] = (addr == 0x00800000U || addr == 0x08800000U) ? s_SR1 : ((slot != NULL) ? *slot : 0U);
       if (len > 1U) pData[1] = pData[0];
       break;
     }
@@ -859,6 +973,7 @@ HAL_StatusTypeDef HAL_XSPI_AutoPolling(XSPI_HandleTypeDef *hxspi, const XSPI_Aut
   if (s_PollTimeout) return HAL_TIMEOUT;
   /* A failed SEMPER operation keeps RDYBSY set */
   if ((s_SR1 & 0x60U) != 0U && s_SemperFail) return HAL_TIMEOUT;
+  if ((s_SR2 & 0x60U) != 0U) return HAL_TIMEOUT;
   /* The embedded operation completes while the controller polls */
   s_SR1 &= (uint8_t)~0x01U;
   return HAL_OK;
@@ -869,6 +984,15 @@ HAL_StatusTypeDef HAL_XSPI_MemoryMapped(XSPI_HandleTypeDef *hxspi, const XSPI_Me
   (void)hxspi; (void)pCfg;
   (void)Mock_NewEvent(MOCK_EV_MEMMAPPED);
   return Mock_ShouldFail() ? HAL_ERROR : HAL_OK;
+}
+
+HAL_StatusTypeDef HAL_XSPI_SetClockPrescaler(XSPI_HandleTypeDef *hxspi, uint32_t Prescaler)
+{
+  MockEvent_t *ev = Mock_NewEvent(MOCK_EV_SET_PRESCALER);
+  ev->Value = Prescaler;
+  if (Mock_ShouldFail()) return HAL_ERROR;
+  hxspi->Init.ClockPrescaler = Prescaler;
+  return HAL_OK;
 }
 
 HAL_StatusTypeDef HAL_XSPI_Abort(XSPI_HandleTypeDef *hxspi)
@@ -883,7 +1007,9 @@ HAL_StatusTypeDef HAL_XSPI_HyperbusCfg(XSPI_HandleTypeDef *hxspi, const XSPI_Hyp
   (void)hxspi; (void)Timeout;
   MockEvent_t *ev = Mock_NewEvent(MOCK_EV_HYPER_CFG);
   ev->HCfg = *pCfg;
-  return Mock_ShouldFail() ? HAL_ERROR : HAL_OK;
+  if (Mock_ShouldFail()) return HAL_ERROR;
+  s_HostAccessTime = pCfg->AccessTimeCycle;
+  return HAL_OK;
 }
 
 HAL_StatusTypeDef HAL_XSPI_HyperbusCmd(XSPI_HandleTypeDef *hxspi, const XSPI_HyperbusCmdTypeDef *pCmd, uint32_t Timeout)
@@ -1032,6 +1158,16 @@ void SCB_CleanInvalidateDCache_by_Addr(void *addr, int32_t size)
 }
 
 void MockHAL_SetHclkFreq(uint32_t hz) { s_HclkHz = hz; }
+void MockHAL_SetXspiKernelClock(uint32_t hz) { s_XspiKernelHz = hz; }
+void MockHAL_SetOctalRamId(uint16_t id) { s_OctalId = id; }
+void MockHAL_SetOctalRamCrLocked(bool locked) { s_OctalCrLocked = locked; }
+uint16_t MockHAL_GetOctalRamCR(void) { return s_OctalCR; }
+
+uint32_t HAL_RCCEx_GetPeriphCLKFreq(uint64_t PeriphClk)
+{
+  (void)PeriphClk;
+  return s_XspiKernelHz;
+}
 
 uint32_t HAL_RCC_GetHCLKFreq(void)
 {

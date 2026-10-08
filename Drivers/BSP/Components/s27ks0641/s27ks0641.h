@@ -47,7 +47,7 @@ extern "C" {
 #define S27KS_CR0_LATENCY_MASK         (0xFU << 4)
 #define S27KS_CR0_LATENCY_5_CYCLES     (0x0U << 4)      /* Up to 133 MHz */
 #define S27KS_CR0_LATENCY_6_CYCLES     (0x1U << 4)      /* Up to 166 MHz (default) */
-#define S27KS_CR0_LATENCY_7_CYCLES     (0x2U << 4)      /* Up to 200 MHz */
+#define S27KS_CR0_LATENCY_7_CYCLES     (0x2U << 4)      /* Up to 200 MHz (default on 200 MHz parts) */
 #define S27KS_CR0_LATENCY_3_CYCLES     (0xEU << 4)      /* Up to 85 MHz  */
 #define S27KS_CR0_LATENCY_4_CYCLES     (0xFU << 4)      /* Up to 104 MHz */
 #define S27KS_CR0_FIXED_LATENCY        (1U << 3)        /* 1 = fixed 2x latency, 0 = variable */
@@ -58,9 +58,13 @@ extern "C" {
 #define S27KS_CR0_BURST_16B            (0x2U << 0)
 #define S27KS_CR0_BURST_32B            (0x3U << 0)
 
-/* Initial configuration: normal operation, 6 clock variable latency, legacy 32 byte wrap */
+/* Initial latency used by the driver: 7 clocks is valid at every frequency up to 200 MHz
+ * (CR0[7:4] = 0010b on Infineon S27KS/S27KL and ISSI IS66WVH/IS67WVH) */
+#define S27KS_LATENCY_CLOCKS           7U
+
+/* Initial configuration: normal operation, 7 clock variable latency, legacy 32 byte wrap */
 #define S27KS_CR0_INIT_VALUE           (S27KS_CR0_DPD_NORMAL | S27KS_CR0_DRIVE_STRENGTH_DEF | S27KS_CR0_RESERVED_ONES | \
-                                          S27KS_CR0_LATENCY_6_CYCLES | S27KS_CR0_VARIABLE_LATENCY | \
+                                          S27KS_CR0_LATENCY_7_CYCLES | S27KS_CR0_VARIABLE_LATENCY | \
                                           S27KS_CR0_LEGACY_WRAP | S27KS_CR0_BURST_32B)
 
 /* Wake-up time after deep power down exit (tEXTDPD, 150 us max) */

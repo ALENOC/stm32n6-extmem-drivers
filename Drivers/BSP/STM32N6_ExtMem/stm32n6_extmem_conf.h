@@ -66,6 +66,14 @@ extern "C" {
 #endif
 
 /**
+  * @brief Highest XSPI bus clock used while probing and configuring a memory in 1S-1S-1S,
+  *        before switching to the configured clock.
+  */
+#ifndef EXTMEM_INIT_MAX_CLOCK_HZ
+#define EXTMEM_INIT_MAX_CLOCK_HZ             50000000U
+#endif
+
+/**
   * @brief XSPI bus clock assumed for the refresh counter when the RCC cannot report the kernel clock.
   */
 #ifndef EXTMEM_XSPI_FALLBACK_BUS_CLOCK_HZ

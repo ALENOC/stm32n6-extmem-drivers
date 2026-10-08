@@ -175,3 +175,52 @@ int32_t SFDP_ReadAndParse(XSPI_HandleTypeDef *hxspi, SFDP_FlashParams_t *pParams
 
   return EXTMEM_OK;
 }
+
+int32_t SFDP_ReadDieRegisterMap(XSPI_HandleTypeDef *hxspi, uint32_t *pVregBase, uint8_t *pDice)
+{
+  SFDP_Header_t hdr;
+  bool haveSccr = false;
+  uint8_t dice = 1;
+
+  if (hxspi == NULL || pVregBase == NULL || pDice == NULL)
+  {
+    return EXTMEM_INVALID_PARAM;
+  }
+
+  if (SFDP_RawRead(hxspi, 0x000000, (uint8_t *)&hdr, sizeof(hdr)) != EXTMEM_OK) return EXTMEM_ERROR;
+  if (hdr.Signature != SFDP_SIGNATURE) return EXTMEM_NOT_SUPPORTED;
+
+  /* NumParameterHdrs is 0-based */
+  for (uint32_t i = 0; i <= hdr.NumParameterHdrs; i++)
+  {
+    SFDP_ParamHeader_t ph;
+    if (SFDP_RawRead(hxspi, 0x08U + (i * 8U), (uint8_t *)&ph, sizeof(ph)) != EXTMEM_OK) return EXTMEM_ERROR;
+
+    uint32_t id = ((uint32_t)ph.ParamID_MSB << 8) | ph.ParamID_LSB;
+    uint32_t dw[2 * (SFDP_MAX_DICE - 1U)] = {0};
+    uint32_t len = ph.TableLengthDwords;
+
+    if (id == SFDP_PARAM_ID_SCCR && len >= 1U)
+    {
+      /* SCCR DWORD 1: volatile register base address of die 0 */
+      if (SFDP_RawRead(hxspi, ph.TablePointer, (uint8_t *)dw, 4U) != EXTMEM_OK) return EXTMEM_ERROR;
+      pVregBase[0] = dw[0];
+      haveSccr = true;
+    }
+    else if (id == SFDP_PARAM_ID_SCCR_MC && len >= 2U)
+    {
+      /* One (volatile, non-volatile) DWORD pair per additional die */
+      if (len > (2U * (SFDP_MAX_DICE - 1U))) len = 2U * (SFDP_MAX_DICE - 1U);
+      if (SFDP_RawRead(hxspi, ph.TablePointer, (uint8_t *)dw, len * 4U) != EXTMEM_OK) return EXTMEM_ERROR;
+      dice = (uint8_t)(1U + (len / 2U));
+      for (uint32_t d = 1; d < dice; d++)
+      {
+        pVregBase[d] = dw[(d - 1U) * 2U];
+      }
+    }
+  }
+
+  if (!haveSccr) return EXTMEM_NOT_SUPPORTED;
+  *pDice = dice;
+  return EXTMEM_OK;
+}

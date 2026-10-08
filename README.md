@@ -31,7 +31,7 @@ Supports **XSPI1**, **XSPI2**, **XSPI3** (Single, Quad, Octal DTR up to 200 MHz,
 ## 🚀 Key Features
 
 - **Comprehensive Infineon Technologies Coverage**:
-  - **SEMPER™ Octal NOR Flash** (`S28HS512T`, `S28HL512T`, `S28HS256T`, `S28HL256T`, `S28HS01GT`): xSPI Profile 1.0 protocol (8D-8D-8D DDR up to 200 MHz / 400 MB/s).
+  - **SEMPER™ Octal NOR Flash** (`S28HS512T`, `S28HL512T`, `S28HS256T`, `S28HL256T`, `S28HS01GT`, `S28HS02GT`): xSPI Profile 1.0 protocol (8D-8D-8D DDR up to 200 MHz / 400 MB/s).
   - **HyperFlash™** (`S26KS512S`, `S26KL512S`, `S26KS256S`, `S26KL256S`, `S26KS128S`, `S26KL128S`): native Cypress HyperBus™ interface at 1.8V / 3.0V.
   - **HyperRAM™** (`S27KS0641`, `S27KL0641`, `S27KS128`, `S27KL128`, `S27KS256`, `S27KL256`, `S27KS512`, `S27HS/HL` 2.0 and 3.0 series).
   - **SEMPER™ / FL Quad SPI Flash** (`S25HL512T`, `S25HS512T`, `S25FL256L`, `S25FL128L`, `S25FL512S`).
@@ -40,7 +40,7 @@ Supports **XSPI1**, **XSPI2**, **XSPI3** (Single, Quad, Octal DTR up to 200 MHz,
   - **HyperFlash™ NOR Flash** (`IS26KS128S`, `IS26KL128S`, `IS26KS256S`, `IS26KL256S`, `IS26KS512S`, `IS26KL512S`): 1.8V / 3.0V HyperBus™ interface up to 166 MHz.
   - **Quad SPI NOR Flash** (`IS25LP` and `IS25WP` from 2Mb up to 512Mb: `020/040/080/016/032/064/128/256/512`, plus `IS25LE/WE` ultra-low power and `IS25LQ/WQ` series).
   - **Parallel NOR Flash via FMC** (`IS29GL512`, `IS29GL256`, `IS29GL128`, `IS29GL064`, `IS29GL032`): 16-bit Parallel CFI NOR Flash.
-  - **Octal PSRAM xSPI Profile 2.0** (`IS66WVO8M8`, `IS66WVO16M8`, `IS66WVO32M8`, `IS66WVO64M8` and automotive `IS67WVO` series).
+  - **OctalRAM, 8D-8D-8D OPI** (`IS66WVO8M8`, `IS66WVO16M8`, `IS66WVO32M8`, `IS66WVO64M8` and automotive `IS67WVO` series).
   - **HyperRAM™ PSRAM** (`IS66WVH8M8`, `IS66WVH16M8`, `IS66WVH32M8` and automotive `IS67WVH` series).
   - **Quad SPI PSRAM** (`IS66WVS1M8`, `IS66WVS2M8`, `IS66WVS4M8`, `IS66WVS16M8`).
   - **Serial Static RAM** (`IS62WVS / IS65WVS 0648 / 1288 / 2568 / 5128` SPI/SDI/SQI).
@@ -78,10 +78,10 @@ Supports **XSPI1**, **XSPI2**, **XSPI3** (Single, Quad, Octal DTR up to 200 MHz,
 | **ISSI** | HyperFlash™ (`IS26KS/IS26KL`) | XSPI1 / XSPI2 | 166 MHz | HyperBus™ | `s26ks512s` |
 | **ISSI** | Quad NOR Flash (`IS25LP/IS25WP/IS25LE/WE/LQ/WQ`) | XSPI1 / XSPI2 / XSPI3 | 133 MHz | 1-4-4 Quad SPI | `is25lp256` |
 | **ISSI** | Parallel NOR Flash (`IS29GL032/064/128/256/512`) | FMC (16-bit) | 110 ns | 16-bit Parallel CFI NOR | `is29gl_fmc` |
-| **ISSI** | Octal PSRAM (`IS66WVO/IS67WVO`) | XSPI1 / XSPI2 | 200 MHz | xSPI Profile 2.0 (8D-8D-8D) | `is66wvo32m8` |
+| **ISSI** | OctalRAM (`IS66WVO/IS67WVO`) | XSPI1 / XSPI2 | 200 MHz | 8D-8D-8D OPI (XSPI Macronix RAM mode) | `is66wvo32m8` |
 | **ISSI** | HyperRAM™ PSRAM (`IS66WVH/IS67WVH`) | XSPI1 / XSPI2 | 200 MHz | HyperBus™ DDR | `is66wvh16m8` |
-| **ISSI** | Quad SPI PSRAM (`IS66WVS/IS67WVS`) | XSPI1 / XSPI2 / XSPI3 | 133 MHz | 1-4-4 Quad SPI | `is66wvs16m8` |
-| **ISSI** | Serial Static RAM (`IS62WVS/IS65WVS`) | XSPI1 / XSPI2 / XSPI3 | 45 MHz | SPI / SQI (1-1-1 / 4-4-4) | `is62wvs` |
+| **ISSI** | Quad SPI PSRAM (`IS66WVS/IS67WVS`) | XSPI1 / XSPI2 / XSPI3 | 104 MHz | 1-4-4 Quad SPI | `is66wvs16m8` |
+| **ISSI** | Serial Static RAM (`IS62WVS/IS65WVS`) | XSPI1 / XSPI2 / XSPI3 | 20 MHz | SPI / SQI (1-1-1 / 4-4-4) | `is62wvs` |
 | **ISSI/IFX** | Parallel Asynch PSRAM (`IS66WV/CY62`) | FMC (16-bit) | Asynchronous (~10-55ns) | 16-bit Parallel SRAM/PSRAM | `is66wv_fmc` |
 | **Micron** | Xccela™ Octal NOR (`MT35XU/MT35XL`) | XSPI1 / XSPI2 | 200 MHz | 8D-8D-8D (Octal DTR) | `mt35xu512a` |
 | **Micron** | MT25Q Quad NOR (`MT25QU/MT25QL`) | XSPI1 / XSPI2 / XSPI3 | 133 MHz | 1-4-4 Quad SPI | `mt25qu512a` |
@@ -180,7 +180,7 @@ void Memory_Setup(void)
 {
   /* Configure XSPI1 bus, prescaler 2 (200 MHz), VDDIO power domain at 1.8V */
   hextmem.Config.Bus            = EXTMEM_BUS_XSPI1;
-  hextmem.Config.ClockPrescaler = 2;
+  hextmem.Config.ClockPrescaler = 2; /* divider: 400 MHz kernel clock / 2 = 200 MHz */
   hextmem.Config.Force1V8       = true;
 
   /* Automatic chip detection via SFDP / JEDEC ID / HyperBus ID */
@@ -247,18 +247,20 @@ The CI workflow runs all three targets on every push and pull request.
 
 ## ⚙️ Known Limitations
 
-- **S28Hx02GT (2 Gb SEMPER Octal)** is a dual-die part that needs per-die register access; it is not in the device table.
+- **Clocks**: `Config.ClockPrescaler` is the XSPI clock divider (memory clock = XSPI kernel clock / divider). Probing and mode switching run at up to `EXTMEM_INIT_MAX_CLOCK_HZ` (50 MHz); `ExtMem_Init()` refuses a configured clock above the part maximum.
+- **S28HS02GT (dual die)**: the per-die register bases come from the SFDP SCCR / SCCR multi-chip tables, following the Linux spi-nor driver. The 2 Gb octal datasheet is not public, so this support is based on the public quad SEMPER DDP documentation.
 - **S25Hx-T Quad I/O reads** use the factory memory latency (8 cycles plus 2 mode cycles), valid up to 118 MHz.
-- **S25FL-L** shares the S25Hx-T driver; its failure flags live in SR2 and are reported as a timeout, not cleared.
-- **HyperRAM** is configured for 6 latency clocks (up to 166 MHz). 200 MHz parts need a higher latency code.
+- **S25FL-L** shares the S25Hx-T driver: failure flags are read from SR2 and cleared with CLSR. A plain timeout on an S25FL-L whose SR1 protection bits (SEC / TBPROT) are set is reported as an error instead of a timeout.
 - **ISSI quad NOR**: the volatile Read Register is set to 11 dummy cycles (1-4-4 up to 139 MHz). Parts without a Read Register keep the factory 6 cycles (81 MHz).
-- **ISSI IS66WVO octal PSRAM** is driven with the AP Memory style OPI command set (0x00 / 0x80 / 0x40 / 0xC0). Check it against the datasheet of the exact part you use.
+- **ISSI IS66WVO OctalRAM** uses the XSPI "Macronix RAM" mode with fixed latency (STM32N6 erratum ES0620). On early STM32N6 silicon this mode only decodes 13 row address bits, so only the first 8 MBytes of larger OctalRAM parts are reachable (see ES0620).
+- **Self-refreshing RAMs** (HyperRAM, OctalRAM, quad PSRAM): CS# is released at least every `EXTMEM_PSRAM_MAX_CS_LOW_NS` (1 us, valid up to 105/125 degC).
 
 ## 📚 Detailed Documentation
 
 - [STM32CubeIDE Integration Guide](Docs/STM32CubeIDE_Integration_Guide.md)
 - [Supported Memories Matrix](Docs/Supported_Memories_Matrix.md)
 - [Hardware Design & High-Speed PCB Routing Guidelines](Docs/Hardware_Design_and_Pinout.md)
+- [Project Context (architecture, conventions, status, sources)](Docs/Project_Context.md)
 
 ---
 

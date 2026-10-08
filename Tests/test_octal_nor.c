@@ -189,9 +189,73 @@ static bool s28hs_spi_operations(void)
   return true;
 }
 
+static bool s28hs_multi_die(void)
+{
+  XSPI_HandleTypeDef h = {0}, h2 = {0}, h3 = {0}, h4 = {0};
+  uint8_t tx[16];
+  S28HS512T_DieLayout_t l = { 2U, 128U * 1024U * 1024U, { 0x00800000U, 0x08800000U, 0U, 0U } };
+  Test_Pattern(tx, sizeof(tx), 0x2D);
+
+  /* Layout validation and registry */
+  S28HS512T_DieLayout_t bad = l;
+  bad.Dice = 0; ASSERT_EQ(S28HS512T_SetDieLayout(&h, &bad), S28HS512T_ERROR);
+  bad.Dice = 5; ASSERT_EQ(S28HS512T_SetDieLayout(&h, &bad), S28HS512T_ERROR);
+  bad.Dice = 2; bad.DieSize = 0; ASSERT_EQ(S28HS512T_SetDieLayout(&h, &bad), S28HS512T_ERROR);
+  ASSERT_EQ(S28HS512T_SetDieLayout(&h, &l), S28HS512T_OK);
+  ASSERT_EQ(S28HS512T_SetDieLayout(&h, &l), S28HS512T_OK);   /* re-registering replaces */
+  ASSERT_EQ(S28HS512T_SetDieLayout(&h2, &l), S28HS512T_OK);
+  ASSERT_EQ(S28HS512T_SetDieLayout(&h3, &l), S28HS512T_OK);
+  ASSERT_EQ(S28HS512T_SetDieLayout(&h4, &l), S28HS512T_ERROR); /* no free slot */
+  ASSERT_EQ(S28HS512T_SetDieLayout(&h2, NULL), S28HS512T_OK);
+  ASSERT_EQ(S28HS512T_SetDieLayout(&h3, NULL), S28HS512T_OK);
+
+  /* Octal entry configures every die, die 0 last */
+  FLASH_SETUP(0x34, 0x5B, 0x1C);
+  ASSERT_EQ(S28HS512T_EnterOctalDTRMode(&h, 24), S28HS512T_OK);
+  ASSERT_CMD(Test_NthCommand(2), I1S(0x65), A1S(HAL_XSPI_ADDRESS_32_BITS, 0x08800003U), D1S(1));
+  ASSERT_EQ(MockHAL_GetAnyReg(0x08800003U), 0x8B);
+  ASSERT_EQ(MockHAL_GetAnyReg(0x08800004U), 0xC0);
+  ASSERT_EQ(MockHAL_GetAnyReg(0x08800006U), 0x43);
+  ASSERT_EQ(MockHAL_GetAnyReg(0x00800006U), 0x43);
+  ASSERT_EQ(MockHAL_CountCommands(0x71), 6);
+
+  /* Program in die 1 polls STR1V of die 1 */
+  MockHAL_ClearLog();
+  ASSERT_EQ(S28HS512T_PageProgram(&h, EXTMEM_MODE_OCTAL_DTR, 0x08000100U, tx, sizeof(tx)), S28HS512T_OK);
+  ASSERT_CMD(Test_NthCommand(2), I8D(0x659A), A8D(0x08800000U), D8D(2), DUMMY(6));
+  MockHAL_ClearLog();
+  ASSERT_EQ(S28HS512T_EraseSector4K(&h, EXTMEM_MODE_SPI, 0x09000000U), S28HS512T_OK);
+  ASSERT_CMD(Test_NthCommand(2), I1S(0x65), A1S(HAL_XSPI_ADDRESS_32_BITS, 0x08800000U), D1S(1), DUMMY(0));
+  MockHAL_ClearLog();
+  ASSERT_EQ(S28HS512T_EraseBlock256K(&h, EXTMEM_MODE_SPI, 0x00000000U), S28HS512T_OK);
+  ASSERT_CMD(Test_NthCommand(2), I1S(0x05), NOADDR, D1S(1));
+  /* Addresses beyond the last die map to the last die */
+  MockHAL_ClearLog();
+  ASSERT_EQ(S28HS512T_EraseBlock256K(&h, EXTMEM_MODE_SPI, 0x20000000U), S28HS512T_OK);
+  ASSERT_CMD(Test_NthCommand(2), I1S(0x65), A1S(HAL_XSPI_ADDRESS_32_BITS, 0x08800000U));
+
+  /* Chip erase = one DIE ERASE per die at the die base, each polled on its own die */
+  MockHAL_ClearLog();
+  ASSERT_EQ(S28HS512T_ChipErase(&h, EXTMEM_MODE_OCTAL_DTR), S28HS512T_OK);
+  ASSERT_CMD(MockHAL_FindCommand(0x619E, 0), I8D(0x619E), A8D(0x00000000U), NODATA);
+  ASSERT_CMD(MockHAL_FindCommand(0x619E, 1), I8D(0x619E), A8D(0x08000000U), NODATA);
+  ASSERT_EQ(MockHAL_CountCommands(0x609F), 0);
+  MockHAL_ClearLog();
+  ASSERT_EQ(S28HS512T_ChipErase(&h, EXTMEM_MODE_SPI), S28HS512T_OK);
+  ASSERT_CMD(MockHAL_FindCommand(0x61, 1), I1S(0x61), A1S(HAL_XSPI_ADDRESS_32_BITS, 0x08000000U), NODATA);
+
+  FAULT_SWEEP(FLASH_SETUP(0x34, 0x5B, 0x1C), S28HS512T_EnterOctalDTRMode(&h, 24));
+  FAULT_SWEEP(FLASH_SETUP(0x34, 0x5B, 0x1C), S28HS512T_ChipErase(&h, EXTMEM_MODE_OCTAL_DTR));
+  FAULT_SWEEP(FLASH_SETUP(0x34, 0x5B, 0x1C), S28HS512T_ChipErase(&h, EXTMEM_MODE_SPI));
+  FAULT_SWEEP(FLASH_SETUP(0x34, 0x5B, 0x1C), S28HS512T_EraseSector4K(&h, EXTMEM_MODE_SPI, 0x09000000U));
+
+  ASSERT_EQ(S28HS512T_SetDieLayout(&h, NULL), S28HS512T_OK);
+  return true;
+}
+
 bool test_infineon_s28hs512t_octal_flash(void)
 {
-  return s28hs_octal_entry() && s28hs_dtr_operations() && s28hs_spi_operations();
+  return s28hs_octal_entry() && s28hs_dtr_operations() && s28hs_spi_operations() && s28hs_multi_die();
 }
 
 /* ========================================================================= */

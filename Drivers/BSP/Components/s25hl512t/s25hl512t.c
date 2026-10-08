@@ -78,17 +78,30 @@ int32_t S25HL512T_AutoPollingMemReady(XSPI_HandleTypeDef *Ctx, uint32_t Timeout)
     return S25HL512T_OK;
   }
 
-  /* SEMPER keeps RDYBSY set after a failed program/erase until CLPEF: tell a failure from a timeout */
-  uint8_t sr1 = 0;
+  /* Both families keep WIP/RDYBSY set after a failed program/erase until the flags are cleared.
+   * S25FL-L reports the failure in SR2V[6:5] (cleared by CLSR 30h); its SR1V[6:5] are protection bits.
+   * SEMPER reports it in STR1V[6:5] (cleared by CLPEF 82h); its STR2V[7:5] read as 0. */
+  uint8_t sr = 0;
+  sCmd.Instruction = S25HL_CMD_READ_STATUS2;
   if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
-  if (HAL_XSPI_Receive(Ctx, &sr1, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
-  if ((sr1 & (S25HL_SR1_PRG_ERR | S25HL_SR1_ERS_ERR)) == 0U)
+  if (HAL_XSPI_Receive(Ctx, &sr, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
+  if ((sr & (S25FL_SR2_PRG_ERR | S25FL_SR2_ERS_ERR)) != 0U)
   {
-    return S25HL512T_TIMEOUT;
+    sCmd.Instruction = S25FL_CMD_CLEAR_STATUS;
+  }
+  else
+  {
+    sCmd.Instruction = S25HL_CMD_READ_STATUS1;
+    if (HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
+    if (HAL_XSPI_Receive(Ctx, &sr, HAL_XSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) return S25HL512T_ERROR;
+    if ((sr & (S25HL_SR1_PRG_ERR | S25HL_SR1_ERS_ERR)) == 0U)
+    {
+      return S25HL512T_TIMEOUT;
+    }
+    sCmd.Instruction = S25HL_CMD_CLEAR_ERRORS;
   }
 
-  sCmd.Instruction = S25HL_CMD_CLEAR_ERRORS;
-  sCmd.DataMode    = HAL_XSPI_DATA_NONE;
+  sCmd.DataMode = HAL_XSPI_DATA_NONE;
   (void)HAL_XSPI_Command(Ctx, &sCmd, HAL_XSPI_TIMEOUT_DEFAULT_VALUE);
   return S25HL512T_ERROR;
 }

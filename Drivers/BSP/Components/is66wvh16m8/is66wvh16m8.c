@@ -68,7 +68,7 @@ int32_t IS66WVH16M8_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint3
   if (HAL_XSPI_Init(Ctx) != HAL_OK) return IS66WVH_ERROR;
 
   sHyperbusCfg.RWRecoveryTimeCycle = 4;
-  sHyperbusCfg.AccessTimeCycle     = 6;
+  sHyperbusCfg.AccessTimeCycle     = IS66WVH_LATENCY_CLOCKS; /* Must match CR0[7:4] */
   sHyperbusCfg.WriteZeroLatency    = HAL_XSPI_LATENCY_ON_WRITE;
   sHyperbusCfg.LatencyMode         = HAL_XSPI_VARIABLE_LATENCY;
 

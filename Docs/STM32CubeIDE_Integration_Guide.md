@@ -198,7 +198,7 @@ int main(void)
 
   /* 1. External Flash Initialization (e.g. Infineon S28HS, ISSI IS25LX, or Micron MT35XU on XSPI1) */
   hExtFlash.Config.Bus            = EXTMEM_BUS_XSPI1;
-  hExtFlash.Config.ClockPrescaler = 2;    /* 200 MHz */
+  hExtFlash.Config.ClockPrescaler = 2;    /* divider: 400 MHz XSPI kernel clock / 2 = 200 MHz */
   hExtFlash.Config.Force1V8       = true; /* 1.8V */
   if (ExtMem_Init(&hExtFlash) != EXTMEM_OK)
   {
@@ -210,7 +210,7 @@ int main(void)
 
   /* 2. External PSRAM Initialization (e.g. ISSI IS66WVO or Infineon HyperRAM on XSPI2) */
   hExtRam.Config.Bus            = EXTMEM_BUS_XSPI2;
-  hExtRam.Config.ClockPrescaler = 2;    /* 200 MHz */
+  hExtRam.Config.ClockPrescaler = 2;    /* divider: 400 MHz XSPI kernel clock / 2 = 200 MHz */
   hExtRam.Config.Force1V8       = true;
   if (ExtMem_Init(&hExtRam) != EXTMEM_OK)
   {

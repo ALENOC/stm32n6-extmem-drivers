@@ -50,11 +50,12 @@ bool Test_CheckCmd(const MockEvent_t *ev, const CmdSpec_t *spec, const char *fil
   ok &= Test_Field("DQSMode",            spec->DQSMode,            c->DQSMode,            file, line, c->Instruction);
   ok &= Test_Field("OperationType",      spec->OperationType,      c->OperationType,      file, line, c->Instruction);
 
-  /* Protocol sanity: 8D instructions are 16-bit with an inverted or repeated extension byte */
+  /* Protocol sanity: 8D instructions are 16-bit with an inverted or repeated extension byte,
+   * or a 00h second byte for the ISSI OctalRAM command format */
   if (c->InstructionDTRMode == HAL_XSPI_INSTRUCTION_DTR_ENABLE)
   {
     uint8_t hi = (uint8_t)(c->Instruction >> 8), lo = (uint8_t)(c->Instruction & 0xFFU);
-    if (c->InstructionWidth != HAL_XSPI_INSTRUCTION_16_BITS || !(lo == hi || lo == (uint8_t)~hi))
+    if (c->InstructionWidth != HAL_XSPI_INSTRUCTION_16_BITS || !(lo == hi || lo == (uint8_t)~hi || lo == 0U))
     {
       printf("       [FAIL] %s:%d: malformed 8D instruction 0x%04lX\r\n", file, line, (unsigned long)c->Instruction);
       ok = false;

@@ -81,7 +81,7 @@ int32_t S27KS0641_Init(XSPI_HandleTypeDef *Ctx, uint32_t ClockPrescaler, uint32_
 
   /* HyperBus timing setup: 6 latency cycles for <= 200MHz */
   sHyperbusCfg.RWRecoveryTimeCycle = 4;
-  sHyperbusCfg.AccessTimeCycle     = 6;
+  sHyperbusCfg.AccessTimeCycle     = S27KS_LATENCY_CLOCKS; /* Must match CR0[7:4] */
   sHyperbusCfg.WriteZeroLatency    = HAL_XSPI_LATENCY_ON_WRITE;
   sHyperbusCfg.LatencyMode         = HAL_XSPI_VARIABLE_LATENCY;
 

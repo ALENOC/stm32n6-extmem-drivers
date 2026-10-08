@@ -19,63 +19,111 @@
 bool test_issi_is66wvo32m8_octal_psram(void)
 {
   XSPI_HandleTypeDef h = {0};
-  uint8_t tx[128], rx[128], mr = 0;
+  uint8_t tx[3000], rx[3000];
+  uint16_t reg = 0, id = 0;
+  uint32_t cap = 0;
   RAM_SETUP();
   Test_Pattern(tx, sizeof(tx), 0x0F);
 
-  ASSERT_EQ(IS66WVO32M8_Init(&h, 2, HAL_XSPI_SIZE_256MB), IS66WVO_OK);
+  /* Init: Macronix RAM mode, 1 KB row boundary, CR written first (zero latency), then ID and CR read back */
+  ASSERT_EQ(IS66WVO32M8_Init(&h, 1, HAL_XSPI_SIZE_64MB), IS66WVO_OK);
   const MockEvent_t *init = MockHAL_FindEvent(MOCK_EV_XSPI_INIT, 0);
-  ASSERT_EQ(init->Init.MemoryType, HAL_XSPI_MEMTYPE_APMEM);
-  ASSERT_EQ(init->Init.MemorySize, HAL_XSPI_SIZE_256MB);
-  ASSERT_EQ(init->Init.ChipSelectBoundary, HAL_XSPI_BONDARYOF_16KB); /* 2 KB page */
-  /* Global reset, then MR0 and MR4 written as DTR byte pairs */
-  ASSERT_CMD(Test_NthCommand(0), I8S(0xFF), NOADDR, NODATA);
-  ASSERT_CMD(Test_NthCommand(1), I8S(0xC0), A8D(IS66WVO_MR0_ADDR), D8D(2), DUMMY(0));
-  ASSERT_CMD(Test_NthCommand(2), I8S(0xC0), A8D(IS66WVO_MR4_ADDR), D8D(2), DUMMY(0));
-  ASSERT_EQ(MockHAL_GetMR(0), IS66WVO_MR0_READ_LATENCY_5 | IS66WVO_MR0_VARIABLE_LATENCY);
-  ASSERT_EQ(MockHAL_GetMR(4), IS66WVO_MR4_WRITE_LATENCY_5);
+  ASSERT_EQ(init->Init.MemoryType, HAL_XSPI_MEMTYPE_MACRONIX_RAM);
+  ASSERT_EQ(init->Init.MemorySize, HAL_XSPI_SIZE_64MB);
+  ASSERT_EQ(init->Init.ChipSelectBoundary, HAL_XSPI_BONDARYOF_8KB); /* 1 KB row */
+  ASSERT_EQ(init->Init.DelayHoldQuarterCycle, HAL_XSPI_DHQC_ENABLE);
+  ASSERT_CMD(Test_NthCommand(0), I8D(0x4000), A8D(IS66WVO_REG_CR), D8D(2), DUMMY(0), NODQS);
+  ASSERT_CMD(Test_NthCommand(1), I8D(0xC000), A8D(IS66WVO_REG_ID), D8D(2), DUMMY(IS66WVO_DUMMY_CYCLES), WITHDQS);
+  ASSERT_CMD(Test_NthCommand(2), I8D(0xC000), A8D(IS66WVO_REG_CR), D8D(2), DUMMY(IS66WVO_DUMMY_CYCLES), WITHDQS);
+  /* CR: normal power, 24 ohm, LC = 7 (0100b), fixed latency, 32 byte wrap -> 0xF04A, fixed latency gives 2 x 7 - 1 dummy */
+  ASSERT_EQ(IS66WVO_CR_INIT_VALUE, 0xF04A);
+  ASSERT_EQ(MockHAL_GetOctalRamCR(), 0xF04A);
+  ASSERT_EQ(IS66WVO_DUMMY_CYCLES, 13);
+  const MockEvent_t *crw = MockHAL_FindTxAfterCommand(0x4000, 0);
+  ASSERT_EQ(crw->Data[0], 0x4A);
+  ASSERT_EQ(crw->Data[1], 0xF0);
 
-  MockHAL_ClearLog();
-  ASSERT_EQ(IS66WVO32M8_ReadReg(&h, IS66WVO_MR0_ADDR, &mr, 4), IS66WVO_OK);
-  ASSERT_CMD(Test_NthCommand(0), I8S(0x40), A8D(0), D8D(2), DUMMY(4), WITHDQS);
-  ASSERT_EQ(mr, IS66WVO_MR0_READ_LATENCY_5);
+  ASSERT_EQ(IS66WVO32M8_ReadID(&h, &id, &cap), IS66WVO_OK);
+  ASSERT_EQ(id, 0x0C93);
+  ASSERT_EQ(cap, 8U * 1024U * 1024U);
+  ASSERT_EQ(IS66WVO32M8_ReadReg(&h, IS66WVO_REG_CR, &reg, 13), IS66WVO_OK);
+  ASSERT_EQ(reg, 0xF04A);
 
-  MockHAL_ClearLog();
-  ASSERT_EQ(IS66WVO32M8_Write(&h, tx, 0x800, sizeof(tx), 5), IS66WVO_OK);
-  ASSERT_CMD(Test_NthCommand(0), I8S(0x80), A8D(0x800), D8D(128), DUMMY(5), WITHDQS);
-  MockHAL_ClearLog();
-  ASSERT_EQ(IS66WVO32M8_Read(&h, rx, 0x800, sizeof(rx), 5), IS66WVO_OK);
-  ASSERT_CMD(Test_NthCommand(0), I8S(0x00), A8D(0x800), D8D(128), DUMMY(5), WITHDQS);
-  ASSERT_EQ(memcmp(tx, rx, sizeof(tx)), 0);
-  /* Zero dummy selects the default latency */
-  MockHAL_ClearLog();
-  ASSERT_EQ(IS66WVO32M8_Read(&h, rx, 0x800, 2, 0), IS66WVO_OK);
-  ASSERT_CMD(Test_NthCommand(0), I8S(0x00), DUMMY(5));
-  MockHAL_ClearLog();
-  ASSERT_EQ(IS66WVO32M8_Write(&h, tx, 0x900, 2, 0), IS66WVO_OK);
-  ASSERT_CMD(Test_NthCommand(0), I8S(0x80), DUMMY(5));
+  /* Wrong manufacturer or a configuration that did not stick: init fails */
+  RAM_SETUP();
+  MockHAL_SetOctalRamId(0x0C91);
+  ASSERT_EQ(IS66WVO32M8_Init(&h, 1, HAL_XSPI_SIZE_64MB), IS66WVO_ERROR);
+  RAM_SETUP();
+  MockHAL_SetOctalRamCrLocked(true);
+  ASSERT_EQ(IS66WVO32M8_Init(&h, 1, HAL_XSPI_SIZE_64MB), IS66WVO_ERROR);
+  /* ID fields that cannot describe a 32-bit address space give no capacity */
+  RAM_SETUP();
+  MockHAL_SetOctalRamId(0x1FF3);
+  ASSERT_EQ(IS66WVO32M8_ReadID(&h, &id, &cap), IS66WVO_OK);
+  ASSERT_EQ(cap, 0);
+  RAM_SETUP();
 
+  /* Aligned transfer inside one row */
+  MockHAL_ClearLog();
+  ASSERT_EQ(IS66WVO32M8_Write(&h, tx, 0x800, 128, 0), IS66WVO_OK);
+  ASSERT_CMD(Test_NthCommand(0), I8D(0x2000), A8D(0x800), D8D(128), DUMMY(13), WITHDQS);
+  MockHAL_ClearLog();
+  ASSERT_EQ(IS66WVO32M8_Read(&h, rx, 0x800, 128, 0), IS66WVO_OK);
+  ASSERT_CMD(Test_NthCommand(0), I8D(0xA000), A8D(0x800), D8D(128), DUMMY(13), WITHDQS);
+  ASSERT_EQ(memcmp(tx, rx, 128), 0);
+
+  /* Unaligned start / odd length / several rows: split at rows, edge bytes read-modify-written */
+  memset(MockHAL_GetMemoryBuffer(), 0xEE, 0x4000);
+  ASSERT_EQ(IS66WVO32M8_Write(&h, tx, 0x3FF, 2051, 13), IS66WVO_OK);
+  ASSERT_EQ(MockHAL_GetMemoryBuffer()[0x3FE], 0xEE);
+  ASSERT_EQ(MockHAL_GetMemoryBuffer()[0x3FF + 2051], 0xEE);
+  ASSERT_EQ(memcmp(&MockHAL_GetMemoryBuffer()[0x3FF], tx, 2051), 0);
   memset(rx, 0, sizeof(rx));
-  ASSERT_EQ(IS66WVO32M8_Write_DMA(&h, tx, 0x1000, 64, 5), IS66WVO_OK);
-  ASSERT_EQ(IS66WVO32M8_Read_DMA(&h, rx, 0x1000, 64, 5), IS66WVO_OK);
+  ASSERT_EQ(IS66WVO32M8_Read(&h, rx, 0x3FF, 2051, 13), IS66WVO_OK);
+  ASSERT_EQ(memcmp(tx, rx, 2051), 0);
+  ASSERT_EQ(IS66WVO32M8_Read(&h, rx, 0x10, 1, 0), IS66WVO_OK);
+
+  /* DMA: one aligned burst inside a row, anything else is refused */
+  ASSERT_EQ(IS66WVO32M8_Write_DMA(&h, tx, 0x1000, 64, 13), IS66WVO_OK);
+  ASSERT_EQ(IS66WVO32M8_Read_DMA(&h, rx, 0x1000, 64, 0), IS66WVO_OK);
   ASSERT_EQ(memcmp(tx, rx, 64), 0);
-  ASSERT_EQ(IS66WVO32M8_Write_DMA(&h, tx, 0x1000, 2, 0), IS66WVO_OK);
-  ASSERT_EQ(IS66WVO32M8_Read_DMA(&h, rx, 0x1000, 2, 0), IS66WVO_OK);
+  ASSERT_EQ(IS66WVO32M8_Write_DMA(&h, tx, 0x1000, 64, 0), IS66WVO_OK);
+  ASSERT_EQ(IS66WVO32M8_Read_DMA(&h, rx, 0x1000, 64, 13), IS66WVO_OK);
+  ASSERT_EQ(IS66WVO32M8_Read_DMA(&h, rx, 0x1001, 64, 13), IS66WVO_ERROR);
+  ASSERT_EQ(IS66WVO32M8_Read_DMA(&h, rx, 0x1000, 63, 13), IS66WVO_ERROR);
+  ASSERT_EQ(IS66WVO32M8_Read_DMA(&h, rx, 0x13F0, 64, 13), IS66WVO_ERROR);
+  ASSERT_EQ(IS66WVO32M8_Read_DMA(&h, rx, 0x1000, 0, 13), IS66WVO_ERROR);
+  ASSERT_EQ(IS66WVO32M8_Write_DMA(&h, tx, 0x1001, 64, 13), IS66WVO_ERROR);
+  ASSERT_EQ(IS66WVO32M8_Write_DMA(&h, tx, 0x1000, 63, 13), IS66WVO_ERROR);
+  ASSERT_EQ(IS66WVO32M8_Write_DMA(&h, tx, 0x13F0, 64, 13), IS66WVO_ERROR);
+  ASSERT_EQ(IS66WVO32M8_Write_DMA(&h, tx, 0x1000, 0, 13), IS66WVO_ERROR);
 
   MockHAL_ClearLog();
-  ASSERT_EQ(IS66WVO32M8_EnableMemoryMappedMode(&h, 5, 5), IS66WVO_OK);
-  ASSERT_CMD(Test_NthCommand(0), I8S(0x80), .AddressMode = HAL_XSPI_ADDRESS_8_LINES, DUMMY(5), WITHDQS, OPWRITE);
-  ASSERT_CMD(Test_NthCommand(1), I8S(0x00), .AddressMode = HAL_XSPI_ADDRESS_8_LINES, DUMMY(5), WITHDQS, OPREAD);
+  ASSERT_EQ(IS66WVO32M8_EnableMemoryMappedMode(&h, 13, 13), IS66WVO_OK);
+  ASSERT_CMD(Test_NthCommand(0), I8D(0x2000), .AddressMode = HAL_XSPI_ADDRESS_8_LINES, DUMMY(13), WITHDQS, OPWRITE);
+  ASSERT_CMD(Test_NthCommand(1), I8D(0xA000), .AddressMode = HAL_XSPI_ADDRESS_8_LINES, DUMMY(13), WITHDQS, OPREAD);
+  MockHAL_ClearLog();
+  ASSERT_EQ(IS66WVO32M8_EnableMemoryMappedMode(&h, 0, 0), IS66WVO_OK);
+  ASSERT_CMD(Test_NthCommand(0), I8D(0x2000), DUMMY(13), OPWRITE);
+  ASSERT_CMD(Test_NthCommand(1), I8D(0xA000), DUMMY(13), OPREAD);
 
-  FAULT_SWEEP(RAM_SETUP(), IS66WVO32M8_Init(&h, 2, HAL_XSPI_SIZE_256MB));
-  FAULT_SWEEP(RAM_SETUP(), IS66WVO32M8_ReadReg(&h, 0, &mr, 4));
-  FAULT_SWEEP(RAM_SETUP(), IS66WVO32M8_WriteReg(&h, 0, 0));
-  FAULT_SWEEP(RAM_SETUP(), IS66WVO32M8_Read(&h, rx, 0, 8, 5));
-  FAULT_SWEEP(RAM_SETUP(), IS66WVO32M8_Write(&h, tx, 0, 8, 5));
-  FAULT_SWEEP(RAM_SETUP(), IS66WVO32M8_Read_DMA(&h, rx, 0, 8, 5));
-  FAULT_SWEEP(RAM_SETUP(), IS66WVO32M8_Write_DMA(&h, tx, 0, 8, 5));
-  FAULT_SWEEP(RAM_SETUP(), IS66WVO32M8_EnableMemoryMappedMode(&h, 5, 5));
-  FAULT_SWEEP(RAM_SETUP(), IS66WVO32M8_Reset(&h));
+  /* Deep power down: CR[15] cleared; wake-up rewrites the configuration */
+  ASSERT_EQ(IS66WVO32M8_EnterDeepPowerDown(&h), IS66WVO_OK);
+  ASSERT_EQ(MockHAL_GetOctalRamCR(), 0x704A);
+  ASSERT_EQ(IS66WVO32M8_LeaveDeepPowerDown(&h), IS66WVO_OK);
+  ASSERT_EQ(MockHAL_GetOctalRamCR(), 0xF04A);
+
+  FAULT_SWEEP(RAM_SETUP(), IS66WVO32M8_Init(&h, 1, HAL_XSPI_SIZE_64MB));
+  FAULT_SWEEP(RAM_SETUP(), IS66WVO32M8_ReadReg(&h, 0, &reg, 13));
+  FAULT_SWEEP(RAM_SETUP(), IS66WVO32M8_WriteReg(&h, IS66WVO_REG_CR, 0xF04A));
+  FAULT_SWEEP(RAM_SETUP(), IS66WVO32M8_ReadID(&h, &id, &cap));
+  FAULT_SWEEP(RAM_SETUP(), IS66WVO32M8_Read(&h, rx, 1, 9, 13));
+  FAULT_SWEEP(RAM_SETUP(), IS66WVO32M8_Write(&h, tx, 1, 9, 13));
+  FAULT_SWEEP(RAM_SETUP(), IS66WVO32M8_Read_DMA(&h, rx, 0, 8, 13));
+  FAULT_SWEEP(RAM_SETUP(), IS66WVO32M8_Write_DMA(&h, tx, 0, 8, 13));
+  FAULT_SWEEP(RAM_SETUP(), IS66WVO32M8_EnableMemoryMappedMode(&h, 13, 13));
+  FAULT_SWEEP(RAM_SETUP(), IS66WVO32M8_EnterDeepPowerDown(&h));
+  FAULT_SWEEP(RAM_SETUP(), IS66WVO32M8_LeaveDeepPowerDown(&h));
   return true;
 }
 
@@ -124,6 +172,16 @@ bool test_issi_is66wvs16m8_quad_psram(void)
   MockHAL_ClearLog();
   ASSERT_EQ(IS66WVS16M8_EnableMemoryMappedMode(&h, 0), IS66WVS_OK);
   ASSERT_CMD(Test_NthCommand(1), I1S(0xEB), DUMMY(6), OPREAD);
+
+  /* Transfers crossing a 1 KB page are split (the device would wrap inside the page) */
+  MockHAL_ClearLog();
+  ASSERT_EQ(IS66WVS16M8_WriteQuad(&h, 0x3F0, tx, 64), IS66WVS_OK);
+  ASSERT_CMD(Test_NthCommand(0), I1S(0x38), A4S(HAL_XSPI_ADDRESS_24_BITS, 0x3F0), D4S(16));
+  ASSERT_CMD(Test_NthCommand(1), I1S(0x38), A4S(HAL_XSPI_ADDRESS_24_BITS, 0x400), D4S(48));
+  MockHAL_ClearLog();
+  ASSERT_EQ(IS66WVS16M8_ReadQuad(&h, 0x3F0, rx, 64, 6), IS66WVS_OK);
+  ASSERT_EQ(Test_CommandCount(), 2);
+  ASSERT_EQ(memcmp(tx, rx, 64), 0);
 
   FAULT_SWEEP(RAM_SETUP(), IS66WVS16M8_Init(&h, 2, HAL_XSPI_SIZE_128MB));
   FAULT_SWEEP(RAM_SETUP(), IS66WVS16M8_ReadID(&h, id));
@@ -188,6 +246,21 @@ bool test_issi_is62wvs_serial_sram(void)
   MockHAL_ClearLog();
   ASSERT_EQ(IS62WVS_ExitQuadMode(&h), IS62WVS_OK);
   ASSERT_CMD(Test_NthCommand(0), I4S(0xFF), NOADDR, NODATA);
+
+  /* Sequential access cannot cross the 2 Mbit die boundary of the 4 Mbit part: split at 0x40000 */
+  for (int quad = 0; quad < 2; quad++)
+  {
+    MockHAL_ClearLog();
+    ASSERT_EQ(quad ? IS62WVS_WriteQuad(&h, 0x3FFF8, tx, 24) : IS62WVS_Write(&h, 0x3FFF8, tx, 24), IS62WVS_OK);
+    ASSERT_EQ(Test_CommandCount(), 2);
+    ASSERT_EQ(Test_NthCommand(0)->Cmd.DataLength, 8);
+    ASSERT_EQ(Test_NthCommand(1)->Cmd.Address, 0x40000);
+    MockHAL_ClearLog();
+    ASSERT_EQ(quad ? IS62WVS_ReadQuad(&h, 0x3FFF8, rx, 24, 2) : IS62WVS_Read(&h, 0x3FFF8, rx, 24), IS62WVS_OK);
+    ASSERT_EQ(Test_CommandCount(), 2);
+    ASSERT_EQ(memcmp(tx, rx, 24), 0);
+  }
+  ASSERT_EQ(MockHAL_FindEvent(MOCK_EV_XSPI_INIT, 0) == NULL, true);
 
   FAULT_SWEEP(RAM_SETUP(), IS62WVS_Init(&h, 4, HAL_XSPI_SIZE_4MB));
   FAULT_SWEEP(RAM_SETUP(), IS62WVS_ReadModeRegister(&h, &mode));

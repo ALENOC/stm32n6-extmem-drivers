@@ -106,6 +106,48 @@ bool test_sfdp_parser(void)
   ASSERT_EQ(SFDP_ReadAndParse(&h, NULL), EXTMEM_INVALID_PARAM);
 
   FAULT_SWEEP(MockHAL_Reset(), SFDP_ReadAndParse(&h, &p));
+
+  /* Die register map: SCCR (FF87h) gives die 0, SCCR multi-chip (FF88h) one DWORD pair per extra die */
+  uint32_t vreg[SFDP_MAX_DICE] = {0};
+  uint8_t dice = 0;
+  MockHAL_Reset();
+  ASSERT_EQ(SFDP_ReadDieRegisterMap(&h, vreg, &dice), EXTMEM_OK);
+  ASSERT_EQ(dice, 4);
+  ASSERT_EQ(vreg[0], 0x00800000U);
+  ASSERT_EQ(vreg[1], 0x08800000U);
+  ASSERT_EQ(vreg[2], 0x10800000U);
+  ASSERT_EQ(vreg[3], 0x18800000U);
+  ASSERT_EQ(SFDP_ReadDieRegisterMap(NULL, vreg, &dice), EXTMEM_INVALID_PARAM);
+  ASSERT_EQ(SFDP_ReadDieRegisterMap(&h, NULL, &dice), EXTMEM_INVALID_PARAM);
+  ASSERT_EQ(SFDP_ReadDieRegisterMap(&h, vreg, NULL), EXTMEM_INVALID_PARAM);
+  {
+    static uint8_t img[0xC0];
+    memset(img, 0, sizeof(img));
+    memcpy(img, "SFDP", 4); img[4] = 6; img[5] = 1; img[6] = 2; img[7] = 0xFF;
+    /* SCCR present, multi-chip table too long (truncated to 3 extra dice) */
+    img[0x08] = 0x87; img[0x0B] = 1; img[0x0C] = 0x40; img[0x0F] = 0xFF;
+    img[0x10] = 0x88; img[0x13] = 10; img[0x14] = 0x50; img[0x17] = 0xFF;
+    img[0x18] = 0x00; img[0x1B] = 9;  img[0x1C] = 0x80; img[0x1F] = 0xFF;  /* BFPT, ignored */
+    uint32_t base0 = 0x00900000U;
+    memcpy(&img[0x40], &base0, 4);
+    for (uint32_t i = 0; i < 10; i++) { uint32_t v = 0x01000000U * (i + 1U); memcpy(&img[0x50 + 4U * i], &v, 4); }
+    MockHAL_Reset();
+    MockHAL_SetSfdpTable(img, sizeof(img));
+    ASSERT_EQ(SFDP_ReadDieRegisterMap(&h, vreg, &dice), EXTMEM_OK);
+    ASSERT_EQ(dice, 4);
+    ASSERT_EQ(vreg[0], 0x00900000U);
+    ASSERT_EQ(vreg[3], 0x05000000U);
+    /* Zero-length tables are ignored: no SCCR means no map */
+    img[0x0B] = 0; img[0x13] = 1;
+    ASSERT_EQ(SFDP_ReadDieRegisterMap(&h, vreg, &dice), EXTMEM_NOT_SUPPORTED);
+    /* SCCR only: single die */
+    img[0x0B] = 1;
+    ASSERT_EQ(SFDP_ReadDieRegisterMap(&h, vreg, &dice), EXTMEM_OK);
+    ASSERT_EQ(dice, 1);
+    img[0] = 'X';
+    ASSERT_EQ(SFDP_ReadDieRegisterMap(&h, vreg, &dice), EXTMEM_NOT_SUPPORTED);
+  }
+  FAULT_SWEEP(MockHAL_Reset(), SFDP_ReadDieRegisterMap(&h, vreg, &dice));
   return true;
 }
 

@@ -182,20 +182,20 @@ static bool hyperram_common(const HyperRamOps_t *ops)
   ASSERT_EQ(init->Init.MemoryType, HAL_XSPI_MEMTYPE_HYPERBUS);
   ASSERT_EQ(init->Init.MemorySize, HAL_XSPI_SIZE_64MB);
   const MockEvent_t *cfg = MockHAL_FindEvent(MOCK_EV_HYPER_CFG, 0);
-  ASSERT_EQ(cfg->HCfg.AccessTimeCycle, 6);
+  ASSERT_EQ(cfg->HCfg.AccessTimeCycle, 7);
   ASSERT_EQ(cfg->HCfg.LatencyMode, HAL_XSPI_VARIABLE_LATENCY);
   ASSERT_EQ(cfg->HCfg.WriteZeroLatency, HAL_XSPI_LATENCY_ON_WRITE);
 
-  /* CR0: deep power down disabled (bit 15 = 1), reserved [11:8] = 1, 6 clocks, variable latency,
+  /* CR0: deep power down disabled (bit 15 = 1), reserved [11:8] = 1, 7 clocks (0010b), variable latency,
    * legacy wrap, 32 byte burst. Sent MSB first on the bus. */
-  ASSERT_EQ(ops->Cr0Init, 0x8F17);
+  ASSERT_EQ(ops->Cr0Init, 0x8F27);
   const MockEvent_t *crw = HyperTx(0);
   ASSERT_NOT_NULL(crw);
   ASSERT_EQ(crw->HCmd.AddressSpace, HAL_XSPI_REGISTER_ADDRESS_SPACE);
   ASSERT_EQ(crw->HCmd.Address, 0x1000);
   ASSERT_EQ(crw->Data[0], 0x8F);
-  ASSERT_EQ(crw->Data[1], 0x17);
-  ASSERT_EQ(MockHAL_GetHyperReg(0x1000), 0x8F17);
+  ASSERT_EQ(crw->Data[1], 0x27);
+  ASSERT_EQ(MockHAL_GetHyperReg(0x1000), 0x8F27);
 
   /* ID0 read decodes MSB first */
   MockHAL_SetHyperBusID(0x0C81, 0x0001);
@@ -216,14 +216,14 @@ static bool hyperram_common(const HyperRamOps_t *ops)
 
   /* Deep power down: CR0[15] cleared, everything else preserved; wake-up toggles CS# */
   ASSERT_EQ(ops->EnterDPD(&h), 0);
-  ASSERT_EQ(MockHAL_GetHyperReg(0x1000), 0x0F17);
+  ASSERT_EQ(MockHAL_GetHyperReg(0x1000), 0x0F27);
   MockHAL_ClearLog();
   ASSERT_EQ(ops->LeaveDPD(&h), 0);
   ASSERT_NOT_NULL(MockHAL_FindEvent(MOCK_EV_HYPER_CMD, 0));
 
   FAULT_SWEEP(HR_SETUP(), ops->Init(&h, 2, HAL_XSPI_SIZE_64MB));
   FAULT_SWEEP(HR_SETUP(), ops->ReadReg(&h, 0, &reg));
-  FAULT_SWEEP(HR_SETUP(), ops->WriteReg(&h, 0x1000, 0x8F17));
+  FAULT_SWEEP(HR_SETUP(), ops->WriteReg(&h, 0x1000, 0x8F27));
   FAULT_SWEEP(HR_SETUP(), ops->Read(&h, 0, rx, 8));
   FAULT_SWEEP(HR_SETUP(), ops->Write(&h, 0, tx, 8));
   FAULT_SWEEP(HR_SETUP(), ops->MemoryMapped(&h));

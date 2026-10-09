@@ -64,11 +64,11 @@ A C driver suite for the **STM32N6** (Cortex-M55) that connects external Flash a
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Infineon** | SEMPER™ Octal NOR (`S28HS/S28HL` 256T to 02GT) | XSPI1 / XSPI2 | 200 MHz (HS-T) / 166 MHz (HL-T) | 8D-8D-8D (Octal DTR) | `s28hs512t` |
 | **Infineon** | HyperFlash™ (`S26KS/S26KL`) | XSPI1 / XSPI2 | 166 MHz | HyperBus™ | `s26ks512s` |
-| **Infineon** | HyperRAM™ (`S27KS0641/S27KL0641`, `S70KS1281/S70KL1281`, `S80KS2562`) | XSPI1 / XSPI2 | 200 MHz | HyperBus™ DDR | `s27ks0641` |
+| **Infineon** | HyperRAM™ (`S27KS0641/S27KL0641` ⚠️, `S70KS1281/S70KL1281` ⚠️, `S80KS2562`) | XSPI1 / XSPI2 | 200 MHz | HyperBus™ DDR | `s27ks0641` |
 | **Infineon** | SEMPER™ / FL-L Quad (`S25HL512T`, `S25HS512T`, `S25FL256L`) | XSPI1 / XSPI2 / XSPI3 | 118 MHz | 1-4-4 Quad SPI | `s25hl512t` |
 | **ISSI** | Octal NOR Flash (`IS25LX/IS25WX` 064 to 512) | XSPI1 / XSPI2 | 200 MHz (WX) / 133 MHz (LX) | 8D-8D-8D (Octal DTR) | `is25lx256` |
-| **ISSI** | HyperFlash™ (`IS26KS/IS26KL`) | XSPI1 / XSPI2 | 166 MHz | HyperBus™ | `s26ks512s` |
-| **ISSI** | Quad NOR Flash (`IS25LP/WP` 080 to 512, `IS25LE/WE128`, `IS25LQ032B`) | XSPI1 / XSPI2 / XSPI3 | 104 to 133 MHz (per part) | 1-4-4 Quad SPI | `is25lp256` |
+| **ISSI** | HyperFlash™ (`IS26KS/IS26KL`) ⚠️ | XSPI1 / XSPI2 | 166 MHz | HyperBus™ | `s26ks512s` |
+| **ISSI** | Quad NOR Flash (`IS25LP/WP` 080 to 512, `IS25LE/WE128`, `IS25LQ032B` ⚠️) | XSPI1 / XSPI2 / XSPI3 | 104 to 133 MHz (per part) | 1-4-4 Quad SPI | `is25lp256` |
 | **ISSI** | Parallel NOR Flash (`IS29GL032/064/128/256`) | FMC (16-bit) | 110 ns access | 16-bit Parallel CFI NOR | `is29gl_fmc` |
 | **ISSI** | OctalRAM (`IS66WVO/IS67WVO`) | XSPI1 / XSPI2 | 200 MHz | 8D-8D-8D OPI (XSPI Macronix RAM mode) | `is66wvo32m8` |
 | **ISSI** | HyperRAM™ (`IS66WVH8M8/16M8/64M8`) | XSPI1 / XSPI2 | 166 MHz (200 MHz IS66WVH64M8) | HyperBus™ DDR | `is66wvh16m8` |
@@ -77,7 +77,9 @@ A C driver suite for the **STM32N6** (Cortex-M55) that connects external Flash a
 | **ISSI / Infineon** | Asynchronous PSRAM / SRAM (`IS66WV51216`, `IS66WVE1M16/2M16/4M16`, `CY62167EV30`) | FMC (16-bit) | 70 ns access | 16-bit Parallel SRAM/PSRAM | `is66wv_fmc` |
 | **Micron** | Xccela™ Octal NOR (`MT35XU/MT35XL` 256 to 02G) | XSPI1 / XSPI2 | 200 MHz | 8D-8D-8D (Octal DTR) | `mt35xu512a` |
 | **Micron** | MT25Q Quad NOR (`MT25QU/MT25QL` 032 to 01G) | XSPI1 / XSPI2 / XSPI3 | 125 MHz | 1-4-4 Quad SPI | `mt25qu512a` |
-| **Micron** | Parallel NOR Flash (`MT28EW128/256/512/01G`) | FMC (16-bit) | 110 ns access | 16-bit Parallel CFI NOR | `is29gl_fmc` |
+| **Micron** | Parallel NOR Flash (`MT28EW128/256/512/01G`) ⚠️ | FMC (16-bit) | 110 ns access | 16-bit Parallel CFI NOR | `is29gl_fmc` |
+
+⚠️ **Not recommended for new designs**: these parts are listed obsolete (S27KS0641/S27KL0641, S70KS1281/S70KL1281, IS25LQ032B, most IS26KS/IS26KL ordering codes) or last time buy (MT28EW) by the manufacturer and its distributors as of October 2026. The drivers keep supporting them for existing designs; the per-part lifecycle status is in the [matrix](Docs/Supported_Memories_Matrix.md).
 
 "Max Clock" is the highest bus clock the driver accepts with the latency it programs, as derived from the datasheet tables; it is not a measured result. All 106 parts, with density, voltage, die count and clock limit, are listed in [Docs/Supported_Memories_Matrix.md](Docs/Supported_Memories_Matrix.md); the datasheets used are listed in [Docs/Project_Context.md](Docs/Project_Context.md).
 

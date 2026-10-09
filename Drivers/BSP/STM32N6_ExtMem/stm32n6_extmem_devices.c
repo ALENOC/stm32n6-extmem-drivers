@@ -5,6 +5,7 @@
   * @brief   Device registry for Infineon, ISSI & Micron Flash and PSRAM memories
   *          compatible with STM32N6. Defined once here so the table is not
   *          duplicated in every translation unit that includes the header.
+  *          Last updated: 2026-10-09 (obsolete and last time buy parts excluded).
   ******************************************************************************
   */
 

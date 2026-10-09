@@ -62,7 +62,7 @@ typedef enum {
   EXTMEM_TYPE_NOR_QUAD_ISSI,       /*!< ISSI Quad SPI Flash (IS25LP / IS25WP / IS25LE / IS25WE) */
   EXTMEM_TYPE_NOR_QUAD_MICRON,     /*!< Micron Quad SPI Flash (MT25QU / MT25QL)         */
   EXTMEM_TYPE_HYPERFLASH_INFINEON, /*!< Infineon HyperFlash (S26KS / S26KL)             */
-  EXTMEM_TYPE_HYPERFLASH_ISSI,     /*!< ISSI HyperFlash (IS26KS / IS26KL)               */
+  EXTMEM_TYPE_HYPERFLASH_ISSI,     /*!< ISSI HyperFlash (no part in the database)       */
   EXTMEM_TYPE_HYPERRAM_INFINEON,   /*!< Infineon HyperRAM (S80KS)                       */
   EXTMEM_TYPE_HYPERRAM_ISSI,       /*!< ISSI HyperRAM (IS66WVH / IS67WVH)               */
   EXTMEM_TYPE_PSRAM_OCTAL_ISSI,    /*!< ISSI Octal PSRAM (IS66WVO / IS67WVO)            */

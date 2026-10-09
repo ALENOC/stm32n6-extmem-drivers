@@ -77,7 +77,7 @@ A C driver suite for the **STM32N6** (Cortex-M55) that connects external Flash a
 | **Micron** | Xccela™ Octal NOR (`MT35XU/MT35XL` 256 to 02G) | XSPI1 / XSPI2 | 200 MHz | 8D-8D-8D (Octal DTR) | `mt35xu512a` |
 | **Micron** | MT25Q Quad NOR (`MT25QU/MT25QL` 032 to 01G) | XSPI1 / XSPI2 / XSPI3 | 125 MHz | 1-4-4 Quad SPI | `mt25qu512a` |
 
-Parts listed obsolete or last time buy by the manufacturer and its distributors as of October 2026 (S27KS0641/S27KL0641, S70KS1281/S70KL1281, IS25LQ032B, IS26KS/IS26KL, MT28EW) are no longer in the device table; the per-part lifecycle status is in the [matrix](Docs/Supported_Memories_Matrix.md).
+Device database last updated: **2026-10-09**. Parts listed obsolete or last time buy are not in the table; the per-part lifecycle status is in the [matrix](Docs/Supported_Memories_Matrix.md).
 
 "Max Clock" is the highest bus clock the driver accepts with the latency it programs, as derived from the datasheet tables; it is not a measured result. All 91 parts, with density, voltage, die count and clock limit, are listed in [Docs/Supported_Memories_Matrix.md](Docs/Supported_Memories_Matrix.md); the datasheets used are listed in [Docs/Project_Context.md](Docs/Project_Context.md).
 

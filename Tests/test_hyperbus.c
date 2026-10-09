@@ -244,7 +244,7 @@ bool test_infineon_s27ks0641_hyperram(void)
   };
   if (!hyperram_common(&ops)) return false;
 
-  /* S70KS1281: CR0 of both dice (CA35 = A22 selects the die), DPD entered on both */
+  /* Dual-die stack: CR0 of both dice (CA35 = A22 selects the die), DPD entered on both */
   {
     XSPI_HandleTypeDef hd = {0};
     HR_SETUP();

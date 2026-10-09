@@ -158,8 +158,8 @@ static uint32_t ExtMem_FmcHalBank(ExtMem_Bus_t bus)
   return banks[ExtMem_FmcSubBankIndex(bus)];
 }
 
-/* Asynchronous timing limits (ns) covering the slowest parallel parts in the database:
- * MT28EW tACC 110 ns (IS29GL 70 to 90 ns), tWP 35 ns; IS66WV / CY62167 tAA 70 ns, tWP 50 ns. */
+/* Asynchronous timing limits (ns) covering the parallel parts in the database with margin:
+ * IS29GL tACC 70 to 90 ns (110 ns programmed), tWP 35 ns; IS66WV / CY62167 tAA 70 ns, tWP 50 ns. */
 #define EXTMEM_FMC_NOR_TACC_NS     110U
 #define EXTMEM_FMC_NOR_TWP_NS       35U
 #define EXTMEM_FMC_RAM_TACC_NS      70U

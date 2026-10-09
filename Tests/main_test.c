@@ -35,7 +35,7 @@ static const TestCase_t s_test_cases[] = {
   { "Device Database Identification & Geometry",        test_device_database_consistency },
   { "Infineon SEMPER Octal NOR Flash (S28HS512T)",      test_infineon_s28hs512t_octal_flash },
   { "Infineon HyperFlash NOR Flash (S26KS512S)",        test_infineon_s26ks512s_hyperflash },
-  { "Infineon HyperRAM PSRAM (S27KS0641)",              test_infineon_s27ks0641_hyperram },
+  { "Infineon HyperRAM PSRAM (S80KS2562)",              test_infineon_s27ks0641_hyperram },
   { "Infineon SEMPER/FL Quad NOR Flash (S25HL512T)",    test_infineon_s25hl512t_quad_flash },
   { "ISSI Octal NOR Flash (IS25LX256)",                 test_issi_is25lx256_octal_flash },
   { "ISSI Quad NOR Flash (IS25LP256)",                  test_issi_is25lp256_quad_flash },

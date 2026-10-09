@@ -1,11 +1,14 @@
 # Supported Memories Matrix
 
+Database last updated: **2026-10-09**.
+
 One row per entry of the device database (`Drivers/BSP/STM32N6_ExtMem/stm32n6_extmem_devices.c`).
 "Max clock" is the highest bus clock the driver accepts for the part with the latency it programs;
 `ExtMem_Init()` refuses a faster configured clock. Values come from the vendor datasheets listed in
 [Project_Context.md](Project_Context.md).
 "Lifecycle" is the production status of the base part as listed by the manufacturer and its authorized
-distributors (DigiKey) in October 2026; "Not verified" means no lifecycle listing was found. Lifecycle
+distributors (DigiKey) in October 2026; obsolete and last time buy parts are not in the database, "Not
+verified" means no lifecycle listing was found. Lifecycle
 changes over time: check the exact ordering code with the vendor before designing in.
 
 | Vendor | Part | Density | Technology | Interface | Voltage | Max clock | Driver | Lifecycle |
@@ -115,5 +118,3 @@ changes over time: check the exact ordering code with the vendor before designin
   every die reports ready; die erase replaces bulk erase where the datasheet requires it.
 - **FMC parts** are asynchronous: the manager derives the FMC timings from the access times above and the
   FMC kernel clock.
-- **Lifecycle**: parts listed obsolete or last time buy were removed from the database (S27KS0641/S27KL0641,
-  S70KS1281/S70KL1281, IS25LQ032B, the ISSI HyperFlash IS26KS/IS26KL and the Micron MT28EW family).

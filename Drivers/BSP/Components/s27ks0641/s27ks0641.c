@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file    s27ks0641.c
   * @author  STM32N6 External Memory Driver Suite Team
-  * @brief   Driver implementation for Infineon HyperRAM(TM) (S27KS / S27KL, S70KS / S70KL, S80KS2562).
+  * @brief   Driver implementation for Infineon HyperRAM(TM) (S80KS2562).
   ******************************************************************************
   */
 

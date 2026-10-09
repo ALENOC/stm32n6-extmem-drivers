@@ -56,7 +56,7 @@ extern "C" {
 #define IS66WVH_CR0_BURST_32B            (0x3U << 0)
 
 /* Initial latency used by the driver: 7 clocks is valid at every frequency up to 200 MHz
- * (CR0[7:4] = 0010b on Infineon S27KS/S27KL and ISSI IS66WVH/IS67WVH) */
+ * (CR0[7:4] = 0010b on Infineon HyperRAM and ISSI IS66WVH/IS67WVH) */
 #define IS66WVH_LATENCY_CLOCKS           7U
 
 /* Initial configuration: normal operation, 7 clock variable latency, legacy 32 byte wrap */

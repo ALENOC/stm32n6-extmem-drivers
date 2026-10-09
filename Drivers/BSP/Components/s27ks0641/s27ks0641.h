@@ -3,9 +3,7 @@
   * @file    s27ks0641.h
   * @author  STM32N6 External Memory Driver Suite Team
   * @brief   Driver header for Infineon HyperRAM(TM) with HyperBus interface.
-  *          Compatible with S27KS0641 / S27KL0641 (64 Mb), the dual-die
-  *          S70KS1281 / S70KL1281 (2 x 64 Mb, datasheet 001-97964) and the
-  *          S80KS2562 (256 Mb, datasheet 002-31337).
+  *          Compatible with the S80KS2562 (256 Mb, datasheet 002-31337).
   ******************************************************************************
   * @attention
   *
@@ -25,11 +23,9 @@ extern "C" {
 #include "extmem_common.h"
 #include "stm32n6xx_hal.h"
 
-#define S27KS0641_RAM_SIZE_64MBIT        (8U * 1024U * 1024U)   /* 64 Mbits = 8 MBytes   */
-#define S70KS1281_RAM_SIZE_128MBIT       (16U * 1024U * 1024U)  /* 128 Mbits = 16 MBytes */
 #define S80KS2562_RAM_SIZE_256MBIT       (32U * 1024U * 1024U)  /* 256 Mbits = 32 MBytes */
 
-/* S70KS1281: CA35 (word address A22) selects the die, for the array and for the registers.
+/* Dual-die stacks: CA35 (word address A22) selects the die, for the array and for the registers.
  * Every die must be configured identically (datasheet 001-97964, register space notes). */
 #define S27KS_MAX_DICE                   2U
 #define S27KS_DIE_STRIDE                 0x00800000U /* Byte offset of the second die (A22 word) */

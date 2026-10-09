@@ -130,11 +130,9 @@ static bool ExerciseDevice(const ExtMem_DeviceDescriptor_t *d)
   }
   if (d->Type == EXTMEM_TYPE_NOR_QUAD_ISSI)
   {
-    /* IS25LQ/WQ have no Read Register: fixed mode byte + 4 dummy cycles, SRPV never sent */
-    bool hasReadRegister = d->DefaultReadDummyCycles > IS25LP_DEFAULT_QUAD_IO_DUMMY;
-    ASSERT_EQ(MockHAL_GetIssiReadParams(), hasReadRegister ? (IS25LP_FAST_QUAD_IO_DUMMY << 3) : 0U);
-    ASSERT_EQ(MockHAL_CountCommands(0xC0), hasReadRegister ? 1U : 0U);
-    ASSERT_EQ(s_h.DummyCycles, hasReadRegister ? IS25LP_FAST_QUAD_IO_DUMMY : IS25LP_DEFAULT_QUAD_IO_DUMMY);
+    ASSERT_EQ(MockHAL_GetIssiReadParams(), IS25LP_FAST_QUAD_IO_DUMMY << 3);
+    ASSERT_EQ(MockHAL_CountCommands(0xC0), 1U);
+    ASSERT_EQ(s_h.DummyCycles, IS25LP_FAST_QUAD_IO_DUMMY);
   }
   if (d->Type == EXTMEM_TYPE_NOR_QUAD_INFINEON)
   {
@@ -490,8 +488,6 @@ bool test_extmem_manager_unified_autodetect(void)
 
   /* HyperRAM detection from ID0: manufacturer and row/column geometry */
   struct { uint16_t id0; const char *pn; uint32_t cap; ExtMem_Type_t type; } hr[] = {
-    { 0x0C81, "S27KS0641",   8U * 1024U * 1024U, EXTMEM_TYPE_HYPERRAM_INFINEON },
-    { 0x0D81, "S70KS1281",  16U * 1024U * 1024U, EXTMEM_TYPE_HYPERRAM_INFINEON },
     { 0x0E86, "S80KS2562",  32U * 1024U * 1024U, EXTMEM_TYPE_HYPERRAM_INFINEON },  /* Infineon ID 0110b */
     { 0x0C83, "IS66WVH8M8",  8U * 1024U * 1024U, EXTMEM_TYPE_HYPERRAM_ISSI },
     { 0x0D83, "IS66WVH16M8", 16U * 1024U * 1024U, EXTMEM_TYPE_HYPERRAM_ISSI },
@@ -793,10 +789,10 @@ bool test_multi_density_shared_drivers(void)
   memset(&s_h, 0, sizeof(s_h));
   s_h.Config.Bus = EXTMEM_BUS_FMC_SRAM_BANK1_2;
   s_h.Config.ForcedDeviceType = EXTMEM_TYPE_NOR_PARALLEL_FMC;
-  s_h.Config.ForcedPartNumber = "MT28EW01GABA";
+  s_h.Config.ForcedPartNumber = "IS29GL256";
   s_h.Config.ForcedCapacityBytes = 64U * 1024U * 1024U;
   ASSERT_EQ(ExtMem_Init(&s_h), EXTMEM_OK);
-  ASSERT_EQ(strcmp(s_h.Geometry.DeviceName, "MT28EW01GABA"), 0);
+  ASSERT_EQ(strcmp(s_h.Geometry.DeviceName, "IS29GL256"), 0);
   ASSERT_EQ(s_h.Geometry.TotalSizeBytes, 64U * 1024U * 1024U);
 
   /* FMC RAM accessed indirectly after leaving the memory-mapped state */

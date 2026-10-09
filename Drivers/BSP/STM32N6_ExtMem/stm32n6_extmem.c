@@ -515,8 +515,7 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
     if (IS66WVH16M8_Init(&hextmem->hxspi, prescaler, memSize, (uint8_t)dice) != IS66WVH_OK) { return EXTMEM_ERROR; }
     hextmem->ActiveMode = EXTMEM_MODE_HYPERBUS;
   }
-  else if (hextmem->Geometry.Type == EXTMEM_TYPE_HYPERFLASH_INFINEON ||
-           hextmem->Geometry.Type == EXTMEM_TYPE_HYPERFLASH_ISSI)
+  else if (hextmem->Geometry.Type == EXTMEM_TYPE_HYPERFLASH_INFINEON)
   {
     if (S26KS512S_Init(&hextmem->hxspi, prescaler, memSize) != S26KS512S_OK) { return EXTMEM_ERROR; }
     hextmem->ActiveMode = EXTMEM_MODE_HYPERBUS;
@@ -530,19 +529,10 @@ int32_t ExtMem_Init(ExtMem_HandleTypeDef *hextmem)
   else if (hextmem->Geometry.Type == EXTMEM_TYPE_NOR_QUAD_ISSI)
   {
     if (IS25LP256_EnableQuadMode(&hextmem->hxspi) != IS25LP_OK) { return EXTMEM_ERROR; }
-    /* The factory latency only covers 81 MHz on 1-4-4 reads: program the volatile Read Register.
-     * IS25LQ/WQ have no Read Register (fixed mode byte + 4 dummy cycles): their table entry keeps 6. */
-    if (hextmem->pDevice != NULL && hextmem->pDevice->DefaultReadDummyCycles <= IS25LP_DEFAULT_QUAD_IO_DUMMY)
-    {
-      hextmem->DummyCycles = IS25LP_DEFAULT_QUAD_IO_DUMMY;
-    }
-    else if (IS25LP256_SetReadDummyCycles(&hextmem->hxspi, IS25LP_FAST_QUAD_IO_DUMMY, &hextmem->DummyCycles) != IS25LP_OK)
+    /* The factory latency only covers 81 MHz on 1-4-4 reads: program the volatile Read Register */
+    if (IS25LP256_SetReadDummyCycles(&hextmem->hxspi, IS25LP_FAST_QUAD_IO_DUMMY, &hextmem->DummyCycles) != IS25LP_OK)
     {
       return EXTMEM_ERROR;
-    }
-    else
-    {
-      /* Read Register programmed, DummyCycles set by IS25LP256_SetReadDummyCycles() */
     }
     if (is4Byte && (IS25LP_Enter4ByteAddressMode(&hextmem->hxspi) != IS25LP_OK))
     {

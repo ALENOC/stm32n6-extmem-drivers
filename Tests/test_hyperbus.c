@@ -43,7 +43,7 @@ static bool CheckHyperWord(const MockEvent_t *ev, uint32_t addr, uint16_t word)
 #define ASSERT_HWORD(n, addr, word) ASSERT_TRUE(CheckHyperWord(HyperTx(n), (addr), (word)))
 
 /* ========================================================================= */
-/* HyperFlash S26KS512S / IS26KS                                             */
+/* HyperFlash S26KS512S                                                      */
 /* ========================================================================= */
 
 bool test_infineon_s26ks512s_hyperflash(void)

@@ -217,75 +217,8 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
   },
 
   /* ========================================================================= */
-  /* INFINEON HYPERRAM(TM) (S27KS / S27KL, S70KS / S70KL, S80KS2562)          */
+  /* INFINEON HYPERRAM(TM) (S80KS2562)                                         */
   /* ========================================================================= */
-  {
-    .PartNumber              = "S27KS0641",
-    .Type                    = EXTMEM_TYPE_HYPERRAM_INFINEON,
-    .ManufacturerID          = 0x01,
-    .MemoryTypeID            = 0x00,
-    .DensityID               = 0x01,
-    .CapacityBytes           = 8 * 1024 * 1024,
-    .PageSizeBytes           = 0,
-    .SectorSizeBytes         = 0,
-    .BlockSizeBytes          = 0,
-    .VoltageNominal          = 1.8f,
-    .MaxClockFreqMHz         = 166,
-    .PreferredMode           = EXTMEM_MODE_HYPERBUS,
-    .DefaultReadDummyCycles  = 6,
-    .DefaultWriteDummyCycles = 0
-  },
-  {
-    .PartNumber              = "S27KL0641",
-    .Type                    = EXTMEM_TYPE_HYPERRAM_INFINEON,
-    .ManufacturerID          = 0x01,
-    .MemoryTypeID            = 0x00,
-    .DensityID               = 0x01,
-    .CapacityBytes           = 8 * 1024 * 1024,
-    .PageSizeBytes           = 0,
-    .SectorSizeBytes         = 0,
-    .BlockSizeBytes          = 0,
-    .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 100,
-    .PreferredMode           = EXTMEM_MODE_HYPERBUS,
-    .DefaultReadDummyCycles  = 5,
-    .DefaultWriteDummyCycles = 0
-  },
-  {
-    /* Dual-die stack of two 64 Mb dice, CA35 selects the die (datasheet 001-97964) */
-    .PartNumber              = "S70KS1281",
-    .Type                    = EXTMEM_TYPE_HYPERRAM_INFINEON,
-    .ManufacturerID          = 0x01,
-    .MemoryTypeID            = 0x00,
-    .DensityID               = 0x02,
-    .CapacityBytes           = 16 * 1024 * 1024,
-    .PageSizeBytes           = 0,
-    .SectorSizeBytes         = 0,
-    .BlockSizeBytes          = 0,
-    .VoltageNominal          = 1.8f,
-    .MaxClockFreqMHz         = 166,
-    .PreferredMode           = EXTMEM_MODE_HYPERBUS,
-    .DefaultReadDummyCycles  = 6,
-    .DefaultWriteDummyCycles = 0,
-    .DieCount                = 2
-  },
-  {
-    .PartNumber              = "S70KL1281",
-    .Type                    = EXTMEM_TYPE_HYPERRAM_INFINEON,
-    .ManufacturerID          = 0x01,
-    .MemoryTypeID            = 0x00,
-    .DensityID               = 0x02,
-    .CapacityBytes           = 16 * 1024 * 1024,
-    .PageSizeBytes           = 0,
-    .SectorSizeBytes         = 0,
-    .BlockSizeBytes          = 0,
-    .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 100,
-    .PreferredMode           = EXTMEM_MODE_HYPERBUS,
-    .DefaultReadDummyCycles  = 6,
-    .DefaultWriteDummyCycles = 0,
-    .DieCount                = 2
-  },
   {
     /* 256 Mb HyperBus HyperRAM, ID0 manufacturer 0110b (datasheet 002-31337) */
     .PartNumber              = "S80KS2562",
@@ -491,107 +424,7 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
   },
 
   /* ========================================================================= */
-  /* ISSI HYPERFLASH(TM) (IS26KS / IS26KL - 1.8V & 3.0V)                      */
-  /* ========================================================================= */
-  {
-    .PartNumber              = "IS26KS512S",
-    .Type                    = EXTMEM_TYPE_HYPERFLASH_ISSI,
-    .ManufacturerID          = 0x9D,
-    .MemoryTypeID            = 0x7E,
-    .DensityID               = 0x1A,
-    .CapacityBytes           = 64 * 1024 * 1024,
-    .PageSizeBytes           = 512,
-    .SectorSizeBytes         = 256 * 1024,
-    .BlockSizeBytes          = 256 * 1024,
-    .VoltageNominal          = 1.8f,
-    .MaxClockFreqMHz         = 166,
-    .PreferredMode           = EXTMEM_MODE_HYPERBUS,
-    .DefaultReadDummyCycles  = 16,
-    .DefaultWriteDummyCycles = 0
-  },
-  {
-    .PartNumber              = "IS26KL512S",
-    .Type                    = EXTMEM_TYPE_HYPERFLASH_ISSI,
-    .ManufacturerID          = 0x9D,
-    .MemoryTypeID            = 0x7E,
-    .DensityID               = 0x1A,
-    .CapacityBytes           = 64 * 1024 * 1024,
-    .PageSizeBytes           = 512,
-    .SectorSizeBytes         = 256 * 1024,
-    .BlockSizeBytes          = 256 * 1024,
-    .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 166,
-    .PreferredMode           = EXTMEM_MODE_HYPERBUS,
-    .DefaultReadDummyCycles  = 16,
-    .DefaultWriteDummyCycles = 0
-  },
-  {
-    .PartNumber              = "IS26KS256S",
-    .Type                    = EXTMEM_TYPE_HYPERFLASH_ISSI,
-    .ManufacturerID          = 0x9D,
-    .MemoryTypeID            = 0x7E,
-    .DensityID               = 0x19,
-    .CapacityBytes           = 32 * 1024 * 1024,
-    .PageSizeBytes           = 512,
-    .SectorSizeBytes         = 256 * 1024,
-    .BlockSizeBytes          = 256 * 1024,
-    .VoltageNominal          = 1.8f,
-    .MaxClockFreqMHz         = 166,
-    .PreferredMode           = EXTMEM_MODE_HYPERBUS,
-    .DefaultReadDummyCycles  = 16,
-    .DefaultWriteDummyCycles = 0
-  },
-  {
-    .PartNumber              = "IS26KL256S",
-    .Type                    = EXTMEM_TYPE_HYPERFLASH_ISSI,
-    .ManufacturerID          = 0x9D,
-    .MemoryTypeID            = 0x7E,
-    .DensityID               = 0x19,
-    .CapacityBytes           = 32 * 1024 * 1024,
-    .PageSizeBytes           = 512,
-    .SectorSizeBytes         = 256 * 1024,
-    .BlockSizeBytes          = 256 * 1024,
-    .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 166,
-    .PreferredMode           = EXTMEM_MODE_HYPERBUS,
-    .DefaultReadDummyCycles  = 16,
-    .DefaultWriteDummyCycles = 0
-  },
-  {
-    .PartNumber              = "IS26KS128S",
-    .Type                    = EXTMEM_TYPE_HYPERFLASH_ISSI,
-    .ManufacturerID          = 0x9D,
-    .MemoryTypeID            = 0x7E,
-    .DensityID               = 0x18,
-    .CapacityBytes           = 16 * 1024 * 1024,
-    .PageSizeBytes           = 512,
-    .SectorSizeBytes         = 256 * 1024,
-    .BlockSizeBytes          = 256 * 1024,
-    .VoltageNominal          = 1.8f,
-    .MaxClockFreqMHz         = 166,
-    .PreferredMode           = EXTMEM_MODE_HYPERBUS,
-    .DefaultReadDummyCycles  = 16,
-    .DefaultWriteDummyCycles = 0
-  },
-  {
-    .PartNumber              = "IS26KL128S",
-    .Type                    = EXTMEM_TYPE_HYPERFLASH_ISSI,
-    .ManufacturerID          = 0x9D,
-    .MemoryTypeID            = 0x7E,
-    .DensityID               = 0x18,
-    .CapacityBytes           = 16 * 1024 * 1024,
-    .PageSizeBytes           = 512,
-    .SectorSizeBytes         = 256 * 1024,
-    .BlockSizeBytes          = 256 * 1024,
-    .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 166,
-    .PreferredMode           = EXTMEM_MODE_HYPERBUS,
-    .DefaultReadDummyCycles  = 16,
-    .DefaultWriteDummyCycles = 0
-  },
-
-  /* ========================================================================= */
-  /* ISSI QUAD SPI NOR FLASH (IS25LP / IS25WP / IS25LE / IS25WE / IS25LQ / WQ) */
+  /* ISSI QUAD SPI NOR FLASH (IS25LP / IS25WP / IS25LE / IS25WE)               */
   /* ========================================================================= */
   /* ISSI quad: maximum clock of QUAD I/O FAST READ (EBh/ECh) with the 11 dummy cycles the driver programs
    * (datasheet Table 6.11 "Read Dummy Cycles vs Max Frequency" of each density and voltage) */
@@ -817,22 +650,6 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .MaxClockFreqMHz         = 133,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
     .DefaultReadDummyCycles  = 11,
-    .DefaultWriteDummyCycles = 0
-  },
-  {
-    .PartNumber              = "IS25LQ032B",
-    .Type                    = EXTMEM_TYPE_NOR_QUAD_ISSI,
-    .ManufacturerID          = 0x9D,
-    .MemoryTypeID            = 0x40,
-    .DensityID               = 0x16,
-    .CapacityBytes           = 4 * 1024 * 1024,
-    .PageSizeBytes           = 256,
-    .SectorSizeBytes         = 4 * 1024,
-    .BlockSizeBytes          = 64 * 1024,
-    .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 104,
-    .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
-    .DefaultReadDummyCycles  = 6,
     .DefaultWriteDummyCycles = 0
   },
   {
@@ -1723,74 +1540,6 @@ const ExtMem_DeviceDescriptor_t ExtMem_DeviceDatabase[] = {
     .MaxClockFreqMHz         = 125,
     .PreferredMode           = EXTMEM_MODE_QUAD_1_4_4,
     .DefaultReadDummyCycles  = 10,
-    .DefaultWriteDummyCycles = 0
-  },
-
-  /* ========================================================================= */
-  /* MICRON MT28EW PARALLEL NOR FLASH (FMC BANK 1)                             */
-  /* ========================================================================= */
-  {
-    .PartNumber              = "MT28EW01GABA",
-    .Type                    = EXTMEM_TYPE_NOR_PARALLEL_FMC,
-    .ManufacturerID          = 0x00,
-    .MemoryTypeID            = 0x00,
-    .DensityID               = 0x00,
-    .CapacityBytes           = 128 * 1024 * 1024,  /* 1 Gbit = 128 MBytes */
-    .PageSizeBytes           = 0,
-    .SectorSizeBytes         = 128 * 1024,
-    .BlockSizeBytes          = 128 * 1024,
-    .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 100,
-    .PreferredMode           = EXTMEM_MODE_PARALLEL_16BIT,
-    .DefaultReadDummyCycles  = 0,
-    .DefaultWriteDummyCycles = 0
-  },
-  {
-    .PartNumber              = "MT28EW512ABA",
-    .Type                    = EXTMEM_TYPE_NOR_PARALLEL_FMC,
-    .ManufacturerID          = 0x00,
-    .MemoryTypeID            = 0x00,
-    .DensityID               = 0x00,
-    .CapacityBytes           = 64 * 1024 * 1024,   /* 512 Mbits = 64 MBytes */
-    .PageSizeBytes           = 0,
-    .SectorSizeBytes         = 128 * 1024,
-    .BlockSizeBytes          = 128 * 1024,
-    .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 100,
-    .PreferredMode           = EXTMEM_MODE_PARALLEL_16BIT,
-    .DefaultReadDummyCycles  = 0,
-    .DefaultWriteDummyCycles = 0
-  },
-  {
-    .PartNumber              = "MT28EW256ABA",
-    .Type                    = EXTMEM_TYPE_NOR_PARALLEL_FMC,
-    .ManufacturerID          = 0x00,
-    .MemoryTypeID            = 0x00,
-    .DensityID               = 0x00,
-    .CapacityBytes           = 32 * 1024 * 1024,   /* 256 Mbits = 32 MBytes */
-    .PageSizeBytes           = 0,
-    .SectorSizeBytes         = 128 * 1024,
-    .BlockSizeBytes          = 128 * 1024,
-    .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 100,
-    .PreferredMode           = EXTMEM_MODE_PARALLEL_16BIT,
-    .DefaultReadDummyCycles  = 0,
-    .DefaultWriteDummyCycles = 0
-  },
-  {
-    .PartNumber              = "MT28EW128ABA",
-    .Type                    = EXTMEM_TYPE_NOR_PARALLEL_FMC,
-    .ManufacturerID          = 0x00,
-    .MemoryTypeID            = 0x00,
-    .DensityID               = 0x00,
-    .CapacityBytes           = 16 * 1024 * 1024,   /* 128 Mbits = 16 MBytes */
-    .PageSizeBytes           = 0,
-    .SectorSizeBytes         = 128 * 1024,
-    .BlockSizeBytes          = 128 * 1024,
-    .VoltageNominal          = 3.0f,
-    .MaxClockFreqMHz         = 100,
-    .PreferredMode           = EXTMEM_MODE_PARALLEL_16BIT,
-    .DefaultReadDummyCycles  = 0,
     .DefaultWriteDummyCycles = 0
   }
 };

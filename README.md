@@ -64,11 +64,10 @@ A C driver suite for the **STM32N6** (Cortex-M55) that connects external Flash a
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Infineon** | SEMPER™ Octal NOR (`S28HS/S28HL` 256T to 02GT) | XSPI1 / XSPI2 | 200 MHz (HS-T) / 166 MHz (HL-T) | 8D-8D-8D (Octal DTR) | `s28hs512t` |
 | **Infineon** | HyperFlash™ (`S26KS/S26KL`) | XSPI1 / XSPI2 | 166 MHz | HyperBus™ | `s26ks512s` |
-| **Infineon** | HyperRAM™ (`S27KS0641/S27KL0641` ⚠️, `S70KS1281/S70KL1281` ⚠️, `S80KS2562`) | XSPI1 / XSPI2 | 200 MHz | HyperBus™ DDR | `s27ks0641` |
+| **Infineon** | HyperRAM™ (`S80KS2562`) | XSPI1 / XSPI2 | 200 MHz | HyperBus™ DDR | `s27ks0641` |
 | **Infineon** | SEMPER™ / FL-L Quad (`S25HL512T`, `S25HS512T`, `S25FL256L`) | XSPI1 / XSPI2 / XSPI3 | 118 MHz | 1-4-4 Quad SPI | `s25hl512t` |
 | **ISSI** | Octal NOR Flash (`IS25LX/IS25WX` 064 to 512) | XSPI1 / XSPI2 | 200 MHz (WX) / 133 MHz (LX) | 8D-8D-8D (Octal DTR) | `is25lx256` |
-| **ISSI** | HyperFlash™ (`IS26KS/IS26KL`) ⚠️ | XSPI1 / XSPI2 | 166 MHz | HyperBus™ | `s26ks512s` |
-| **ISSI** | Quad NOR Flash (`IS25LP/WP` 080 to 512, `IS25LE/WE128`, `IS25LQ032B` ⚠️) | XSPI1 / XSPI2 / XSPI3 | 104 to 133 MHz (per part) | 1-4-4 Quad SPI | `is25lp256` |
+| **ISSI** | Quad NOR Flash (`IS25LP/WP` 080 to 512, `IS25LE/WE128`) | XSPI1 / XSPI2 / XSPI3 | 104 to 133 MHz (per part) | 1-4-4 Quad SPI | `is25lp256` |
 | **ISSI** | Parallel NOR Flash (`IS29GL032/064/128/256`) | FMC (16-bit) | 110 ns access | 16-bit Parallel CFI NOR | `is29gl_fmc` |
 | **ISSI** | OctalRAM (`IS66WVO/IS67WVO`) | XSPI1 / XSPI2 | 200 MHz | 8D-8D-8D OPI (XSPI Macronix RAM mode) | `is66wvo32m8` |
 | **ISSI** | HyperRAM™ (`IS66WVH8M8/16M8/64M8`) | XSPI1 / XSPI2 | 166 MHz (200 MHz IS66WVH64M8) | HyperBus™ DDR | `is66wvh16m8` |
@@ -77,11 +76,10 @@ A C driver suite for the **STM32N6** (Cortex-M55) that connects external Flash a
 | **ISSI / Infineon** | Asynchronous PSRAM / SRAM (`IS66WV51216`, `IS66WVE1M16/2M16/4M16`, `CY62167EV30`) | FMC (16-bit) | 70 ns access | 16-bit Parallel SRAM/PSRAM | `is66wv_fmc` |
 | **Micron** | Xccela™ Octal NOR (`MT35XU/MT35XL` 256 to 02G) | XSPI1 / XSPI2 | 200 MHz | 8D-8D-8D (Octal DTR) | `mt35xu512a` |
 | **Micron** | MT25Q Quad NOR (`MT25QU/MT25QL` 032 to 01G) | XSPI1 / XSPI2 / XSPI3 | 125 MHz | 1-4-4 Quad SPI | `mt25qu512a` |
-| **Micron** | Parallel NOR Flash (`MT28EW128/256/512/01G`) ⚠️ | FMC (16-bit) | 110 ns access | 16-bit Parallel CFI NOR | `is29gl_fmc` |
 
-⚠️ **Not recommended for new designs**: these parts are listed obsolete (S27KS0641/S27KL0641, S70KS1281/S70KL1281, IS25LQ032B, most IS26KS/IS26KL ordering codes) or last time buy (MT28EW) by the manufacturer and its distributors as of October 2026. The drivers keep supporting them for existing designs; the per-part lifecycle status is in the [matrix](Docs/Supported_Memories_Matrix.md).
+Parts listed obsolete or last time buy by the manufacturer and its distributors as of October 2026 (S27KS0641/S27KL0641, S70KS1281/S70KL1281, IS25LQ032B, IS26KS/IS26KL, MT28EW) are no longer in the device table; the per-part lifecycle status is in the [matrix](Docs/Supported_Memories_Matrix.md).
 
-"Max Clock" is the highest bus clock the driver accepts with the latency it programs, as derived from the datasheet tables; it is not a measured result. All 106 parts, with density, voltage, die count and clock limit, are listed in [Docs/Supported_Memories_Matrix.md](Docs/Supported_Memories_Matrix.md); the datasheets used are listed in [Docs/Project_Context.md](Docs/Project_Context.md).
+"Max Clock" is the highest bus clock the driver accepts with the latency it programs, as derived from the datasheet tables; it is not a measured result. All 91 parts, with density, voltage, die count and clock limit, are listed in [Docs/Supported_Memories_Matrix.md](Docs/Supported_Memories_Matrix.md); the datasheets used are listed in [Docs/Project_Context.md](Docs/Project_Context.md).
 
 ---
 
@@ -277,10 +275,10 @@ The CI workflow runs all five targets on every push and pull request to `main`.
 - **SEMPER Octal in 1S-1S-1S** reads with Read Fast 0Bh (0Ch is not implemented) at the current address length: the driver keeps the part in 4-byte mode, also after a software reset.
 - **S25Hx-T Quad I/O reads** use the factory memory latency (8 cycles plus 2 mode cycles), valid up to 118 MHz. SEMPER Quad has no quad page program: it programs in 1S-1S-1S (12h); the S25FL-L uses Quad Page Program (34h).
 - **S25FL-L** shares the S25Hx-T driver: failure flags are read from SR2 and cleared with CLSR. A plain timeout on an S25FL-L whose SR1 protection bits (SEC / TBPROT) are set is reported as an error instead of a timeout.
-- **ISSI quad NOR**: the volatile Read Register is set to 11 dummy cycles; the database limits every part to the QUAD I/O FAST READ frequency its datasheet gives for 11 cycles (104 MHz on IS25WP256D/032D/016D, 112 MHz on IS25WP512M, 117 MHz on IS25LP512M, 133 MHz otherwise). IS25LQ/WQ have no Read Register: their fixed mode byte plus 4 dummy cycles run up to 104 MHz.
+- **ISSI quad NOR**: the volatile Read Register is set to 11 dummy cycles; the database limits every part to the QUAD I/O FAST READ frequency its datasheet gives for 11 cycles (104 MHz on IS25WP256D/032D/016D, 112 MHz on IS25WP512M, 117 MHz on IS25LP512M, 133 MHz otherwise).
 - **MT25Q** keeps the factory 10 dummy cycles, which limit QUAD I/O FAST READ to 125 MHz.
 - **Stacked Micron parts** (MT25QU01G, MT35XU01G, MT35XU02G): successive flag status reads return the status of each die, so a program or erase completes only when every die reports ready.
-- **Dual-die HyperRAM**: S70KS1281 / S70KL1281 get CR0 on both dice (CA35 selects the die) and enter deep power down on both. IS66WVH64M8 gets CR0 on both dice (CA37 selects the die) with the fixed latency the datasheet requires, bursts restart at the 32 MByte die boundary, and deep power down is not available.
+- **Dual-die HyperRAM**: IS66WVH64M8 gets CR0 on both dice (CA37 selects the die) with the fixed latency the datasheet requires, bursts restart at the 32 MByte die boundary, and deep power down is not available.
 - **ISSI IS66WVO OctalRAM** uses the XSPI "Macronix RAM" mode with fixed latency (STM32N6 erratum ES0620). On early STM32N6 silicon this mode only decodes 13 row address bits, so only the first 8 MBytes of larger OctalRAM parts are reachable (see ES0620).
 - **Self-refreshing RAMs** (HyperRAM, OctalRAM, quad PSRAM): CS# is released at least every `EXTMEM_PSRAM_MAX_CS_LOW_NS` (1 us, valid up to 105/125 degC).
 - **Documentation sources**: S25Hx-T was checked against the Japanese edition of its datasheet (the English one could not be downloaded); IS66WVH8M8/16M8 against a partly unreadable PDF plus the IS66WVH64M8 datasheet of the same family; smaller densities of a family against the datasheet of a sibling density where the protocol is shared. IS29GL512 and IS25WQ032 were removed because no datasheet was available.

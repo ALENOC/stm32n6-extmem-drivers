@@ -69,7 +69,7 @@ Done:
 - [x] Static analysis with GCC `-fanalyzer`, cppcheck and clang-tidy clean in CI; MISRA C:2012 addon findings
       reduced from 1132 to 671, the rest documented as deviations (not a compliance claim)
 - [x] Stacked dice: MT25Q 1 Gb, MT35X 1/2 Gb (all dice polled), S28HS02GT / S28HL02GT (datasheet 002-23755),
-      S70KS1281 and IS66WVH64M8 dual-die HyperRAM
+      IS66WVH64M8 dual-die HyperRAM
 - [x] Device table: part numbers checked against the datasheets and every clock limit matched to the
       latency the driver programs
 

@@ -5,10 +5,8 @@ One row per entry of the device database (`Drivers/BSP/STM32N6_ExtMem/stm32n6_ex
 `ExtMem_Init()` refuses a faster configured clock. Values come from the vendor datasheets listed in
 [Project_Context.md](Project_Context.md).
 "Lifecycle" is the production status of the base part as listed by the manufacturer and its authorized
-distributors (DigiKey) in October 2026. Parts marked obsolete or last time buy remain supported by the
-drivers for existing designs but are not recommended for new designs; "Not verified" means no lifecycle
-listing was found. Lifecycle changes over time: check the exact ordering code with the vendor before
-designing in.
+distributors (DigiKey) in October 2026; "Not verified" means no lifecycle listing was found. Lifecycle
+changes over time: check the exact ordering code with the vendor before designing in.
 
 | Vendor | Part | Density | Technology | Interface | Voltage | Max clock | Driver | Lifecycle |
 |:---|:---|:---|:---|:---|:---|:---|:---|:---|
@@ -24,10 +22,6 @@ designing in.
 | Infineon | `S26KL512S` | 512 Mb | HyperFlash™ NOR | HyperBus™ DDR, RWDS | 3.0 V | 100 MHz | `s26ks512s` | Active |
 | Infineon | `S26KS256S` | 256 Mb | HyperFlash™ NOR | HyperBus™ DDR, RWDS | 1.8 V | 166 MHz | `s26ks512s` | Active |
 | Infineon | `S26KS128S` | 128 Mb | HyperFlash™ NOR | HyperBus™ DDR, RWDS | 1.8 V | 166 MHz | `s26ks512s` | Active |
-| Infineon | `S27KS0641` | 64 Mb | HyperRAM™ | HyperBus™ DDR, RWDS | 1.8 V | 166 MHz | `s27ks0641` | **Obsolete, not recommended for new designs** |
-| Infineon | `S27KL0641` | 64 Mb | HyperRAM™ | HyperBus™ DDR, RWDS | 3.0 V | 100 MHz | `s27ks0641` | **Obsolete, not recommended for new designs** |
-| Infineon | `S70KS1281` | 128 Mb, 2 dice | HyperRAM™ | HyperBus™ DDR, RWDS | 1.8 V | 166 MHz | `s27ks0641` | **Obsolete, not recommended for new designs** |
-| Infineon | `S70KL1281` | 128 Mb, 2 dice | HyperRAM™ | HyperBus™ DDR, RWDS | 3.0 V | 100 MHz | `s27ks0641` | **Obsolete, not recommended for new designs** |
 | Infineon | `S80KS2562` | 256 Mb | HyperRAM™ | HyperBus™ DDR, RWDS | 1.8 V | 200 MHz | `s27ks0641` | Active |
 | Infineon | `S25HL512T` | 512 Mb | Quad SPI NOR Flash | Quad SPI 1-4-4 | 3.0 V | 118 MHz | `s25hl512t` | Active |
 | Infineon | `S25HS512T` | 512 Mb | Quad SPI NOR Flash | Quad SPI 1-4-4 | 1.8 V | 118 MHz | `s25hl512t` | Active |
@@ -40,12 +34,6 @@ designing in.
 | ISSI | `IS25WX128` | 128 Mb | Octal NOR Flash | Octal xSPI 8D-8D-8D, DQS | 1.8 V | 200 MHz | `is25lx256` | Active |
 | ISSI | `IS25LX064` | 64 Mb | Octal NOR Flash | Octal xSPI 8D-8D-8D, DQS | 3.0 V | 133 MHz | `is25lx256` | Active |
 | ISSI | `IS25WX064` | 64 Mb | Octal NOR Flash | Octal xSPI 8D-8D-8D, DQS | 1.8 V | 200 MHz | `is25lx256` | Active |
-| ISSI | `IS26KS512S` | 512 Mb | HyperFlash™ NOR | HyperBus™ DDR, RWDS | 1.8 V | 166 MHz | `s26ks512s` | **Obsolete (most ordering codes), not recommended for new designs** |
-| ISSI | `IS26KL512S` | 512 Mb | HyperFlash™ NOR | HyperBus™ DDR, RWDS | 3.0 V | 166 MHz | `s26ks512s` | **Obsolete (most ordering codes), not recommended for new designs** |
-| ISSI | `IS26KS256S` | 256 Mb | HyperFlash™ NOR | HyperBus™ DDR, RWDS | 1.8 V | 166 MHz | `s26ks512s` | **Obsolete (most ordering codes), not recommended for new designs** |
-| ISSI | `IS26KL256S` | 256 Mb | HyperFlash™ NOR | HyperBus™ DDR, RWDS | 3.0 V | 166 MHz | `s26ks512s` | **Obsolete (most ordering codes), not recommended for new designs** |
-| ISSI | `IS26KS128S` | 128 Mb | HyperFlash™ NOR | HyperBus™ DDR, RWDS | 1.8 V | 166 MHz | `s26ks512s` | **Obsolete (most ordering codes), not recommended for new designs** |
-| ISSI | `IS26KL128S` | 128 Mb | HyperFlash™ NOR | HyperBus™ DDR, RWDS | 3.0 V | 166 MHz | `s26ks512s` | **Obsolete (most ordering codes), not recommended for new designs** |
 | ISSI | `IS25LP512M` | 512 Mb | Quad SPI NOR Flash | Quad SPI 1-4-4 | 3.0 V | 117 MHz | `is25lp256` | Active |
 | ISSI | `IS25WP512M` | 512 Mb | Quad SPI NOR Flash | Quad SPI 1-4-4 | 1.8 V | 112 MHz | `is25lp256` | Active |
 | ISSI | `IS25LP256D` | 256 Mb | Quad SPI NOR Flash | Quad SPI 1-4-4 | 3.0 V | 133 MHz | `is25lp256` | Active |
@@ -60,7 +48,6 @@ designing in.
 | ISSI | `IS25WP016D` | 16 Mb | Quad SPI NOR Flash | Quad SPI 1-4-4 | 1.8 V | 104 MHz | `is25lp256` | Active |
 | ISSI | `IS25LP080D` | 8 Mb | Quad SPI NOR Flash | Quad SPI 1-4-4 | 3.0 V | 133 MHz | `is25lp256` | Active |
 | ISSI | `IS25WP080D` | 8 Mb | Quad SPI NOR Flash | Quad SPI 1-4-4 | 1.8 V | 133 MHz | `is25lp256` | Active |
-| ISSI | `IS25LQ032B` | 32 Mb | Quad SPI NOR Flash | Quad SPI 1-4-4 | 3.0 V | 104 MHz | `is25lp256` | **Obsolete, not recommended for new designs** |
 | ISSI | `IS25LE128` | 128 Mb | Quad SPI NOR Flash | Quad SPI 1-4-4 | 3.0 V | 133 MHz | `is25lp256` | Not verified |
 | ISSI | `IS25WE128` | 128 Mb | Quad SPI NOR Flash | Quad SPI 1-4-4 | 1.8 V | 133 MHz | `is25lp256` | Not verified |
 | ISSI | `IS29GL256` | 256 Mb | Parallel NOR Flash | FMC 16-bit asynchronous | 3.0 V | async, 110 ns access | `is29gl_fmc` | Active |
@@ -114,10 +101,6 @@ designing in.
 | Micron | `MT25QL064ABA` | 64 Mb | Quad SPI NOR Flash | Quad SPI 1-4-4 | 3.0 V | 125 MHz | `mt25qu512a` | Active |
 | Micron | `MT25QU032ABA` | 32 Mb | Quad SPI NOR Flash | Quad SPI 1-4-4 | 1.8 V | 125 MHz | `mt25qu512a` | Active |
 | Micron | `MT25QL032ABA` | 32 Mb | Quad SPI NOR Flash | Quad SPI 1-4-4 | 3.0 V | 125 MHz | `mt25qu512a` | Active |
-| Micron | `MT28EW01GABA` | 1 Gb | Parallel NOR Flash | FMC 16-bit asynchronous | 3.0 V | async, 110 ns access | `is29gl_fmc` | **Last Time Buy, not recommended for new designs** |
-| Micron | `MT28EW512ABA` | 512 Mb | Parallel NOR Flash | FMC 16-bit asynchronous | 3.0 V | async, 110 ns access | `is29gl_fmc` | **Last Time Buy, not recommended for new designs** |
-| Micron | `MT28EW256ABA` | 256 Mb | Parallel NOR Flash | FMC 16-bit asynchronous | 3.0 V | async, 110 ns access | `is29gl_fmc` | **Last Time Buy, not recommended for new designs** |
-| Micron | `MT28EW128ABA` | 128 Mb | Parallel NOR Flash | FMC 16-bit asynchronous | 3.0 V | async, 110 ns access | `is29gl_fmc` | **Last Time Buy, not recommended for new designs** |
 
 ## Notes
 
@@ -126,12 +109,11 @@ designing in.
 - **S25Hx-T** has no quad page program: programming runs in 1S-1S-1S (12h), reads in 1-4-4.
 - **MT25Q**: the factory 10 dummy cycles limit QUAD I/O FAST READ to 125 MHz.
 - **ISSI quad NOR**: limits are those of QUAD I/O FAST READ with the 11 dummy cycles the driver programs
-  (Table 6.11 of each datasheet); IS25LQ/WQ have no Read Register and keep the fixed 6-cycle latency.
+  (Table 6.11 of each datasheet).
 - **Stacked dice**: SEMPER and HyperRAM dice are configured one by one (IS66WVH64M8: fixed latency, 32 MByte
   burst boundary, no deep power down); Micron stacks are polled until
   every die reports ready; die erase replaces bulk erase where the datasheet requires it.
 - **FMC parts** are asynchronous: the manager derives the FMC timings from the access times above and the
   FMC kernel clock.
-- **Lifecycle**: S27KS0641/S27KL0641 and S70KS1281/S70KL1281 (first generation HyperRAM), IS25LQ032B and
-  the ISSI HyperFlash IS26KS/IS26KL ordering codes are listed obsolete; the Micron MT28EW family is in
-  last time buy. The Infineon S26KS/S26KL HyperFlash and S80KS2562 HyperRAM remain active.
+- **Lifecycle**: parts listed obsolete or last time buy were removed from the database (S27KS0641/S27KL0641,
+  S70KS1281/S70KL1281, IS25LQ032B, the ISSI HyperFlash IS26KS/IS26KL and the Micron MT28EW family).

@@ -3,7 +3,7 @@
   * @file    test_fmc.c
   * @author  STM32N6 External Memory Driver Suite Team
   * @brief   Tests for the FMC drivers: parallel PSRAM/SRAM (IS66WV, CY62167)
-  *          and parallel NOR flash (IS29GL, MT28EW).
+  *          and parallel NOR flash (IS29GL).
   ******************************************************************************
   */
 
